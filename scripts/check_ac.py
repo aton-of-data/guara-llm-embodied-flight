@@ -212,6 +212,23 @@ def check_ac15b(run_dir: pathlib.Path) -> list[str]:
     return []
 
 
+def check_ac15c(run_dir: pathlib.Path) -> list[str]:
+    """FM-3: armed restart is rejected by PX4."""
+    px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
+    armed_hit = px4_log.find("already registered")
+    if armed_hit < 0:
+        armed_hit = px4_log.find("Not accepting registration requests while armed")
+    if armed_hit < 0:
+        return ["px4.log has no armed-registration rejection"]
+    if not (run_dir / "guara_rta_node_restart.log").is_file():
+        return ["missing guara_rta_node_restart.log"]
+    disarmed = px4_log.find("Disarmed")
+    if disarmed != -1 and armed_hit > disarmed:
+        return ["registration rejection was logged after disarm"]
+    print("PX4 rejected armed registration (event in px4.log)")
+    return []
+
+
 def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
@@ -228,6 +245,7 @@ CHECKERS = {
     "AC-14": check_ac14,
     "AC-15": check_ac15,
     "AC-15b": check_ac15b,
+    "AC-15c": check_ac15c,
     "AC-20": check_ac20,
 }
 
