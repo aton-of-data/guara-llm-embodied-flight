@@ -73,6 +73,12 @@ if(BUILD_TESTING)
     rclcpp::rclcpp
   )
   ament_target_dependencies(daa_equivalence guara_msgs px4_msgs)
+  # Review remediation of 2026-09-11 H-7: traffic ageing, eviction and the ownship freshness gate.
+  # Apache-2.0 wrapper logic only; it links no DAIDALUS symbol (ADR 0003).
+  ament_add_gtest(traffic_table test/test_traffic_table.cpp)
+  target_compile_options(traffic_table PRIVATE ${GUARA_WARNINGS})
+  target_include_directories(traffic_table PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 endif()
 
 ament_package()

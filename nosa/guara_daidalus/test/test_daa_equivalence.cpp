@@ -177,6 +177,108 @@ TEST(DaaEquivalence, TransponderReportConversionMatchesStandalone)
   EXPECT_NEAR(got.t_daa_s, expected, kTolS);
 }
 
+// Review of 2026-09-11, AC-10 gap: the only recorded encounter was a manned aircraft at 8700 ft and
+// 151 kt. Guará's use case is a small UAS a few tens of metres above a field, so the equivalence is
+// also checked on a low-altitude, low-speed head-on encounter: 60 m AMSL, ownship 12 m/s north,
+// intruder 15 m/s south, 3 km ahead (the DO-365B corrective volume is entered well before CPA).
+namespace
+{
+
+constexpr double kUasLat = -22.0087;
+constexpr double kUasLon = -47.8909;
+constexpr double kUasAltM = 60.0;
+constexpr double kUasGsMps = 12.0;
+constexpr double kIntruderGsMps = 15.0;
+constexpr double kSeparationM = 3000.0;
+constexpr double kMetresPerDegLat = 110574.0;  // local approximation at the test latitude
+constexpr std::uint32_t kUasIntruderIcao = 4242u;
+
+double smallUasStandaloneTdaa()
+{
+  larcfm::Daidalus daa;
+  daa.set_DO_365B();
+  const larcfm::Position so = larcfm::Position::makeLatLonAlt(
+    kUasLat, "deg", kUasLon, "deg", kUasAltM / kFtToM, "ft");
+  const larcfm::Velocity vo = larcfm::Velocity::makeTrkGsVs(
+    0.0, "deg", kUasGsMps / kKnotToMps, "knot", 0.0, "fpm");
+  daa.setOwnshipState("ownship", so, vo, 0.0);
+  const larcfm::Position si = larcfm::Position::makeLatLonAlt(
+    kUasLat + kSeparationM / kMetresPerDegLat, "deg", kUasLon, "deg", kUasAltM / kFtToM, "ft");
+  const larcfm::Velocity vi = larcfm::Velocity::makeTrkGsVs(
+    180.0, "deg", kIntruderGsMps / kKnotToMps, "knot", 0.0, "fpm");
+  const int idx = daa.addTrafficState(std::to_string(kUasIntruderIcao), si, vi);
+  return daa.timeToCorrectiveVolume(idx);
+}
+
+}  // namespace
+
+TEST(DaaEquivalence, WrapperMatchesStandaloneOnASmallUasEncounter)
+{
+  const double expected = smallUasStandaloneTdaa();
+  ASSERT_TRUE(std::isfinite(expected)) << "head-on geometry must enter the corrective volume";
+
+  guara_daidalus::OwnshipSi own;
+  own.time_s = 0.0;
+  own.lat_deg = kUasLat;
+  own.lon_deg = kUasLon;
+  own.alt_m_amsl = kUasAltM;
+  own.track_rad = 0.0;
+  own.gs_mps = kUasGsMps;
+  own.vs_mps_up = 0.0;
+  own.valid = true;
+
+  guara_daidalus::TrafficSi tr;
+  tr.icao = kUasIntruderIcao;
+  tr.time_s = 0.0;
+  tr.lat_deg = kUasLat + kSeparationM / kMetresPerDegLat;
+  tr.lon_deg = kUasLon;
+  tr.alt_m_amsl = kUasAltM;
+  tr.track_rad = 180.0 * kDegToRad;
+  tr.gs_mps = kIntruderGsMps;
+  tr.vs_mps_up = 0.0;
+
+  guara_daidalus::Evaluator eval;
+  const guara_daidalus::DaaEvaluation got = eval.evaluate(own, &tr, 1);
+  EXPECT_EQ(got.critical_intruder_icao, kUasIntruderIcao);
+  EXPECT_NEAR(got.t_daa_s, expected, kTolS);
+  std::cout << "[daa_equivalence] small_uas standalone_T_daa_s=" << expected
+            << " wrapper=" << got.t_daa_s << std::endl;
+}
+
+// An intruder report older than the ownship sample is projected from its own observation time
+// (review H-7): re-dating it to the ownship instant changes T_daa, so the two must differ.
+TEST(DaaEquivalence, TrafficTimeChangesTheEvaluation)
+{
+  guara_daidalus::OwnshipSi own;
+  own.time_s = 5.0;
+  own.lat_deg = kUasLat;
+  own.lon_deg = kUasLon;
+  own.alt_m_amsl = kUasAltM;
+  own.track_rad = 0.0;
+  own.gs_mps = kUasGsMps;
+  own.vs_mps_up = 0.0;
+  own.valid = true;
+
+  guara_daidalus::TrafficSi fresh;
+  fresh.icao = kUasIntruderIcao;
+  fresh.time_s = 5.0;
+  fresh.lat_deg = kUasLat + kSeparationM / kMetresPerDegLat;
+  fresh.lon_deg = kUasLon;
+  fresh.alt_m_amsl = kUasAltM;
+  fresh.track_rad = 180.0 * kDegToRad;
+  fresh.gs_mps = kIntruderGsMps;
+  guara_daidalus::TrafficSi old = fresh;
+  old.time_s = 2.0;  // observed 3 s earlier: DAIDALUS projects it 45 m further along its track
+
+  guara_daidalus::Evaluator eval;
+  const double t_fresh = eval.evaluate(own, &fresh, 1).t_daa_s;
+  const double t_old = eval.evaluate(own, &old, 1).t_daa_s;
+  ASSERT_TRUE(std::isfinite(t_fresh));
+  ASSERT_TRUE(std::isfinite(t_old));
+  EXPECT_GT(std::fabs(t_fresh - t_old), 0.5)
+    << "t_fresh=" << t_fresh << " t_old=" << t_old;
+}
+
 TEST(DaaEquivalence, NoTrafficYieldsInfinity)
 {
   guara_daidalus::Evaluator eval;

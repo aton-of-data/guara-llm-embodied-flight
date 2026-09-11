@@ -68,7 +68,10 @@ DaaEvaluation Evaluator::evaluate(
     const TrafficSi & tr = traffic[i];
     const larcfm::Position si = positionSi(tr.lat_deg, tr.lon_deg, tr.alt_m_amsl);
     const larcfm::Velocity vi = velocitySi(tr.track_rad, tr.gs_mps, tr.vs_mps_up);
-    impl_->daa.addTrafficState(std::to_string(tr.icao), si, vi, own.time_s);
+    // Each intruder is added at the time its report was observed [G A.14]; DAIDALUS projects it to
+    // the ownship time itself.
+    impl_->daa.addTrafficState(std::to_string(tr.icao), si, vi,
+      std::isfinite(tr.time_s) ? tr.time_s : own.time_s);
   }
 
   out.num_intruders = static_cast<std::uint16_t>(

@@ -4,6 +4,7 @@
 
 #include "guara_daidalus/convert.hpp"
 #include "guara_daidalus/evaluate.hpp"
+#include "guara_daidalus/traffic_table.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -27,12 +28,16 @@ private:
   void onLocal(const px4_msgs::msg::VehicleLocalPosition & msg);
   void onTraffic(const px4_msgs::msg::TransponderReport & msg);
   void publishStatus();
+  double clockSeconds();
 
   Evaluator evaluator_;
   OwnshipSi own_{};
-  TrafficSi traffic_[kMaxTraffic]{};
-  std::uint64_t traffic_stamp_us_[kMaxTraffic]{};
-  std::size_t traffic_count_{0};
+  TrafficTable traffic_;
+  double ownship_max_age_s_{0.5};
+  double traffic_max_age_s_{5.0};
+  // Reception instants on the node clock; the PX4 sample stamps are used for the DAIDALUS times.
+  double t_global_recv_s_{-1.0};
+  double t_local_recv_s_{-1.0};
   bool have_global_{false};
   bool have_local_{false};
   px4_msgs::msg::VehicleGlobalPosition last_global_{};

@@ -17,6 +17,9 @@ inline constexpr std::size_t kMaxTraffic = 16;
 struct TrafficSi
 {
   std::uint32_t icao{0};
+  // Observation time of this report on the same clock as OwnshipSi::time_s. DAIDALUS projects each
+  // state from its own time, so a report is never re-dated to the ownship instant (review H-7).
+  double time_s{0.0};
   double lat_deg{0.0};
   double lon_deg{0.0};
   double alt_m_amsl{0.0};
