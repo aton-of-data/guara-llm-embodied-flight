@@ -46,8 +46,7 @@ C. Separate repository.
 5. Container images with DAIDALUS are labeled as containing NOSA software
    and ship the agreement text and the link to the source (3.A.2).
 6. No project material implies NASA endorsement (3.E).
-7. License of Guará's own code: **[PARAMETER TBD]** by the author
-   (Apache-2.0 would ease P7).
+7. License of Guará's own code: **Apache-2.0** (ADR 0006, 2026-09-11).
 
 ## Consequences
 
