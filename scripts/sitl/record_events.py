@@ -29,6 +29,12 @@ def main() -> int:
             "cause_mask": int(msg.cause_mask),
             "t_decide_s": float(msg.t_decide_s),
             "t_input_recv_s": float(msg.t_input_recv_s),
+            "t_cmd_pub_s": float(msg.t_cmd_pub_s),
+            "t_ack_s": float(msg.t_ack_s),
+            "l0_s": float(msg.l0_s),
+            "clock_err_s": float(msg.clock_err_s),
+            "l2_s": float(msg.l2_s),
+            "l3_s": float(msg.l3_s),
         }
         out.write(json.dumps(rec) + "\n")
         out.flush()

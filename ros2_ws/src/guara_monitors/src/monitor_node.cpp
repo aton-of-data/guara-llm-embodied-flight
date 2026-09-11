@@ -23,16 +23,19 @@ namespace
 std::atomic<bool> g_handler_fired{false};
 
 void publishPending(rclcpp::Publisher<guara_msgs::msg::MonitorVerdict>::SharedPtr pub,
-  const builtin_interfaces::msg::Time & stamp, std::uint64_t step, bool complete)
+  const rclcpp::Time & recv, double processing_s, std::uint64_t step, bool complete)
 {
   guara_msgs::msg::MonitorVerdict msg;
-  msg.stamp = stamp;
+  const std::int64_t ns = recv.nanoseconds();
+  msg.stamp.sec = static_cast<std::int32_t>(ns / 1000000000LL);
+  msg.stamp.nanosec = static_cast<std::uint32_t>(ns % 1000000000LL);
   msg.monitor_id = "REQ-ALT-01";
   msg.monitor_class = guara_msgs::msg::MonitorVerdict::CLASS_SWITCH;
   msg.action = guara_msgs::msg::MonitorVerdict::ACTION_HOLD;
   msg.violated = g_handler_fired.load();
   msg.inputs_complete = complete;
   msg.step = step;
+  msg.processing_s = processing_s;
   pub->publish(msg);
 }
 
@@ -61,13 +64,12 @@ public:
 private:
   void onSample(const px4_msgs::msg::VehicleLocalPosition & msg)
   {
+    const rclcpp::Time t_recv = now();
     input_signal = msg.z;
     g_handler_fired.store(false);
     step();
-    builtin_interfaces::msg::Time stamp;
-    stamp.sec = static_cast<std::int32_t>(msg.timestamp_sample / 1000000ULL);
-    stamp.nanosec = static_cast<std::uint32_t>((msg.timestamp_sample % 1000000ULL) * 1000ULL);
-    publishPending(pub_, stamp, step_, msg.z_valid);
+    const rclcpp::Time t_pub = now();
+    publishPending(pub_, t_recv, (t_pub - t_recv).seconds(), step_, msg.z_valid);
     ++step_;
   }
 

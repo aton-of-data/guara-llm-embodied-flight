@@ -31,8 +31,18 @@ uint8 rf_from
 uint8 rf_to
 uint32 cause_mask
 
-float64 t_decide_s          # tick instant t_k
-float64 t_input_recv_s      # reception instant of the most recent input that made U true
+float64 t_decide_s          # tick instant t_k (arbiter steady clock)
+float64 t_input_recv_s      # reception instant of the most recent input that made U true (steady)
+float64 t_input_stamp_s     # PX4 timestamp_sample [s] of the last local_position
+float64 t_px4_timestamp_s   # PX4 timestamp [s] of the last local_position
+float64 t_ros_recv_s        # ROS clock at last local_position callback
+float64 t_cmd_pub_s         # VehicleCommand publish (steady clock)
+float64 t_cmd_pub_ros_s     # VehicleCommand publish (ROS clock)
+float64 t_ack_s             # last SET_NAV_STATE ACK (steady clock)
+float64 l0_s                # timestamp - timestamp_sample (PX4 clock, SPEC L0)
+float64 clock_err_s         # ROS recv - PX4 timestamp (AC-19)
+float64 l2_s                # last monitor processing_s (SPEC L2)
+float64 l3_s                # arbiter ROS recv - verdict stamp (SPEC L3)
 float64 t_daa_s             # T_daa(k)
 float64 t_gf_s              # T_gf(k)
 string monitor_id           # first switch-class monitor reporting a violation, if any

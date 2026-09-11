@@ -27,3 +27,6 @@ bool inputs_complete
 
 # Monotonic evaluation counter of the monitor process.
 uint64 step
+
+# Monitor processing duration (SPEC §4.1 L2): time from input reception to verdict publish, seconds.
+float64 processing_s

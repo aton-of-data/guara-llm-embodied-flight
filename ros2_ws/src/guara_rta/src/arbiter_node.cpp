@@ -345,6 +345,14 @@ private:
     const bool valid = msg.xy_valid && msg.z_valid && msg.v_xy_valid && msg.v_z_valid;
     inputs_->onReceive(Channel::kLocalPosition, t, valid);
     last_input_recv_s_ = t;
+    const double ros_s = get_clock()->now().seconds();
+    const double px4_s = static_cast<double>(msg.timestamp) * 1e-6;
+    const double sample_s = static_cast<double>(msg.timestamp_sample) * 1e-6;
+    l0_s_ = px4_s - sample_s;
+    clock_err_s_ = ros_s - px4_s;
+    t_ros_recv_s_ = ros_s;
+    t_px4_timestamp_s_ = px4_s;
+    t_input_stamp_s_ = sample_s;
     if (geofence_.enabled()) {
       const GeofenceSample s = geofence_.update(msg, valid);
       t_gf_s_ = s.t_gf_s;
@@ -355,7 +363,11 @@ private:
   void onVerdict(const guara_msgs::msg::MonitorVerdict & msg)
   {
     const double t = steadySeconds();
+    const double ros_s = get_clock()->now().seconds();
     inputs_->onReceive(Channel::kMonitor, t, true);
+    l2_s_ = msg.processing_s;
+    const rclcpp::Time stamp(msg.stamp, get_clock()->get_clock_type());
+    l3_s_ = ros_s - stamp.seconds();
     MonitorSlot * slot = nullptr;
     for (auto & s : monitors_) {
       if (s.used && std::strncmp(s.id.data(), msg.monitor_id.c_str(), s.id.size() - 1U) == 0) {
@@ -484,6 +496,7 @@ private:
       cmd.timestamp = 0;  // set by PX4
       command_pub_->publish(cmd);
       t_last_cmd_pub_s_ = t;
+      t_cmd_pub_ros_s_ = get_clock()->now().seconds();
     } else if (action == ActuatorAction::kFailed) {
       RCLCPP_ERROR(get_logger(), "mode request %s not accepted after %u publications",
         toString(pending), static_cast<unsigned>(actuator_params_.n_retry));
@@ -510,6 +523,16 @@ private:
     ev.cause_mask = tr.cause;
     ev.t_decide_s = t;
     ev.t_input_recv_s = last_input_recv_s_;
+    ev.t_input_stamp_s = t_input_stamp_s_;
+    ev.t_px4_timestamp_s = t_px4_timestamp_s_;
+    ev.t_ros_recv_s = t_ros_recv_s_;
+    ev.t_cmd_pub_s = t_last_cmd_pub_s_;
+    ev.t_cmd_pub_ros_s = t_cmd_pub_ros_s_;
+    ev.t_ack_s = actuator_->lastAck();
+    ev.l0_s = l0_s_;
+    ev.clock_err_s = clock_err_s_;
+    ev.l2_s = l2_s_;
+    ev.l3_s = l3_s_;
     ev.t_daa_s = in.t_daa_s;
     ev.t_gf_s = in.t_gf_s;
     if (first_violating_monitor_ != nullptr && (tr.cause & cause::kMonitor) != 0U) {
@@ -537,6 +560,10 @@ private:
     st.max_tick_duration_s = max_tick_s_;
     st.t_last_cmd_pub_s = t_last_cmd_pub_s_;
     st.t_last_ack_s = actuator_->lastAck();
+    st.l0_s = l0_s_;
+    st.clock_err_s = clock_err_s_;
+    st.t_px4_timestamp_s = t_px4_timestamp_s_;
+    st.t_ros_recv_s = t_ros_recv_s_;
     state_pub_->publish(st);
     t_last_state_pub_s_ = t;
   }
@@ -582,6 +609,14 @@ private:
   double t_gf_s_{kInf};
   double last_input_recv_s_{std::numeric_limits<double>::quiet_NaN()};
   double t_last_cmd_pub_s_{std::numeric_limits<double>::quiet_NaN()};
+  double t_cmd_pub_ros_s_{std::numeric_limits<double>::quiet_NaN()};
+  double t_input_stamp_s_{std::numeric_limits<double>::quiet_NaN()};
+  double t_px4_timestamp_s_{std::numeric_limits<double>::quiet_NaN()};
+  double t_ros_recv_s_{std::numeric_limits<double>::quiet_NaN()};
+  double l0_s_{std::numeric_limits<double>::quiet_NaN()};
+  double clock_err_s_{std::numeric_limits<double>::quiet_NaN()};
+  double l2_s_{std::numeric_limits<double>::quiet_NaN()};
+  double l3_s_{std::numeric_limits<double>::quiet_NaN()};
   double t_last_state_pub_s_{-kInf};
   double t_start_s_{0.0};
   double max_tick_s_{0.0};

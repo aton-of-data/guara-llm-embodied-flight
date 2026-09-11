@@ -30,6 +30,7 @@ def main() -> int:
             "step": int(msg.step),
             "monitor_class": int(msg.monitor_class),
             "action": int(msg.action),
+            "processing_s": float(msg.processing_s),
         }
         out.write(json.dumps(rec) + "\n")
         out.flush()

@@ -16,3 +16,7 @@ bool owned_mode_active
 float64 max_tick_duration_s # maximum observed DecisionCore::step duration since start
 float64 t_last_cmd_pub_s    # most recent recovery or return command publication
 float64 t_last_ack_s        # most recent accepted acknowledgement
+float64 l0_s                # last local_position timestamp - timestamp_sample [s]
+float64 clock_err_s         # ROS recv - PX4 timestamp [s] (AC-19)
+float64 t_px4_timestamp_s
+float64 t_ros_recv_s
