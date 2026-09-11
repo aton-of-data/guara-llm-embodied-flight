@@ -134,9 +134,21 @@ def extract_run(run_dir: pathlib.Path) -> dict:
     l4 = None
     if _finite(t3.get("t_decide_s")) and _finite(t3.get("t_input_recv_s")):
         l4 = float(t3["t_decide_s"]) - float(t3["t_input_recv_s"])
+    t_cmd = t3.get("t_cmd_pub_s")
+    t_ack = t3.get("t_ack_s")
+    if not _finite(t_ack):
+        for ev in events:
+            if _finite(ev.get("t_ack_s")) and _finite(t_cmd) and float(ev["t_ack_s"]) >= float(t_cmd):
+                t_ack = ev["t_ack_s"]
+                break
+        if not _finite(t_ack):
+            for st in states:
+                if _finite(st.get("t_last_ack_s")) and _finite(t_cmd) and float(st["t_last_ack_s"]) >= float(t_cmd):
+                    t_ack = st["t_last_ack_s"]
+                    break
     l5_ack = None
-    if _finite(t3.get("t_ack_s")) and _finite(t3.get("t_cmd_pub_s")):
-        l5_ack = float(t3["t_ack_s"]) - float(t3["t_cmd_pub_s"])
+    if _finite(t_ack) and _finite(t_cmd):
+        l5_ack = float(t_ack) - float(t_cmd)
 
     ulog = _ulog_l0_l5_l6_tau(run_dir, t3.get("t_cmd_pub_ros_s"))
     l0 = t3.get("l0_s")
@@ -145,16 +157,19 @@ def extract_run(run_dir: pathlib.Path) -> dict:
     l1 = t3.get("clock_err_s")
     l2 = t3.get("l2_s") if _finite(t3.get("l2_s")) else 0.0
     l3 = t3.get("l3_s")
-    l5 = ulog.get("l5_ulog_s")
-    if not _finite(l5):
-        l5 = l5_ack
+    # L5 is command publish → ACK on the arbiter steady clock (SPEC L5_ack). Mixing
+    # ROS time with ULog timestamps is invalid until AC-19 (SPEC §4.3).
+    l5 = l5_ack
     l6 = ulog.get("l6_s")
 
     stages = {"L0": l0, "L1": l1, "L2": l2, "L3": l3, "L4": l4, "L5": l5, "L6": l6}
+    include_l1 = _finite(l1) and abs(float(l1)) < CLOCK_ALIGN_LIMIT_S
     delta = 0.0
     missing = []
     for name in STAGES:
         val = stages[name]
+        if name == "L1" and not include_l1:
+            continue
         if not _finite(val):
             missing.append(name)
         else:
@@ -165,6 +180,7 @@ def extract_run(run_dir: pathlib.Path) -> dict:
         "stages_s": {k: (None if not _finite(v) else float(v)) for k, v in stages.items()},
         "delta_lat_s": None if missing else delta,
         "missing_stages": missing,
+        "l1_in_delta_lat": include_l1,
         "l5_ack_s": l5_ack,
         "clock_err_abs_p99_s": percentile(clock_samples, 99) if clock_samples else None,
         "n_clock_samples": len(clock_samples),

@@ -55,6 +55,7 @@ def main() -> int:
             "tick": int(msg.tick),
             "t_s": _f(msg.t_s),
             "state": int(msg.state),
+            "t_last_ack_s": _f(msg.t_last_ack_s),
             "l0_s": _f(msg.l0_s),
             "clock_err_s": _f(msg.clock_err_s),
             "t_px4_timestamp_s": _f(msg.t_px4_timestamp_s),
