@@ -1,69 +1,71 @@
-# Guará — Especificação (SPEC)
+# Guará — Specification (SPEC)
 
-Versão: 0.1 (P1, 2026-09-11) · Estado: rascunho para revisão humana
+Version: 0.1 (P1, 2026-09-11) · Status: draft for human review
 
-Base de versões: PX4 v1.17.0, px4_msgs release/1.17, px4-ros2-interface-lib
+Version baseline: PX4 v1.17.0, px4_msgs release/1.17, px4-ros2-interface-lib
 release/1.17, ROS 2 Humble, Ogma v1.15.0, DAIDALUS v2.0.3a, Copilot v4.8.1
-(`third_party/VERSIONS.md`). Referências `[G x.y]` apontam para linhas de
-`GROUNDING.md`; nenhuma API é usada fora dele.
+(`third_party/VERSIONS.md`). References `[G x.y]` point to rows of
+`GROUNDING.md`; no API is used outside it. Project rationale and research
+questions: `docs/PROPOSAL.md`.
 
-Convenções:
-- **[HIPÓTESE]**: valor ou comportamento a medir; nunca usar como resultado.
-- **[REVISAR]**: depende de interpretação normativa ou jurídica.
-- **[DESCONHECIDO]**: sem evidência; exige P0 ou experimento antes de depender dele.
-
----
-
-## 1. Escopo
-
-O Guará é uma arquitetura de Runtime Assurance (RTA) para multicópteros PX4 em
-simulação (SITL) e, futuramente, em companion computer. Uma função complexa
-não confiável (CF) comanda o veículo; um árbitro troca para modos internos do
-PX4 (Hold / RTL / Land) quando monitores indicam risco de:
-
-1. violação de geofence prevista;
-2. perda de well-clear (DAA) prevista pelo DAIDALUS;
-3. violação de requisitos formais (FRETish → Ogma → Copilot);
-4. entradas inválidas ou velhas.
-
-Fora de escopo: certificação, hardware real (fase 1), asa fixa/VTOL, seleção
-de alvo ou armamento (CLAUDE.md), segurança contra adversários na rede ROS 2.
+Conventions:
+- **[HYPOTHESIS]**: value or behavior to measure; never use as a result.
+- **[REVIEW]**: depends on normative or legal interpretation.
+- **[UNKNOWN]**: no evidence; requires P0 or an experiment before depending on it.
+- **[PARAMETER TBD]**: value without a source yet.
 
 ---
 
-## 2. Mapeamento ASTM F3269 → componentes
+## 1. Scope
 
-O texto da ASTM F3269 **não está disponível no repositório**. O mapeamento usa
-os nomes de componentes listados no pacote de prompts do projeto. Números de
-cláusula e redação normativa: **[REVISAR]** contra a norma licenciada.
+Guará is a Runtime Assurance (RTA) architecture for PX4 multicopters in
+simulation (SITL) and, later, on a companion computer. An untrusted complex
+function (CF) commands the vehicle; an arbiter switches to PX4 internal modes
+(Hold / RTL / Land) when monitors indicate risk of:
 
-| Componente F3269 | Componente Guará | Processo / pacote | Base técnica |
+1. predicted geofence violation;
+2. loss of well-clear (DAA) predicted by DAIDALUS;
+3. violation of formal requirements (FRETish → Ogma → Copilot);
+4. invalid or stale inputs.
+
+Out of scope: certification, real hardware (phase 1), fixed-wing/VTOL, target
+selection or weapons (CLAUDE.md), security against adversaries on the ROS 2 network.
+
+---
+
+## 2. ASTM F3269 → component mapping
+
+The ASTM F3269 text **is not available in the repository**. The mapping uses
+the component names listed in the project prompt pack. Clause numbers and
+normative wording: **[REVIEW]** against the licensed standard.
+
+| F3269 component | Guará component | Process / package | Technical basis |
 |---|---|---|---|
-| Complex Function (CF) | Nó CF externo (ex.: planejador por intenção textual, P5) que publica `guara_msgs/CfSetpoint`; entra no PX4 **somente** através do owned mode `GuaraCfGateway` | `guara_cf_*` (processo separado) | [G A.4, A.7] |
-| Recovery Function (RF) | Modos internos do PX4: Hold (`kModeIDLoiter`), RTL (`kModeIDRtl`), Land (`kModeIDLand`), acionados por `scheduleMode` | PX4 (FMU/SITL) | [G 1.1, 1.2, 1.3] |
-| Safety Monitor | (a) monitores Copilot gerados pelo Ogma; (b) preditor de geofence; (c) nó DAIDALUS; cada um publica veredito com carimbo de tempo | `guara_monitors`, `guara_geofence` (biblioteca no árbitro), `guara_daidalus` (NOSA, isolado) | [G 4.1-4.6, 5.1-5.7] |
-| Switching Logic | Núcleo de decisão puro (`DecisionCore`), sem alocação, período fixo `T_s`; máquina de estados da §3 | `guara_rta` | CLAUDE.md §Engenharia |
-| Input Manager | (a) validação de idade/validade de todas as entradas; (b) gateway que só repassa setpoints da CF quando o estado é `CF` e os bloqueia (substitui por velocidade zero) quando uma troca está pendente | `guara_rta` | [G A.7, A.8, A.13] |
-| Camada final (fora do RTA Guará) | Failsafes e geofence internos do PX4 (`GF_ACTION`), permanecem habilitados | PX4 | [G 2.4, A.11] |
+| Complex Function (CF) | External CF node (e.g. text-intent planner, P5) publishing `guara_msgs/CfSetpoint`; enters PX4 **only** through the owned mode `GuaraCfGateway` | `guara_cf_*` (separate process) | [G A.4, A.7] |
+| Recovery Function (RF) | PX4 internal modes: Hold (`kModeIDLoiter`), RTL (`kModeIDRtl`), Land (`kModeIDLand`), triggered by `scheduleMode` | PX4 (FMU/SITL) | [G 1.1, 1.2, 1.3] |
+| Safety Monitor | (a) Copilot monitors generated by Ogma; (b) geofence predictor; (c) DAIDALUS node; each publishes a timestamped verdict | `guara_monitors`, `guara_geofence` (library inside the arbiter), `guara_daidalus` (NOSA, isolated) | [G 4.1-4.6, 5.1-5.7] |
+| Switching Logic | Pure decision core (`DecisionCore`), allocation-free, fixed period `T_s`; state machine of §3 | `guara_rta` | CLAUDE.md §Engineering |
+| Input Manager | (a) age/validity checks on all inputs; (b) gateway that forwards CF setpoints only when state is `CF` and blocks them (replaced by zero velocity) while a switch is pending | `guara_rta` | [G A.7, A.8, A.13] |
+| Final layer (outside Guará RTA) | PX4 internal failsafes and geofence (`GF_ACTION`), kept enabled | PX4 | [G 2.4, A.11] |
 
-Diagrama de processos:
+Process diagram:
 
 ```mermaid
 flowchart LR
   subgraph PX4[PX4 v1.17 SITL]
     FMU[commander + navigator\nHold / RTL / Land\nfailsafes]
   end
-  subgraph RTA[processo guara_rta]
+  subgraph RTA[guara_rta process]
     IM[Input Manager]
     DC[DecisionCore\nSwitching Logic]
     GW[GuaraCfGateway\nowned mode]
     EX[GuaraExecutor\nModeExecutor]
     GF[GeofencePredictor]
-    ACT[Atuador\nscheduleMode]
+    ACT[Actuator\nscheduleMode]
   end
   MON[guara_monitors\nCopilot/Ogma]
   DAA[guara_daidalus\nNOSA]
-  CF[CF externa]
+  CF[External CF]
   FMU -- /fmu/out/* best-effort --> IM
   FMU -- transponder_report --> DAA
   FMU -- /fmu/out/* --> MON
@@ -73,255 +75,264 @@ flowchart LR
   IM --> DC
   DC --> ACT --> EX -- vehicle_command_mode_executor --> FMU
   CF -- CfSetpoint --> GW -- trajectory_setpoint --> FMU
-  DC -. estado .-> GW
+  DC -. state .-> GW
 ```
 
 ---
 
-## 3. Lógica de chaveamento formal
+## 3. Formal switching logic
 
-### 3.1 Sinais (avaliados a cada tick `k`, período `T_s`)
+Notation note: `docs/PROPOSAL.md` §5 writes the classic Simplex rule with a single
+bound `min(τ_daa, τ_gf) ≤ τ_rec + δ_lat`, where `τ_*` are time signals. This SPEC
+refines it: time signals are `T_daa`, `T_gf`; `τ_daa`, `τ_gf` are per-channel
+thresholds constrained by obligation O-1 (§3.3). The proposal rule is the special
+case `τ_daa = τ_gf = τ_rec + δ_lat`.
 
-| Símbolo | Definição | Fonte |
+### 3.1 Signals (evaluated at each tick `k`, period `T_s`)
+
+| Symbol | Definition | Source |
 |---|---|---|
-| `t_k` | instante do tick (relógio monotônico do árbitro) | — |
-| `T_daa(k)` | min sobre intrusos do tempo previsto até perda de well-clear, em s; `+∞` sem conflito no lookahead | `DaaStatus` (§ADR-0003; função DAIDALUS a fixar em M5, [G 5.4, 5.5]) |
-| `T_gf(k)` | tempo previsto até violação da geofence, em s; `+∞` se não houver violação no horizonte | `GeofencePredictor` (ADR-0004) |
-| `M(k)` | `1` se algum monitor da classe `switch` reporta violação | `MonitorVerdict` |
-| `a_i(k)` | idade da entrada `i`: `t_k − stamp_i` (conversão de relógio em §4.3) | Input Manager |
-| `V(k)` | `1` se ∃ entrada obrigatória com `a_i(k) > A_i`, flag de validade falsa (ex.: `xy_valid`, `v_xy_valid` [G A.8]) ou mensagem ausente | Input Manager |
-| `IC(k)` | `1` se o executor está in charge (`isInCharge()` [G 1.6]) | interface-lib |
+| `t_k` | tick instant (arbiter monotonic clock) | — |
+| `T_daa(k)` | min over intruders of predicted time to loss of well-clear, in s; `+∞` with no conflict within lookahead | `DaaStatus` (ADR-0003); computed with `timeToCorrectiveVolume` = corrective-level WCV volume [G 5.4, A.14] |
+| `T_gf(k)` | predicted time to geofence violation, in s; `+∞` if no violation within horizon | `GeofencePredictor` (ADR-0004) |
+| `M(k)` | `1` if any monitor of class `switch` reports a violation | `MonitorVerdict` |
+| `a_i(k)` | age of input `i`: `t_k − stamp_i` (clock conversion in §4.3) | Input Manager |
+| `V(k)` | `1` if ∃ mandatory input with `a_i(k) > A_i`, false validity flag (e.g. `xy_valid`, `v_xy_valid` [G A.8]) or missing message | Input Manager |
+| `IC(k)` | `1` if the executor is in charge (`isInCharge()` [G 1.6]) | interface-lib |
 
-### 3.2 Parâmetros
+### 3.2 Parameters
 
-| Símbolo | Significado | Valor inicial | Estado |
+| Symbol | Meaning | Initial value | Status |
 |---|---|---|---|
-| `T_s` | período do núcleo de decisão | 0,05 s | [HIPÓTESE] |
-| `δ_lat` | latência ponta a ponta p99, amostra de entrada → RF efetivo (§4) | 0,8 s | [HIPÓTESE] — medir em M7 |
-| `τ_rec,gf` | tempo para a RF (Hold) levar a velocidade horizontal a ~0; **já incorporado em `T_gf`** via `d_stop` (ADR-0004), portanto não soma no limiar | derivado de `a_brake` | [HIPÓTESE] — medir `a_brake` em M4 |
-| `τ_rec,daa` | tempo para a RF escolhida completar a manobra relevante contra tráfego | 2,0 s | [HIPÓTESE] — medir em M5 |
-| `τ_gf` | limiar de disparo por geofence | 1,0 s | [HIPÓTESE]; deve satisfazer O-1 |
-| `τ_daa` | limiar de disparo por DAA | 30 s | [HIPÓTESE]; deve satisfazer O-1; depende da configuração DAIDALUS (5.8) |
-| `h_gf`, `h_daa` | histerese aditiva (s) no retorno | 1,0 s / 5,0 s | [HIPÓTESE] |
-| `T_d` | dwell mínimo na RF e tempo contínuo de condição limpa antes do retorno | 5,0 s | [HIPÓTESE] |
-| `A_i` | idade máxima por entrada | `vehicle_local_position_v1`: 0,2 s; `MonitorVerdict`: 0,5 s; `DaaStatus`: 1,0 s; `vehicle_status_v1`: 1,0 s | [HIPÓTESE] |
-| `N_max`, `W` | máximo de chaveamentos CF→RF numa janela deslizante antes de travar | 3 em 120 s | [HIPÓTESE] |
-| `H_max` | idade máxima do heartbeat do núcleo antes do auto-reporte de falha (§5, FM-4) | 0,25 s | [HIPÓTESE] |
+| `T_s` | decision core period | 0.05 s | [HYPOTHESIS] |
+| `δ_lat` | end-to-end p99 latency, input sample → effective RF (§4) | 0.8 s | [HYPOTHESIS] — measure in M7 |
+| `τ_rec,gf` | time for the RF (Hold) to bring horizontal speed to ~0; **already included in `T_gf`** via `d_stop` (ADR-0004), so it does not add to the threshold | derived from `a_brake` | [HYPOTHESIS] — measure `a_brake` in M4 |
+| `τ_rec,daa` | time for the chosen RF to complete the relevant maneuver against traffic | 2.0 s | [HYPOTHESIS] — measure in M5 |
+| `τ_gf` | geofence trigger threshold | 1.0 s | [HYPOTHESIS]; must satisfy O-1 |
+| `τ_daa` | DAA trigger threshold | 30 s | [HYPOTHESIS]; must satisfy O-1; depends on DAIDALUS configuration (5.8) |
+| `h_gf`, `h_daa` | additive hysteresis (s) on return | 1.0 s / 5.0 s | [HYPOTHESIS] |
+| `T_d` | minimum dwell in RF and continuous clear-condition time before return | 5.0 s | [HYPOTHESIS] |
+| `A_i` | maximum age per input | `vehicle_local_position_v1`: 0.2 s; `MonitorVerdict`: 0.5 s; `DaaStatus`: 1.0 s; `vehicle_status_v1`: 1.0 s | [HYPOTHESIS] |
+| `N_max`, `W` | maximum CF→RF switches in a sliding window before latching | 3 in 120 s | [HYPOTHESIS] |
+| `H_max` | maximum age of the core heartbeat before self-reported failure (§5, FM-4) | 0.25 s | [HYPOTHESIS] |
 
-Os valores ficam em `config/rta_params.yaml`; toda execução copia o arquivo
-para `results/{run_id}/config.yaml`.
+Values live in `config/rta_params.yaml`; every run copies the file to
+`results/{run_id}/config.yaml`.
 
-### 3.3 Obrigações de projeto (verificadas por medição, não por prova)
+### 3.3 Design obligations (verified by measurement, not proof)
 
-- **O-1 (margem temporal):** `τ_gf ≥ δ_lat` (a frenagem já está em `T_gf`, ADR-0004)
-  e `τ_daa ≥ τ_rec,daa + δ_lat`, com `δ_lat` = p99 medido em M7 e `τ_rec,daa`, `a_brake` medidos em SITL.
-  Com os valores iniciais (`τ_gf = 1,0 s`, `δ_lat = 0,8 s`) a folga é 0,2 s (4·`T_s`);
-  AC-22 decide com `δ_lat` medido.
-- **O-2 (resolução):** `T_s ≤ min(A_i)/2`, para que dados velhos sejam detectados em ≤ 2 ticks.
-- **O-3 (assimetria):** nenhum atraso intencional (histerese ou dwell) é aplicado no sentido CF→RF.
+- **O-1 (time margin):** `τ_gf ≥ δ_lat` (braking already inside `T_gf`, ADR-0004)
+  and `τ_daa ≥ τ_rec,daa + δ_lat`, with `δ_lat` = p99 measured in M7 and `τ_rec,daa`, `a_brake` measured in SITL.
+  With initial values (`τ_gf = 1.0 s`, `δ_lat = 0.8 s`) the slack is 0.2 s (4·`T_s`);
+  AC-22 decides with measured `δ_lat`.
+- **O-2 (resolution):** `T_s ≤ min(A_i)/2`, so stale data is detected in ≤ 2 ticks.
+- **O-3 (asymmetry):** no intentional delay (hysteresis or dwell) is applied in the CF→RF direction.
 
-### 3.4 Predicados
+### 3.4 Predicates
 
 ```
-U(k)  = [T_daa(k) ≤ τ_daa] ∨ [T_gf(k) ≤ τ_gf] ∨ M(k) ∨ V(k)          (inseguro)
-C(k)  = [T_daa(k) > τ_daa + h_daa] ∧ [T_gf(k) > τ_gf + h_gf] ∧ ¬M(k) ∧ ¬V(k)   (limpo)
-Cdur(k) = duração contínua (s) até t_k em que C é verdadeiro; 0 se C(k) falso
-S(k)  = número de transições CF→RF em (t_k − W, t_k]
+U(k)  = [T_daa(k) ≤ τ_daa] ∨ [T_gf(k) ≤ τ_gf] ∨ M(k) ∨ V(k)          (unsafe)
+C(k)  = [T_daa(k) > τ_daa + h_daa] ∧ [T_gf(k) > τ_gf + h_gf] ∧ ¬M(k) ∧ ¬V(k)   (clear)
+Cdur(k) = continuous duration (s) up to t_k during which C is true; 0 if C(k) false
+S(k)  = number of CF→RF transitions in (t_k − W, t_k]
 ```
 
-`C ⇒ ¬U` por construção (`h ≥ 0`); a faixa entre os limiares é a histerese.
+`C ⇒ ¬U` by construction (`h ≥ 0`); the band between thresholds is the hysteresis.
 
-### 3.5 Máquina de estados
+### 3.5 State machine
 
-Estados: `INACTIVE`, `CF`, `RF(r)`, `LATCHED(r)`; `r ∈ {HOLD, RTL, LAND}`.
+States: `INACTIVE`, `CF`, `RF(r)`, `LATCHED(r)`; `r ∈ {HOLD, RTL, LAND}`.
 
-| # | De | Condição (avaliada em ordem) | Para | Ação |
+| # | From | Condition (evaluated in order) | To | Action |
 |---|---|---|---|---|
-| T1 | qualquer | `¬IC(k)` | `INACTIVE` | nenhum comando é emitido (autoridade humana/PX4 [G 1.6]) |
-| T2 | `INACTIVE` | `IC(k)` ∧ owned mode ativo ∧ `¬U(k)` | `CF` | gateway libera setpoints da CF |
-| T2b | `INACTIVE` | `IC(k)` ∧ owned mode ativo ∧ `U(k)` | `RF(select(k))` | igual a T3 (preserva P-2 na ativação) |
-| T3 | `CF` | `U(k)` | `RF(select(k))` | gateway bloqueia CF no mesmo tick; atuador agenda `r`; registra `t_sw` |
-| T4 | `RF(r)` | `S(k) ≥ N_max` | `LATCHED(r)` | nenhum retorno até `¬IC` |
-| T5 | `RF(HOLD)` | `C(k)` ∧ `Cdur(k) ≥ T_d` ∧ `t_k − t_sw ≥ T_d` ∧ `return_enabled` | `CF` | atuador agenda owned mode |
-| T6 | `RF(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `RF(select(k))` | escalonamento (ADR-0005) |
-| T7 | `LATCHED(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `LATCHED(select(k))` | escalonamento permitido, retorno não |
+| T1 | any | `¬IC(k)` | `INACTIVE` | no command is emitted (human/PX4 authority [G 1.6]) |
+| T2 | `INACTIVE` | `IC(k)` ∧ owned mode active ∧ `¬U(k)` | `CF` | gateway releases CF setpoints |
+| T2b | `INACTIVE` | `IC(k)` ∧ owned mode active ∧ `U(k)` | `RF(select(k))` | same as T3 (preserves P-2 on activation) |
+| T3 | `CF` | `U(k)` | `RF(select(k))` | gateway blocks CF in the same tick; actuator schedules `r`; records `t_sw` |
+| T4 | `RF(r)` | `S(k) ≥ N_max` | `LATCHED(r)` | no return until `¬IC` |
+| T5 | `RF(HOLD)` | `C(k)` ∧ `Cdur(k) ≥ T_d` ∧ `t_k − t_sw ≥ T_d` ∧ `return_enabled` | `CF` | actuator schedules owned mode |
+| T6 | `RF(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `RF(select(k))` | escalation (ADR-0005) |
+| T7 | `LATCHED(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `LATCHED(select(k))` | escalation allowed, return not |
 
-`select(k)` (política v1, [HIPÓTESE], ADR-0005):
+`select(k)` (policy v1, [HYPOTHESIS], ADR-0005):
 
-| Causa verdadeira em `k` | `r` |
+| Cause true at `k` | `r` |
 |---|---|
-| `V(k)` (entradas velhas/invalidas) | HOLD |
+| `V(k)` (stale/invalid inputs) | HOLD |
 | `T_gf ≤ τ_gf` | HOLD |
 | `T_daa ≤ τ_daa` | HOLD |
-| `M(k)` | ação configurada por monitor ∈ {HOLD, RTL, LAND}; padrão HOLD |
-| várias | maior `rank`: `HOLD < RTL < LAND` |
+| `M(k)` | action configured per monitor ∈ {HOLD, RTL, LAND}; default HOLD |
+| several | highest `rank`: `HOLD < RTL < LAND` |
 
-Propriedades exigidas do `DecisionCore` (testáveis em unidade, AC-4..AC-6, AC-12, AC-13):
+Required `DecisionCore` properties (unit-testable, AC-4..AC-6, AC-12, AC-13):
 
-- **P-1:** `U(k) ∧ estado=CF ⇒ estado(k)=RF` no mesmo tick.
-- **P-2:** estado `CF` em `k` ⇒ `¬U(k)`.
-- **P-3:** retorno `RF→CF` em `k` ⇒ `C` contínuo em `[t_k − T_d, t_k]` e `t_k − t_sw ≥ T_d`.
-- **P-4:** número de transições CF→RF em qualquer janela `W` ≤ `N_max`.
-- **P-5:** o núcleo não aloca memória dinâmica após a inicialização e executa em tempo máximo observado ≤ `B_dec` = 1 ms [HIPÓTESE] em x86-64 do container.
-- **P-6:** `¬IC(k)` ⇒ nenhum comando emitido a partir de `k`.
+- **P-1:** `U(k) ∧ state=CF ⇒ state(k)=RF` in the same tick.
+- **P-2:** state `CF` at `k` ⇒ `¬U(k)`.
+- **P-3:** return `RF→CF` at `k` ⇒ `C` continuous over `[t_k − T_d, t_k]` and `t_k − t_sw ≥ T_d`.
+- **P-4:** number of CF→RF transitions in any window `W` ≤ `N_max`.
+- **P-5:** the core does not allocate dynamic memory after initialization and runs in maximum observed time ≤ `B_dec` = 1 ms [HYPOTHESIS] on the container's host CPU.
+- **P-6:** `¬IC(k)` ⇒ no command emitted from `k` on.
 
 ---
 
-## 4. Orçamento de latência
+## 4. Latency budget
 
-### 4.1 Decomposição
+### 4.1 Decomposition
 
-Caminho medido: amostra que torna `U` verdadeiro → RF efetivo no PX4.
+Measured path: sample that makes `U` true → effective RF in PX4.
 
-| Etapa | Símbolo | Início (carimbo) | Fim (carimbo) | Fonte do carimbo | Valor inicial |
+| Stage | Symbol | Start (stamp) | End (stamp) | Stamp source | Initial value |
 |---|---|---|---|---|---|
-| Amostragem → publicação uORB | `L0` | `timestamp_sample` | `timestamp` | campos da mensagem PX4 [G A.8] | [HIPÓTESE] 0,02 s |
-| Transporte DDS PX4 → ROS 2 | `L1` | `timestamp` (+offset) | recepção no nó | callback ROS 2 [G A.9] | [HIPÓTESE] 0,02 s |
-| Processamento do monitor (Copilot/geofence/DAIDALUS) | `L2` | recepção | publicação do veredito | `MonitorVerdict.stamp` / `DaaStatus.stamp` | [HIPÓTESE] 0,05 s (DAA 0,2 s) |
-| Transporte do veredito até o árbitro | `L3` | publicação do veredito | recepção no árbitro | callback | [HIPÓTESE] 0,01 s |
-| Decisão (espera do tick + cálculo) | `L4` | recepção no árbitro | transição T3 | `RtaEvent.t_decide` | ≤ `T_s` + `B_dec` |
-| Comando → aceito pelo commander | `L5` | publicação `VehicleCommand` | `vehicle_command` na ULog | ULog [G A.10] | [HIPÓTESE] 0,05 s |
-| Aceito → modo efetivo | `L6` | `vehicle_command` na ULog | mudança de `nav_state` em `vehicle_status` na ULog | ULog [G A.10] | [HIPÓTESE] 0,1 s |
+| Sampling → uORB publish | `L0` | `timestamp_sample` | `timestamp` | PX4 message fields [G A.8] | [HYPOTHESIS] 0.02 s |
+| DDS transport PX4 → ROS 2 | `L1` | `timestamp` (+offset) | node reception | ROS 2 callback [G A.9] | [HYPOTHESIS] 0.02 s |
+| Monitor processing (Copilot/geofence/DAIDALUS) | `L2` | reception | verdict publish | `MonitorVerdict.stamp` / `DaaStatus.stamp` | [HYPOTHESIS] 0.05 s (DAA 0.2 s) |
+| Verdict transport to arbiter | `L3` | verdict publish | arbiter reception | callback | [HYPOTHESIS] 0.01 s |
+| Decision (tick wait + compute) | `L4` | arbiter reception | T3 transition | `RtaEvent.t_decide` | ≤ `T_s` + `B_dec` |
+| Command → accepted by commander | `L5` | `VehicleCommand` publish | `vehicle_command` in ULog | ULog [G A.10] | [HYPOTHESIS] 0.05 s |
+| Accepted → effective mode | `L6` | `vehicle_command` in ULog | `nav_state` change in `vehicle_status` in ULog | ULog [G A.10] | [HYPOTHESIS] 0.1 s |
 
-`δ_lat = L0 + L1 + L2 + L3 + L4 + L5 + L6` (p50 e p99 por etapa e total).
-A soma das hipóteses é ~0,30 s (~0,45 s no caminho DAA, com `L4` no pior caso
-de `T_s`); `δ_lat` inicial = 0,8 s inclui folga. Tudo **[HIPÓTESE]** até M7.
+`δ_lat = L0 + L1 + L2 + L3 + L4 + L5 + L6` (p50 and p99 per stage and total).
+The sum of hypotheses is ~0.30 s (~0.45 s on the DAA path, with `L4` at worst-case
+`T_s`); initial `δ_lat` = 0.8 s includes slack. All **[HYPOTHESIS]** until M7.
 
-### 4.2 Regras de medição
+### 4.2 Measurement rules
 
-- Observação de modo **não** usa `/fmu/out/vehicle_status_v1` (limitado a 5 Hz [G 3.7]); `L6` vem da ULog.
-- O bloqueio do `sendCommandSync` (até ~3,9 s [G A.1]) **não** entra em `L5`: o comando é publicado antes da espera. O tempo até ACK é registrado à parte como `L5_ack`.
-- `RtaEvent` registra `t_input_stamp`, `t_recv`, `t_decide`, `t_cmd_pub`, `t_ack`, com relógio declarado.
-- Métricas saem apenas de `scripts/aggregate.py` → `results/{run_id}/metrics.json` (CLAUDE.md).
+- Mode observation does **not** use `/fmu/out/vehicle_status_v1` (limited to 5 Hz [G 3.7]); `L6` comes from ULog.
+- The `sendCommandSync` blocking (up to ~3.9 s [G A.1]) does **not** enter `L5`: the command is published before the wait. Time to ACK is recorded separately as `L5_ack`.
+- `RtaEvent` records `t_input_stamp`, `t_recv`, `t_decide`, `t_cmd_pub`, `t_ack`, with declared clock.
+- Metrics come only from `scripts/aggregate.py` → `results/{run_id}/metrics.json` (CLAUDE.md).
 
-### 4.3 Alinhamento de relógios
+### 4.3 Clock alignment
 
-`timestamp` recebe o offset de sincronização da sessão uXRCE [G A.9]. Qual
-relógio ROS 2 isso produz (sistema vs. sim time) é **MÉDIA**; AC-19 mede o erro
-de alinhamento antes de qualquer latência cross-process ser reportada. Enquanto
-AC-19 não passar, só são válidas latências medidas em um mesmo relógio (`L4`,
-`L5_ack`, e `L6` inteiramente na ULog).
+`timestamp` receives the uXRCE session sync offset [G A.9]. Which ROS 2 clock
+this produces (system vs. sim time) is **MEDIUM**; AC-19 measures the alignment
+error before any cross-process latency is reported. Until AC-19 passes, only
+latencies measured on a single clock are valid (`L4`, `L5_ack`, and `L6` entirely in ULog).
 
 ---
 
-## 5. Modos de falha do árbitro e reação do PX4
+## 5. Arbiter failure modes and PX4 reaction
 
-| ID | Falha | Detecção | Reação do PX4 / do sistema | Evidência | Confiança | Verificação |
+| ID | Failure | Detection | PX4 / system reaction | Evidence | Confidence | Verification |
 |---|---|---|---|---|---|---|
-| FM-1 | Processo `guara_rta` termina (crash/kill) com owned mode (CF) ativo | PX4: sem resposta ao arming check; unresponsive após >3 requisições perdidas (~1,2 s) | `mode_req_other` → modo não pode rodar → RTL (sem atraso `COM_FAIL_ACT_T`). Comportamento dos controladores durante a janela sem setpoints: **[DESCONHECIDO]** | [G 2.1-2.4, 2.10] | MÉDIA | AC-15 |
-| FM-2 | Processo termina com RF (Hold/RTL/Land) ativo | Nenhuma detecção pelo PX4 (modo interno) | Modo interno continua; failsafes do PX4 seguem ativos; não há retorno à CF | [G 2.6] | MÉDIA | AC-15b |
-| FM-3 | Reinício do árbitro em voo | — | Registro rejeitado com veículo armado (`COM_MODE_ARM_CHK=0`): Guará fica indisponível até pousar/desarmar | [G 2.7] | ALTA | AC-15c |
-| FM-4 | Thread de decisão trava, callbacks do nó seguem vivos | Owned mode verifica heartbeat do núcleo em `checkArmingAndRunConditions`; idade > `H_max` ⇒ `armingCheckFailureExt` | `can_arm_and_run=false` → mesma cadeia do FM-1 (RTL), latência ≤ ~300 ms + processamento | [G A.4-A.6] | MÉDIA | AC-16 |
-| FM-5 | Executor ROS 2 inteiro trava (thread única) | Igual FM-1 | Igual FM-1 | [G 2.1-2.4, A.5] | MÉDIA | AC-16b |
-| FM-6 | Dados de entrada velhos, ausentes ou inválidos | Input Manager: `V(k)` | Guará: T3 → HOLD. PX4 desconhece a condição | §3.1 | — (projeto) | AC-17 |
-| FM-7 | Atuador bloqueado em `sendCommandSync` (até ~3,9 s) ou comando sem ACK (`Result::Timeout`) | Resultado do callback | Comando já publicado; gateway mantém setpoint de velocidade zero enquanto `RF` pendente; nova tentativa a cada tick até `N_retry` [HIPÓTESE 3]; depois `LATCHED` + evento crítico | [G A.1] | ALTA (bloqueio); MÉDIA (mitigação) | AC-21 |
-| FM-8 | Piloto/GCS troca de modo | `onDeactivate(Other)` | Guará vai a `INACTIVE` e para de comandar (autoridade humana) | [G 1.6, A.3] | ALTA | AC-14 |
-| FM-9 | PX4 entra em failsafe | `onDeactivate(FailsafeActivated)` | Guará vai a `INACTIVE`; failsafes **nunca** são adiados pelo Guará | [G 1.8] | ALTA | AC-20 |
-| FM-10 | Monitor/requisito incorreto (falso negativo) | Não detectável pelo árbitro | Nenhuma; ver §7 | — | — | revisão P3 + P6 |
-| FM-11 | Relógios desalinhados | AC-19 | Idades `a_i` erradas → falsos `V` ou dados velhos aceitos | [G A.9] | MÉDIA | AC-19 |
-| FM-12 | Outro nó publica em `/fmu/in/trajectory_setpoint` contornando o gateway | Não detectável pelo árbitro | PX4 não autentica origem; fora do modelo de ameaça | [G A.13] | ALTA (formato) | — (§7) |
+| FM-1 | `guara_rta` process terminates (crash/kill) with owned mode (CF) active | PX4: no arming-check reply; unresponsive after >3 missed requests (~1.2 s) | `mode_req_other` → mode cannot run → RTL (no `COM_FAIL_ACT_T` delay). Controller behavior during the window without setpoints: **[UNKNOWN]** | [G 2.1-2.4, 2.10] | MEDIUM | AC-15 |
+| FM-2 | Process terminates with RF (Hold/RTL/Land) active | No PX4 detection (internal mode) | Internal mode continues; PX4 failsafes stay active; no return to CF | [G 2.6] | MEDIUM | AC-15b |
+| FM-3 | Arbiter restart in flight | — | Registration rejected while armed (`COM_MODE_ARM_CHK=0`): Guará unavailable until landed/disarmed | [G 2.7, A.16] | HIGH | AC-15c |
+| FM-4 | Decision thread hangs, node callbacks stay alive | Owned mode checks core heartbeat in `checkArmingAndRunConditions`; age > `H_max` ⇒ `armingCheckFailureExt` | `can_arm_and_run=false` → same chain as FM-1 (RTL), latency ≤ ~300 ms + processing | [G A.4-A.6] | MEDIUM | AC-16 |
+| FM-5 | Whole ROS 2 executor hangs (single thread) | Same as FM-1 | Same as FM-1 | [G 2.1-2.4, A.5] | MEDIUM | AC-16b |
+| FM-6 | Stale, missing or invalid input data | Input Manager: `V(k)` | Guará: T3 → HOLD. PX4 is unaware of the condition | §3.1 | — (design) | AC-17 |
+| FM-7 | Actuator blocked in `sendCommandSync` (up to ~3.9 s) or command without ACK (`Result::Timeout`) | Callback result | Command already published; gateway holds zero-velocity setpoint while `RF` pending; retry every tick up to `N_retry` [HYPOTHESIS 3]; then `LATCHED` + critical event | [G A.1] | HIGH (blocking); MEDIUM (mitigation) | AC-21 |
+| FM-8 | Pilot/GCS switches mode | `onDeactivate(Other)` | Guará goes `INACTIVE` and stops commanding (human authority) | [G 1.6, A.3] | HIGH | AC-14 |
+| FM-9 | PX4 enters failsafe | `onDeactivate(FailsafeActivated)` | Guará goes `INACTIVE`; failsafes are **never** deferred by Guará | [G 1.8] | HIGH | AC-20 |
+| FM-10 | Incorrect monitor/requirement (false negative) | Not detectable by the arbiter | None; see §7 | — | — | P3 review + P6 |
+| FM-11 | Misaligned clocks | AC-19 | Wrong ages `a_i` → false `V` or stale data accepted | [G A.9] | MEDIUM | AC-19 |
+| FM-12 | Another node publishes to `/fmu/in/trajectory_setpoint` bypassing the gateway | Not detectable by the arbiter | PX4 does not authenticate origin; outside threat model | [G A.13] | HIGH (format) | — (§7) |
 
 ---
 
-## 6. Critérios de aceite
+## 6. Acceptance criteria
 
-Convenções: comandos rodam na raiz do repositório dentro do container de
-desenvolvimento (`./scripts/dev.sh <cmd>`, criado em M1). `results/latest` é
-link para a última execução. Um AC só passa com comando executado + trecho da
-saída no relatório do milestone.
+Conventions: commands run at the repository root inside the development
+container (`./scripts/dev.sh <cmd>`, created in M1). `results/latest` is a
+link to the last run. An AC only passes with an executed command + output
+excerpt in the milestone report.
 
-| AC | Milestone | Critério (passa se…) | Comando de verificação |
+| AC | Milestone | Criterion (passes if…) | Verification command |
 |---|---|---|---|
-| AC-1 | M1 | Workspace compila do zero sem erros | `./scripts/dev.sh colcon build --symlink-install` (exit 0) |
-| AC-2 | M1 | SITL headless executa cenário e grava `config.yaml` (seed, commits de `third_party/VERSIONS.md`, SHA do Guará) e `.ulg` | `./scripts/sitl_run.sh --scenario hover --seed 42 --headless && python3 scripts/check_run_contract.py results/latest` |
-| AC-2b | M1 | Duas execuções com a mesma seed produzem o mesmo `config.yaml` (exceto `run_id`/data) | `python3 scripts/check_reproducible.py --scenario hover --seed 42 --runs 2` |
-| AC-3 | M2 | Monitor Ogma/Copilot recebe `/fmu/out/vehicle_local_position_v1` com QoS best-effort e publica violação no cenário de altitude | `./scripts/sitl_run.sh --scenario alt_ceiling_violation --seed 42 --headless && python3 scripts/check_ac.py AC-3 results/latest` |
-| AC-3b | M2 | Template Ogma próprio usa QoS compatível com PX4 [G 4.5] | `colcon test --packages-select guara_monitors --ctest-args -R qos_profile` |
-| AC-4 | M3 | Propriedades P-1, P-2, P-6 sobre tabela-verdade exaustiva de (`U`, `C`, `IC`, estado) | `colcon test --packages-select guara_rta --ctest-args -R decision_core_truth_table` |
-| AC-5 | M3 | P-5 (sem alocação): contador de `operator new` = 0 durante 10⁶ ticks após init | `colcon test --packages-select guara_rta --ctest-args -R decision_core_no_alloc` |
-| AC-6 | M3 | P-5 (tempo): tempo máximo observado por tick ≤ `B_dec` em 10⁶ entradas aleatórias com seed fixa (medição, não WCET provado) | `colcon test --packages-select guara_rta --ctest-args -R decision_core_timing` |
-| AC-7 | M3 | Em SITL, gatilho de monitor injetado leva `nav_state` a `AUTO_LOITER`; latência `L6` extraída da ULog | `./scripts/sitl_run.sh --scenario monitor_trigger_hold --seed 42 --headless && python3 scripts/check_ac.py AC-7 results/latest` |
-| AC-8 | M4 | `GeofencePredictor` retorna `T_gf` dentro de ±0,05 s em casos analíticos (polígonos convexos e côncavos, velocidade nula, trajetória tangente) e `+∞` quando não há violação | `colcon test --packages-select guara_geofence --ctest-args -R predictor_analytic` |
-| AC-9 | M4 | Cenário `gf_straight_concave` seed 42: com RTA, profundidade máxima de violação = 0 m; sem RTA (mesma seed), violação > 0 m (valida que o cenário exercita a geofence) | `./scripts/sitl_pair.sh --scenario gf_straight_concave --seed 42 && python3 scripts/check_ac.py AC-9 results/latest_pair` |
-| AC-10 | M5 | `guara_daidalus` publica `DaaStatus` a partir de `transponder_report`; `T_daa` coincide (±0,1 s) com o DAIDALUS standalone nas mesmas entradas gravadas | `colcon test --packages-select guara_daidalus --ctest-args -R daa_equivalence` |
-| AC-11 | M5 | Nenhum pacote fora de `nosa/` depende (`package.xml`/CMake) ou inclui cabeçalhos do DAIDALUS | `python3 scripts/check_license_isolation.py` |
-| AC-12 | M6 | P-3: sinal com oscilação em torno de `τ` nunca causa retorno antes de `T_d`; histerese impede retorno enquanto `T ≤ τ + h` | `colcon test --packages-select guara_rta --ctest-args -R hysteresis_dwell` |
-| AC-13 | M6 | P-4: após `N_max` chaveamentos em `W`, estado vai a `LATCHED` e não retorna | `colcon test --packages-select guara_rta --ctest-args -R latch_policy` |
-| AC-14 | M3 | Troca de modo pelo "piloto" (comando MAVLink simulado) ⇒ `INACTIVE` e zero comandos do executor depois (P-6) | `./scripts/sitl_run.sh --scenario pilot_override --seed 42 --headless && python3 scripts/check_ac.py AC-14 results/latest` |
-| AC-15 | M3 | FM-1: `kill -9` do árbitro com CF ativa ⇒ `nav_state = AUTO_RTL` na ULog; tempo de detecção registrado em `metrics.json` | `./scripts/sitl_run.sh --scenario kill_arbiter_in_cf --seed 42 --headless && python3 scripts/check_ac.py AC-15 results/latest` |
-| AC-15b | M3 | FM-2: `kill -9` com Hold ativo ⇒ Hold mantido até o fim do cenário (confirma ou refuta [G 2.6]) | `./scripts/sitl_run.sh --scenario kill_arbiter_in_hold --seed 42 --headless && python3 scripts/check_ac.py AC-15b results/latest` |
-| AC-15c | M3 | FM-3: reinício armado ⇒ registro rejeitado, evento registrado | `./scripts/sitl_run.sh --scenario restart_arbiter_armed --seed 42 --headless && python3 scripts/check_ac.py AC-15c results/latest` |
-| AC-16 | M3 | FM-4: travamento injetado da thread de decisão ⇒ PX4 sai do owned mode (RTL) | `./scripts/sitl_run.sh --scenario hang_decision_thread --seed 42 --headless && python3 scripts/check_ac.py AC-16 results/latest` |
-| AC-16b | M3 | FM-5: travamento do executor ROS 2 inteiro ⇒ RTL | `./scripts/sitl_run.sh --scenario hang_ros_executor --seed 42 --headless && python3 scripts/check_ac.py AC-16b results/latest` |
-| AC-17 | M3 | FM-6: supressão de `vehicle_local_position_v1` por > `A_i` ⇒ HOLD em ≤ 2 ticks após expirar `A_i` (registro `RtaEvent`) | `./scripts/sitl_run.sh --scenario stale_local_position --seed 42 --headless && python3 scripts/check_ac.py AC-17 results/latest` |
-| AC-18 | M7 | Relatório com p50/p99 de `L0..L6` e `δ_lat` a partir de ≥ 30 execuções [HIPÓTESE de tamanho]; toda etapa presente; números só de `metrics.json` | `python3 scripts/aggregate.py results/batch_latency && python3 scripts/check_ac.py AC-18 results/batch_latency` |
-| AC-19 | M7 | Erro de alinhamento de relógio PX4↔ROS 2 medido e reportado (p99); latências cross-process só aparecem se p99 < 10 ms [HIPÓTESE] | `python3 scripts/check_ac.py AC-19 results/batch_latency` |
-| AC-20 | M3 | Código do Guará nunca habilita adiamento de failsafe | `! grep -rn "deferFailsafesSync *( *true" ros2_ws/src` |
-| AC-21 | M3 | FM-7: com atuador simulado bloqueando/sem ACK, gateway publica velocidade zero desde o tick de T3 e CF é descartada | `colcon test --packages-select guara_rta --ctest-args -R gateway_blocks_cf` |
-| AC-22 | M4-M6 | Obrigação O-1 verificada com `δ_lat` e `τ_rec` medidos; relatório indica se os parâmetros escolhidos a satisfazem | `python3 scripts/check_ac.py AC-22 results/batch_latency` |
+| AC-1 | M1 | Workspace builds from scratch without errors | `./scripts/dev.sh colcon build --symlink-install` (exit 0) |
+| AC-2 | M1 | Headless SITL runs a scenario and writes `config.yaml` (seed, commits from `third_party/VERSIONS.md`, Guará SHA) and `.ulg` | `./scripts/sitl_run.sh --scenario hover --seed 42 --headless && python3 scripts/check_run_contract.py results/latest` |
+| AC-2b | M1 | Two runs with the same seed produce the same `config.yaml` (except `run_id`/date) | `python3 scripts/check_reproducible.py --scenario hover --seed 42 --runs 2` |
+| AC-3 | M2 | Ogma/Copilot monitor receives `/fmu/out/vehicle_local_position_v1` with best-effort QoS and publishes a violation in the altitude scenario | `./scripts/sitl_run.sh --scenario alt_ceiling_violation --seed 42 --headless && python3 scripts/check_ac.py AC-3 results/latest` |
+| AC-3b | M2 | Own Ogma template uses PX4-compatible QoS [G 4.5] | `colcon test --packages-select guara_monitors --ctest-args -R qos_profile` |
+| AC-4 | M3 | Properties P-1, P-2, P-6 over exhaustive truth table of (`U`, `C`, `IC`, state) | `colcon test --packages-select guara_rta --ctest-args -R decision_core_truth_table` |
+| AC-5 | M3 | P-5 (no allocation): `operator new` counter = 0 over 10⁶ ticks after init | `colcon test --packages-select guara_rta --ctest-args -R decision_core_no_alloc` |
+| AC-6 | M3 | P-5 (time): maximum observed time per tick ≤ `B_dec` over 10⁶ random inputs with fixed seed (measurement, not proven WCET) | `colcon test --packages-select guara_rta --ctest-args -R decision_core_timing` |
+| AC-7 | M3 | In SITL, an injected monitor trigger drives `nav_state` to `AUTO_LOITER`; latency `L6` extracted from ULog | `./scripts/sitl_run.sh --scenario monitor_trigger_hold --seed 42 --headless && python3 scripts/check_ac.py AC-7 results/latest` |
+| AC-8 | M4 | `GeofencePredictor` returns `T_gf` within ±0.05 s on analytic cases (convex and concave polygons, zero velocity, tangent trajectory) and `+∞` when there is no violation | `colcon test --packages-select guara_geofence --ctest-args -R predictor_analytic` |
+| AC-9 | M4 | Scenario `gf_straight_concave` seed 42: with RTA, maximum violation depth = 0 m; without RTA (same seed), violation > 0 m (validates that the scenario exercises the geofence) | `./scripts/sitl_pair.sh --scenario gf_straight_concave --seed 42 && python3 scripts/check_ac.py AC-9 results/latest_pair` |
+| AC-10 | M5 | `guara_daidalus` publishes `DaaStatus` from `transponder_report`; `T_daa` matches (±0.1 s) standalone DAIDALUS on the same recorded inputs | `colcon test --packages-select guara_daidalus --ctest-args -R daa_equivalence` |
+| AC-11 | M5 | No package outside `nosa/` depends on (`package.xml`/CMake) or includes DAIDALUS headers | `python3 scripts/check_license_isolation.py` |
+| AC-12 | M6 | P-3: a signal oscillating around `τ` never causes return before `T_d`; hysteresis prevents return while `T ≤ τ + h` | `colcon test --packages-select guara_rta --ctest-args -R hysteresis_dwell` |
+| AC-13 | M6 | P-4: after `N_max` switches in `W`, state goes to `LATCHED` and does not return | `colcon test --packages-select guara_rta --ctest-args -R latch_policy` |
+| AC-14 | M3 | "Pilot" mode switch (simulated MAVLink command) ⇒ `INACTIVE` and zero executor commands afterwards (P-6) | `./scripts/sitl_run.sh --scenario pilot_override --seed 42 --headless && python3 scripts/check_ac.py AC-14 results/latest` |
+| AC-15 | M3 | FM-1: `kill -9` of arbiter with CF active ⇒ `nav_state = AUTO_RTL` in ULog; detection time recorded in `metrics.json` | `./scripts/sitl_run.sh --scenario kill_arbiter_in_cf --seed 42 --headless && python3 scripts/check_ac.py AC-15 results/latest` |
+| AC-15b | M3 | FM-2: `kill -9` with Hold active ⇒ Hold kept until end of scenario (confirms or refutes [G 2.6]) | `./scripts/sitl_run.sh --scenario kill_arbiter_in_hold --seed 42 --headless && python3 scripts/check_ac.py AC-15b results/latest` |
+| AC-15c | M3 | FM-3: armed restart ⇒ registration rejected, event recorded | `./scripts/sitl_run.sh --scenario restart_arbiter_armed --seed 42 --headless && python3 scripts/check_ac.py AC-15c results/latest` |
+| AC-16 | M3 | FM-4: injected decision-thread hang ⇒ PX4 leaves owned mode (RTL) | `./scripts/sitl_run.sh --scenario hang_decision_thread --seed 42 --headless && python3 scripts/check_ac.py AC-16 results/latest` |
+| AC-16b | M3 | FM-5: whole ROS 2 executor hang ⇒ RTL | `./scripts/sitl_run.sh --scenario hang_ros_executor --seed 42 --headless && python3 scripts/check_ac.py AC-16b results/latest` |
+| AC-17 | M3 | FM-6: suppression of `vehicle_local_position_v1` for > `A_i` ⇒ HOLD within ≤ 2 ticks after `A_i` expires (`RtaEvent` record) | `./scripts/sitl_run.sh --scenario stale_local_position --seed 42 --headless && python3 scripts/check_ac.py AC-17 results/latest` |
+| AC-18 | M7 | Report with p50/p99 of `L0..L6` and `δ_lat` from ≥ 30 runs [HYPOTHESIS on size]; every stage present; numbers only from `metrics.json` | `python3 scripts/aggregate.py results/batch_latency && python3 scripts/check_ac.py AC-18 results/batch_latency` |
+| AC-19 | M7 | PX4↔ROS 2 clock alignment error measured and reported (p99); cross-process latencies only appear if p99 < 10 ms [HYPOTHESIS] | `python3 scripts/check_ac.py AC-19 results/batch_latency` |
+| AC-20 | M3 | Guará code never enables failsafe deferral | `! grep -rn "deferFailsafesSync *( *true" ros2_ws/src` |
+| AC-21 | M3 | FM-7: with a simulated actuator blocking/without ACK, the gateway publishes zero velocity from the T3 tick and the CF is discarded | `colcon test --packages-select guara_rta --ctest-args -R gateway_blocks_cf` |
+| AC-22 | M4-M6 | Obligation O-1 verified with measured `δ_lat` and `τ_rec`; report states whether chosen parameters satisfy it | `python3 scripts/check_ac.py AC-22 results/batch_latency` |
 
-Os scripts e cenários citados são entregáveis dos milestones indicados; não existem ainda.
-
----
-
-## 7. O que o Guará NÃO garante
-
-1. **Não é certificação** nem demonstra conformidade com ASTM F3269, DO-365 ou
-   regulamentação brasileira. O alinhamento com a F3269 é arquitetural e [REVISAR].
-2. **Não garante evitar colisão nem manter well-clear.** A RF v1 para DAA é
-   Hold: parar não afasta o veículo de um intruso convergente. O Guará só
-   garante (sob O-1 medida) que a troca ocorre antes do tempo previsto de perda.
-3. **Não garante ausência de violação de geofence** sob vento acima do
-   modelado, erro de estimativa de posição (`eph`) acima do modelado, ou
-   `τ_rec,gf` subestimado.
-4. **Não sobrevive à própria falha em todos os casos:** com RF interna ativa,
-   a morte do árbitro não é detectada pelo PX4 (FM-2); o árbitro não volta em
-   voo (FM-3); durante a janela de ~1,2 s do FM-1 o comportamento dos
-   controladores é [DESCONHECIDO].
-5. **Não protege contra entradas falsificadas** (GPS spoofing, ADS-B falso,
-   tráfego não cooperativo sem transponder) nem contra nós maliciosos na rede
-   ROS 2 (FM-12). A DDS não é autenticada nesta fase.
-6. **Não detecta erros nos requisitos:** monitores Copilot verificam o que foi
-   especificado; formalização incorreta de FRETish passa despercebida (FM-10).
-7. **O árbitro roda fora do FMU** (companion/SITL): não tem as garantias de
-   tempo real nem o isolamento do autopiloto; latências são medidas, não limitadas.
-8. **Resultados de SITL não se transferem automaticamente** a voo real
-   (dinâmica, sensores, rede, carga de CPU).
-9. **O tempo de decisão é medido, não provado** (P-5); não há análise de WCET.
-10. **O CopilotVerifier**, se usado, cobre o C gerado pelo Copilot, não o glue
-    C++/ROS nem o árbitro [G 6.4].
-11. **Não substitui os failsafes do PX4**; se o PX4 entra em failsafe, o Guará
-    se retira (FM-9).
+Scripts and scenarios cited are deliverables of the indicated milestones; they do not exist yet.
 
 ---
 
-## 8. Rastreabilidade
+## 7. What Guará does NOT guarantee
 
-| Seção | ADR | ACs |
+1. **It is not certification** and does not demonstrate compliance with ASTM F3269, DO-365 or
+   Brazilian regulation (RBAC 100). F3269 alignment is architectural and [REVIEW].
+2. **It does not guarantee collision avoidance nor keeping well-clear.** The v1 RF for DAA is
+   Hold: stopping does not move the vehicle away from a converging intruder. Guará only
+   guarantees (under measured O-1) that the switch happens before the predicted loss time.
+3. **It does not guarantee absence of geofence violation** under wind above the
+   model, position estimate error (`eph`) above the model, or underestimated
+   `τ_rec,gf`.
+4. **It does not survive its own failure in all cases:** with an internal RF active,
+   arbiter death is not detected by PX4 (FM-2); the arbiter does not come back in
+   flight (FM-3); during the ~1.2 s window of FM-1 controller behavior is [UNKNOWN].
+5. **It does not protect against spoofed inputs** (GPS spoofing, fake ADS-B,
+   non-cooperative traffic without transponder) nor against malicious nodes on the ROS 2
+   network (FM-12). DDS is not authenticated in this phase.
+6. **It does not detect errors in the requirements:** Copilot monitors check what was
+   specified; incorrect FRETish formalization goes unnoticed (FM-10).
+7. **The arbiter runs outside the FMU** (companion/SITL): it has neither the real-time
+   guarantees nor the isolation of the autopilot; latencies are measured, not bounded.
+8. **SITL results do not transfer automatically** to real flight
+   (dynamics, sensors, network, CPU load).
+9. **Decision time is measured, not proven** (P-5); there is no WCET analysis.
+10. **CopilotVerifier**, if used, covers the C generated by Copilot, not the
+    C++/ROS glue nor the arbiter [G 6.4].
+11. **It does not replace PX4 failsafes**; if PX4 enters failsafe, Guará
+    withdraws (FM-9).
+12. **It does not make an LLM correct.** When the CF is an LLM planner (P5,
+    `docs/research/LLM-EMBODIMENT.md`), Guará bounds *physical* consequences covered by
+    monitors; mission-level errors inside the safe envelope (wrong field, wrong photo,
+    wrong dose) are not detected.
+
+---
+
+## 8. Traceability
+
+| Section | ADR | ACs |
 |---|---|---|
-| §2 arquitetura | 0001, 0002 | AC-1, AC-2 |
-| §3 chaveamento | 0005 | AC-4..AC-6, AC-12, AC-13, AC-22 |
+| §2 architecture | 0001, 0002 | AC-1, AC-2 |
+| §3 switching | 0005 | AC-4..AC-6, AC-12, AC-13, AC-22 |
 | §3.1 `T_gf` | 0004 | AC-8, AC-9 |
 | §3.1 `T_daa` | 0003 | AC-10, AC-11 |
-| §4 latência | 0001 | AC-7, AC-18, AC-19 |
-| §5 falhas | 0001 | AC-14..AC-17, AC-20, AC-21 |
+| §4 latency | 0001 | AC-7, AC-18, AC-19 |
+| §5 failures | 0001 | AC-14..AC-17, AC-20, AC-21 |
 
 ---
 
-## 9. Riscos abertos (fim do P1)
+## 9. Open risks (end of P1)
 
-| # | Risco | Impacto | Ação / onde se resolve |
+| # | Risk | Impact | Action / where resolved |
 |---|---|---|---|
-| R-1 | Comportamento dos controladores PX4 na janela de ~1,2 s sem setpoints após crash do árbitro (FM-1) é [DESCONHECIDO] | Deriva do veículo antes do RTL | AC-15 em M3; se inaceitável, reavaliar ADR 0001 |
-| R-2 | Morte do árbitro com Hold ativo não é detectada (FM-2); inferência por ausência de código | Veículo parado indefinidamente sem árbitro | AC-15b em M3 |
-| R-3 | `sendCommandSync` aloca e bloqueia até ~3,9 s [G A.1]; mitigação por thread de atuação separada não testada | Atraso de escalonamento; violação da regra de caminho limitado se mal isolado | AC-5, AC-21 em M3 |
-| R-4 | Alinhamento de relógio PX4↔ROS 2 [G A.9] é MÉDIA | Latências cross-process e idades `a_i` erradas | AC-19 antes de publicar qualquer `δ_lat` |
-| R-5 | Configuração DO-365B (lookahead 180 s, 0,66 nmi) inadequada para drones pequenos; função DAIDALUS para "perda de well-clear" ainda não fixada [G 5.5, 5.8] | `T_daa` sem significado operacional | ADR complementar em M5 com fonte para os limiares ([PARÂMETRO A DEFINIR]) |
-| R-6 | RF=Hold não resolve conflito com intruso convergente (§7 item 2) | Resultado DAA fraco / overclaiming | Declarar no paper; avaliar escalonamento em M6 |
-| R-7 | Injeção de tráfego no SITL depende de MAVLink `ADSB_VEHICLE` ou `fake_traffic` [G 3.3]; nenhum dos dois exercitado | M5/P4 bloqueados | Novo P0 curto no início de M5 |
-| R-8 | Texto da ASTM F3269 indisponível; mapeamento §2 não conferido | Terminologia/claims incorretos | Revisão humana com a norma [REVISAR] |
-| R-9 | Interpretação jurídica NOSA × Apache-2.0/BSD e licença do próprio Guará não definidas [G A.12] | Bloqueia distribuição de containers e P7 | Revisão humana; ADR 0003 item 7 |
-| R-10 | Fluxo FRET → Ogma não verificado [G 4.7] | P3/M2 podem precisar de conversão manual | Novo P0 curto no início de M2 |
-| R-11 | Ambiente: 7,9 GB livres em disco; daemon Docker parado; sem toolchain Haskell/LLVM/z3 | M1 e CopilotVerifier bloqueados | Liberar disco e iniciar Docker antes de M1 |
-| R-12 | Todos os parâmetros de §3.2 e etapas de §4.1 são [HIPÓTESE] | Nenhum número publicável até M7 | AC-18, AC-22 |
-| R-13 | Nomes de cenário e scripts citados nos ACs ainda não existem | ACs podem mudar de forma na implementação | Mudanças registradas no relatório do milestone, sem alterar o critério |
+| R-1 | PX4 controller behavior in the ~1.2 s window without setpoints after arbiter crash (FM-1) is [UNKNOWN] | Vehicle drift before RTL | AC-15 in M3; if unacceptable, revisit ADR 0001 |
+| R-2 | Arbiter death with Hold active is not detected (FM-2); inference from absence of code | Vehicle stopped indefinitely without arbiter | AC-15b in M3 |
+| R-3 | `sendCommandSync` allocates and blocks up to ~3.9 s [G A.1]; mitigation via separate actuation thread untested | Escalation delay; violation of bounded-path rule if poorly isolated | AC-5, AC-21 in M3 |
+| R-4 | PX4↔ROS 2 clock alignment [G A.9] is MEDIUM | Wrong cross-process latencies and ages `a_i` | AC-19 before publishing any `δ_lat` |
+| R-5 | DO-365B configuration (lookahead 180 s, 0.66 nmi) unsuitable for small drones. Function semantics resolved: `timeToCorrectiveVolume` = corrective-level WCV volume [G A.14]; thresholds still open [G 5.8] | `T_daa` without operational meaning | Complementary ADR in M5 with sourced thresholds ([PARAMETER TBD]) |
+| R-6 | RF=Hold does not resolve conflict with a converging intruder (§7 item 2) | Weak DAA result / overclaiming | State in the paper; evaluate escalation in M6 |
+| R-7 | Traffic injection in SITL depends on MAVLink `ADSB_VEHICLE` or `fake_traffic` [G 3.3]; neither exercised | M5/P4 blocked | New short P0 at start of M5 |
+| R-8 | ASTM F3269 text unavailable; §2 mapping not checked | Incorrect terminology/claims | Human review against the standard [REVIEW] |
+| R-9 | Legal interpretation NOSA × Apache-2.0/BSD and Guará's own license undefined [G A.12] | Blocks distribution of containers and P7 | Human review; ADR 0003 item 7 |
+| R-10 | FRET → Ogma flow: export keys match Ogma `fcs_smv` [G A.15], not executed | P3/M2 may need manual conversion | Run one requirement end-to-end at M2 start |
+| R-11 | Environment (updated 2026-09-11): Docker daemon running, 54 GB free, arm64 host; no Haskell/LLVM ≤ 16/z3 toolchain | CopilotVerifier (RQ4) blocked; SITL image must build on arm64 | Install toolchain in container before RQ4 |
+| R-12 | All parameters in §3.2 and stages in §4.1 are [HYPOTHESIS] | No publishable number until M7 | AC-18, AC-22 |
+| R-13 | Scenario names and scripts cited in ACs do not exist yet | ACs may change shape during implementation | Changes recorded in the milestone report, without altering the criterion |
+| R-14 | DAIDALUS pin is tag `v2.0.3a` (2023-09-08); upstream README declares v2.0.4 (2023-11-30) and `master` has fixes up to 2025-05-07 (e.g. "Fixed MofN logic") with no tag | Evaluating an outdated reference implementation | Decide pin at M5 start; re-run Q5 grounding on the new commit |
