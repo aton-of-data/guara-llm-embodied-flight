@@ -99,7 +99,7 @@ framework (RBAC 100 / MAPA Portaria 298).** That is exactly Guará + a language 
 |---|---|---|
 | L-R1 | RBAC 100 (in force 2026-06-16) classifies by operational risk: Open / Specific / Certified | Voice-commanded autonomy likely pushes toward Specific with risk assessment |
 | L-R2 | BVLOS needs specific authorization via DECEA/SARPAS | Phase 1 must be VLOS |
-| L-R3 | Spraying/solids: MAPA Portaria 298/2021 — SIPEAGRO registration, CAAR course or responsible agronomist, per-application records, 20 m buffers | **Keep spraying out of scope** in phases 1–3; survey/imaging only |
+| L-R3 | Spraying/solids: MAPA Portaria 298/2021 — SIPEAGRO registration, CAAR course or responsible agronomist, per-application records, 20 m buffers | In scope as class-D capability packs (ADR 0009), disabled until dispense monitors, T2 airframe and regulatory preconditions exist |
 | L-R4 | Remote pilot remains responsible | The LLM cannot be the pilot in command; a certified human is |
 | L-R5 | LGPD: imagery of neighbors, people, houses | Data minimization, on-device storage, retention policy |
 | L-R6 | Market is ~84% DJI (closed) | Guará needs PX4; target open airframes or PX4 retrofits; DJI SDK integration is out of scope |
@@ -235,18 +235,55 @@ All values only from `results/` via script (CLAUDE.md).
 | M11 | Imaging + ODM reports + talk-back summaries | M10 |
 | M12 | Field-trial readiness: VLOS ops manual, risk assessment, LGPD policy | M11, human regulatory review |
 
-Candidate ADRs (not yet written): 0006 LLM emits intents only; 0007 stop path bypasses LLM;
-0008 ASR on ground device with confirmation; 0009 offline-first model selection and license check;
-0010 mission compiler as pre-flight monitor; 0011 SROS2 for CF topics.
+Written ADRs: 0006 license (Apache-2.0), 0007 reference airframe, 0008 language packs, 0009 capability packs.
+Candidate ADRs (not yet written): 0010 LLM emits intents only; 0011 stop path bypasses LLM;
+0012 ASR on ground device with confirmation; 0013 offline-first model selection and model-license check;
+0014 mission compiler as pre-flight monitor; 0015 SROS2 for CF topics.
 
-## 9. Open questions for the author
+## 9. Author decisions (2026-09-11)
 
-1. Scope of first field use: survey/imaging only (recommended) or also spraying?
-2. Target airframe: which PX4 multicopter (the Brazilian agri fleet is mostly closed DJI)?
-3. Language priority: Portuguese first, English, or both from M9?
-4. Guará license (ADR 0003 item 7) — needed before publishing the voice stack.
+| Question | Decision | Record |
+|---|---|---|
+| Scope | All civil uses of LLM embodiment, via capability packs gated by risk class | ADR 0009, §10 |
+| Airframe | Holybro X500 V2 + Pixhawk (PX4 Dev Kit), `gz_x500` twin; SIH for batches; heavy-lift tier later | ADR 0007 |
+| Languages | Portuguese (`pt-BR`) and English (`en`) from the start; new languages as drop-in packs | ADR 0008 |
+| License | Apache-2.0 (as Ogma, cFS, F Prime, ROS 2) | ADR 0006 |
 
-## 10. Sources
+## 10. Civil use-case catalog (capability packs, ADR 0009)
+
+Class: S sense · D dispense · T transport · C cooperate. Phase: when the pack can first run (S packs need
+M8–M11; D/T need the T2 airframe and extra monitors; C needs multi-vehicle work). "Extra monitors" are on top
+of the base RTA (geofence, DAA, stale inputs). Regulatory notes are pointers, all [REVIEW].
+
+| Domain | Use case | Example voice command | Class | Extra monitors / data | Regulatory pointer | Phase |
+|---|---|---|---|---|---|---|
+| Agriculture | Crop scouting and NDVI/NDRE survey | "Map north field with the multispectral camera" | S | coverage, GSD, light conditions | RBAC 100 | 2 |
+| Agriculture | Plant counting / stand gaps / yield estimate | "Count plants in plot 4" | S | model uncertainty reported | RBAC 100 | 2 |
+| Agriculture | Pest/disease hotspot detection → scouting route for agronomist | "Where does the soybean look sick?" | S | agronomist sign-off (L-P1) | RBAC 100 | 2 |
+| Agriculture | Irrigation pivot, canal, reservoir, fence inspection | "Check pivot 2 for leaks" | S | thermal calibration | RBAC 100 | 2 |
+| Agriculture | Frost / heat stress thermal mapping at dawn | "Thermal map of the orchard at 5 am" | S | night-ops constraints | RBAC 100 (night) | 3 |
+| Agriculture | Pesticide / fertilizer spraying | "Spray fungicide on hotspots, 20 m from the river" | D | flow/dose, wind/drift, buffer zones, tank level | MAPA Portaria 298, SIPEAGRO, CAAR | 3 |
+| Agriculture | Solid spreading / seeding / cover crops | "Seed brachiaria on the terrace" | D | release rate, swath | MAPA Portaria 298 | 3 |
+| Agriculture | Biological control release (e.g. parasitoid insects) | "Release capsules every 30 m in sugarcane block B" | D | release-point logging | MAPA [REVIEW] | 3 |
+| Livestock | Herd counting, locating strays, water trough checks | "Find cattle outside pasture 3" | S | animal-disturbance altitude floor | RBAC 100 | 2 |
+| Forestry / environment | Deforestation, illegal fire spots, wildlife census, riparian monitoring | "Scan the reserve border for smoke" | S | smoke/visibility | RBAC 100, environmental agency rules | 2 |
+| Fire | Pasture/forest fire perimeter mapping for brigades | "Map the fire front and send to the truck" | S | heat/updraft limits, manned-aircraft traffic (DAA critical) | RBAC 100, DECEA coordination | 3 |
+| Infrastructure | Power line, solar farm, wind turbine, telecom tower, bridge inspection | "Inspect panels row 1 to 20 for hotspots" | S | obstacle proximity, EMI | RBAC 100 | 3 |
+| Mapping | Orthomosaic, topography, rural cadastre (CAR) | "Make an orthomosaic of the whole property" | S | GCP/RTK accuracy | RBAC 100 | 2 |
+| Construction / mining | Progress tracking, stockpile volumes | "Measure the gravel pile" | S | volume uncertainty | RBAC 100 | 3 |
+| Emergency | Flood / landslide / storm damage assessment | "Show me flooded roads" | S | BVLOS likely | RBAC 100 BVLOS, civil defense | 3 |
+| Emergency | Search and rescue support (find people to help them) | "Search the riverbank for the missing hiker" | C | people-proximity policy, privacy minimization | RBAC 100, civil defense | 4 |
+| Logistics | Medical/sample transport between farm sites or clinics | "Take this sample to the lab" | T | payload mass/CG, drop zone | RBAC 100 specific/certified | 4 |
+| Logistics | Spare part drop to field machinery | "Drop the fuse at tractor 7" | T | drop-zone clearance | RBAC 100 | 4 |
+| Communications | Temporary telemetry/radio relay over hills | "Hover as relay at 60 m" | S | endurance, tether option | RBAC 100 | 3 |
+| Property care | Consented perimeter check of own property | "Check the gate is closed" | S | no person identification; LGPD minimization | RBAC 100, LGPD | 2 |
+| Research / education | Teaching RTA, formal methods, robotics | "Fly the geofence demo" | S | SITL-first | — | 1 |
+| Multi-vehicle | Coordinated survey or spraying by several drones | "Split field 5 between two drones" | C | inter-vehicle separation, shared geofence | RBAC 100 [REVIEW] | 4 |
+
+Never packs (ADR 0009 §4): weapons or harmful payloads; target selection or tracking of specific people for
+enforcement or harassment; covert surveillance; interference with aircraft; defeating geofence, remote ID or failsafes.
+
+## 11. Sources
 
 - TypeFly: [arXiv 2312.14950](https://arxiv.org/abs/2312.14950), [site](https://typefly.github.io/)
 - ChatGPT for Robotics: [arXiv 2306.17582](https://ar5iv.labs.arxiv.org/html/2306.17582), [PromptCraft AirSim](https://github.com/microsoft/PromptCraft-Robotics/tree/main/chatgpt_airsim)
@@ -265,3 +302,6 @@ Candidate ADRs (not yet written): 0006 LLM emits intents only; 0007 stop path by
 - RBAC 100 overview: [article](https://irlenmenezes.com.br/rbac-100-drone-o-que-muda-2026/); RBAC-E 94: [ANAC](https://antigo.anac.gov.br/assuntos/legislacao/legislacao-1/rbha-e-rbac/rbac/rbac-e-94)
 - MAPA Portaria 298/2021: [LegisWeb](https://www.legisweb.com.br/legislacao/?id=420676)
 - Brazilian agri-drone fleet (SISANT): [ranking](https://irlenmenezes.com.br/marcas-drones-agricolas-brasil-ranking-sisant-2026/)
+- Holybro PX4 Development Kit X500 V2: [product](https://holybro.com/products/px4-development-kit-x500-v2), [docs](https://docs.holybro.com/drone-development-kit/px4-development-kit-x500v2)
+- PX4 payload use cases (spraying as generic actuator): [PX4 docs](https://docs.px4.io/main/en/payloads/use_cases)
+- Heavy-lift octocopter platforms (secondary): [article](https://zbotic.in/octocopter-drone-build-heavy-lift-platform-for-industry/)
