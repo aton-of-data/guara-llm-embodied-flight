@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: Apache-2.0
+# M2: take off so local NED z becomes negative and REQ-ALT-01 fires (AC-3).
+name: alt_ceiling_violation
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+ros_nodes:
+  - {package: guara_monitors, executable: guara_monitors_node}
+record_verdicts: true
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 15}
+  - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
+expect:
+  min_altitude_m: 2.0
+  monitor_violation: true

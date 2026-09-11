@@ -178,17 +178,38 @@ def main() -> int:
     agent = subprocess.Popen(["MicroXRCEAgent", "udp4", "-p", "8888"], stdout=agent_log, stderr=subprocess.STDOUT)
     px4 = subprocess.Popen([str(PX4_BUILD / "bin" / "px4"), "-d", "-w", str(px4_work), str(PX4_BUILD / "etc")],
                            env=env, stdout=px4_log, stderr=subprocess.STDOUT)
+    ros_procs: list[tuple[str, subprocess.Popen]] = []
     status = 0
     try:
         if not wait_for_log(px4_log_path, "Startup script returned successfully",
                             scenario["timeouts_s"]["boot"]):
             raise RuntimeError("PX4 did not finish startup")
+        wait_for_log(run_dir / "xrce_agent.log", "session", 15)
+        if scenario.get("record_verdicts"):
+            verdict_log = (run_dir / "record_verdicts.log").open("w")
+            rec = subprocess.Popen(
+                [sys.executable, str(ROOT / "scripts" / "sitl" / "record_verdicts.py"),
+                 str(run_dir / "verdicts.jsonl")],
+                stdout=verdict_log, stderr=subprocess.STDOUT)
+            ros_procs.append(("record_verdicts", rec, verdict_log))
+        for spec in scenario.get("ros_nodes", []):
+            node_log = (run_dir / f"{spec['executable']}.log").open("w")
+            proc = subprocess.Popen(
+                ["ros2", "run", spec["package"], spec["executable"]],
+                stdout=node_log, stderr=subprocess.STDOUT)
+            ros_procs.append((spec["executable"], proc, node_log))
+            log(f"started ros2 run {spec['package']} {spec['executable']}")
+        if ros_procs:
+            time.sleep(2.0)
         run_steps(scenario)
         log("scenario complete")
     except Exception as exc:  # report and still shut down cleanly
         log(f"FAIL {exc}")
         status = 1
     finally:
+        for name, proc, handle in reversed(ros_procs):
+            stop(proc, name)
+            handle.close()
         stop(px4, "px4")
         stop(agent, "MicroXRCEAgent")
         agent_log.close()
