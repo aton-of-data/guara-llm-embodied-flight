@@ -47,7 +47,7 @@ struct Arbiter
     in.owned_mode_active = true;
     in.monitor_violation = unsafe;
     const Output out = core.step(in);
-    actuator.request(out.command, t);
+    actuator.request(out.command, kNavStateUnknown, t);
     const ActuatorAction action = actuator.tick(t);
     if (action == ActuatorAction::kPublish && ack_available) {
       actuator.onAck(actuator.pending(), true, t);
@@ -59,7 +59,7 @@ struct Arbiter
     }
     gateway.onCoreState(core.state(), t);
     // The CF keeps publishing at every tick, stamped with the current time.
-    gateway.onCfSetpoint(t, kCfVelocity, 0.0F);
+    gateway.onCfSetpoint(t, t, kCfVelocity, 0.0F);
     return gateway.compute(t);
   }
 };
@@ -93,21 +93,23 @@ TEST(GatewayBlocksCf, ZeroVelocityFromT3TickWithUnacknowledgedActuator)
   EXPECT_EQ(a.core.state(), State::kLatched);
 }
 
-TEST(GatewayBlocksCf, SetpointsStampedBeforeReturnAreDiscarded)
+// Since the review of 2026-09-11 (H-1) the ordering rule uses the reception instant, not the
+// CF-supplied stamp: a setpoint received during RF is discarded after the return to CF.
+TEST(GatewayBlocksCf, SetpointsReceivedBeforeReturnAreDiscarded)
 {
   GatewayLogic gateway(kCfTimeout);
   gateway.onCoreState(State::kCf, 0.0);
-  gateway.onCfSetpoint(0.1, kCfVelocity, 0.0F);
+  gateway.onCfSetpoint(0.1, 0.1, kCfVelocity, 0.0F);
   EXPECT_TRUE(gateway.compute(0.1).forwarding_cf);
 
   gateway.onCoreState(State::kRf, 1.0);
   EXPECT_FALSE(gateway.compute(1.0).forwarding_cf);
 
   // A setpoint generated during RF is still buffered when the core returns to CF at t = 6.0.
-  gateway.onCfSetpoint(5.9, kCfVelocity, 0.0F);
+  gateway.onCfSetpoint(5.9, 5.9, kCfVelocity, 0.0F);
   gateway.onCoreState(State::kCf, 6.0);
   EXPECT_TRUE(isZero(gateway.compute(6.0)));
-  gateway.onCfSetpoint(6.05, kCfVelocity, 0.0F);
+  gateway.onCfSetpoint(6.05, 6.05, kCfVelocity, 0.0F);
   EXPECT_TRUE(gateway.compute(6.05).forwarding_cf);
 }
 
@@ -115,12 +117,12 @@ TEST(GatewayBlocksCf, StaleAndNonFiniteCfSetpointsAreNotForwarded)
 {
   GatewayLogic gateway(kCfTimeout);
   gateway.onCoreState(State::kCf, 0.0);
-  gateway.onCfSetpoint(0.1, kCfVelocity, 0.0F);
+  gateway.onCfSetpoint(0.1, 0.1, kCfVelocity, 0.0F);
   EXPECT_TRUE(gateway.compute(0.5).forwarding_cf);
   EXPECT_TRUE(isZero(gateway.compute(0.1 + kCfTimeout + 0.01)));
 
   const float nan = std::numeric_limits<float>::quiet_NaN();
-  gateway.onCfSetpoint(1.0, {nan, 0.0F, 0.0F}, 0.0F);
+  gateway.onCfSetpoint(1.0, 1.0, {nan, 0.0F, 0.0F}, 0.0F);
   EXPECT_TRUE(isZero(gateway.compute(1.0)));
 }
 
@@ -128,7 +130,7 @@ TEST(GatewayBlocksCf, ActuatorRetriesAtRetryPeriodThenReportsFailureOnce)
 {
   ActuatorParameters p;
   ActuatorLogic act(p);
-  act.request(Command::kHold, 0.0);
+  act.request(Command::kHold, kNavStateUnknown, 0.0);
   int publications = 0;
   int failures = 0;
   for (int k = 0; k < 100; ++k) {
@@ -139,7 +141,7 @@ TEST(GatewayBlocksCf, ActuatorRetriesAtRetryPeriodThenReportsFailureOnce)
   EXPECT_EQ(publications, p.n_retry);
   EXPECT_EQ(failures, 1);
 
-  act.request(Command::kHold, 10.0);
+  act.request(Command::kHold, kNavStateUnknown, 10.0);
   EXPECT_EQ(act.tick(10.0), ActuatorAction::kPublish);
   act.onAck(Command::kRtl, true, 10.01);  // acknowledgement of a different request is ignored
   EXPECT_EQ(act.pending(), Command::kHold);
