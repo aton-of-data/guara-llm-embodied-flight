@@ -221,6 +221,25 @@ Prediction predict(
     return out;
   }
 
+  // Lateral (heading-independent) uncertainty bound. The ray model subtracts k_sigma * eph only
+  // along the velocity, so hovering inside the uncertainty band of the boundary, or flying parallel
+  // to it, produced T_gf = +inf although the true position may already be outside the fence
+  // (review 2026-09-11 §4 "Lateral uncertainty is ignored"). A sample whose horizontal or vertical
+  // uncertainty band reaches the boundary is a violation at this tick.
+  const double lateral_margin_m = params.k_sigma * std::max(0.0, s.eph_m);
+  const double vertical_margin_m = params.k_sigma * std::max(0.0, s.epv_m);
+  const bool inside_lateral_band = lateral_margin_m > 0.0 &&
+    fence.polygon.boundaryDistance(s.position) <= lateral_margin_m;
+  const bool inside_vertical_band = vertical_margin_m > 0.0 &&
+    (s.altitude_m - fence.alt_min_m <= vertical_margin_m ||
+    fence.alt_max_m - s.altitude_m <= vertical_margin_m);
+  if (inside_lateral_band || inside_vertical_band)
+  {
+    out.t_gf_s = out.t_horizontal_s = out.t_vertical_s = 0.0;
+    out.exit_distance_m = 0.0;
+    return out;
+  }
+
   const double speed = norm(s.velocity);
   if (speed >= params.v_min_m_s) {
     const Vec2 u{s.velocity.x / speed, s.velocity.y / speed};

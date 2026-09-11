@@ -27,6 +27,9 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(predictor_analytic test/test_predictor_analytic.cpp)
   target_link_libraries(predictor_analytic guara_geofence)
+  # Review remediation of 2026-09-11 §4: heading-independent position uncertainty.
+  ament_add_gtest(predictor_uncertainty test/test_predictor_uncertainty.cpp)
+  target_link_libraries(predictor_uncertainty guara_geofence)
 endif()
 
 ament_export_include_directories(include)

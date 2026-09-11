@@ -12,8 +12,15 @@
 // the latest instant at which a constant deceleration a_brake, initiated with no further delay, still
 // keeps the vehicle inside P. The vertical channel is analogous with the vertical speed, the ceiling
 // or floor distance, a_brake_v and k_sigma * epv. T_gf = min(T_h, T_v); values above the horizon are
-// reported as +inf, and a position outside F yields T_gf = 0. Latency is not part of the model; it is
-// covered by the threshold (SPEC obligation O-1).
+// reported as +inf, and a position outside F yields T_gf = 0.
+//
+// The ray model is heading dependent, so it does not cover a vehicle that hovers inside the
+// uncertainty band of the boundary or flies parallel to it (review 2026-09-11 §4). Independently of
+// the heading, a sample whose distance to the boundary is at most k_sigma * eph, or whose altitude
+// is within k_sigma * epv of a limit, is reported as T_gf = 0. With k_sigma = 0 or a zero reported
+// uncertainty the band is empty and the model reduces to the ray model above.
+//
+// Latency is not part of the model; it is covered by the threshold (SPEC obligation O-1).
 //
 // Implementation constraints (CLAUDE.md, Engineering): fixed capacity and no dynamic allocation. A
 // prediction computes at most 2N ray-boundary events, sorts them by insertion and classifies each
