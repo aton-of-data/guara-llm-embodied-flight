@@ -1,0 +1,92 @@
+# SPDX-License-Identifier: Apache-2.0
+# Guará formal-methods toolchain image: FRET formalizer (FRETish -> ptLTL), Ogma (ptLTL -> Copilot
+# specification and ROS 2 application) and Copilot (specification -> C99). It is a generation-time
+# image only; its outputs are committed under ros2_ws/src/guara_monitors/generated/ and compiled by
+# the ROS 2 development image (docker/Dockerfile). Pinned commits must equal third_party/VERSIONS.md.
+FROM ubuntu:22.04
+
+ARG GHC_VERSION=9.10.1
+ARG CABAL_VERSION=3.12.1.0
+ARG OGMA_REF=v1.15.0
+ARG OGMA_COMMIT=69485b3442d76c48faaee30b37f9cbee212ceca6
+ARG COPILOT_REF=v4.8.1
+ARG COPILOT_COMMIT=365fb21429aa0b880f81d72dcaa9f207f5ea2d0a
+ARG FRET_REF=v3.1.0
+ARG FRET_COMMIT=58db455be35182a015e607232d9f4e3c86731932
+ARG NODE_MAJOR=20
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    TZ=UTC
+
+RUN apt-get update -y --quiet \
+ && apt-get install -y --quiet --no-install-recommends \
+      build-essential ca-certificates curl git gnupg pkg-config xz-utils \
+      libffi-dev libgmp-dev libncurses-dev libtinfo5 zlib1g-dev libbz2-dev libexpat-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# Haskell toolchain. GHC 9.10 / cabal 3.12 is the configuration exercised by Ogma's own ROS CI
+# workflow (ogma@69485b3:.github/workflows/repo-ghc-8.6-cabal-2.4-ros.yml:14-17).
+ENV GHCUP_INSTALL_BASE_PREFIX=/opt \
+    PATH=/opt/.ghcup/bin:/root/.cabal/bin:${PATH}
+RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org \
+      | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh \
+ && ghcup install ghc ${GHC_VERSION} --set \
+ && ghcup install cabal ${CABAL_VERSION} --set \
+ && ghcup gc --cache --tmpdirs
+
+RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${OGMA_REF} \
+      https://github.com/nasa/ogma.git /opt/fm/ogma \
+ && test "$(git -C /opt/fm/ogma rev-parse HEAD)" = "${OGMA_COMMIT}" \
+ && git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${COPILOT_REF} \
+      https://github.com/Copilot-Language/copilot.git /opt/fm/copilot \
+ && test "$(git -C /opt/fm/copilot rev-parse HEAD)" = "${COPILOT_COMMIT}"
+
+# A single cabal project resolves Ogma against the pinned Copilot sources rather than Hackage
+# releases, so the generated specification and the C99 back end share one version.
+RUN printf '%s\n' \
+      'packages:' \
+      '  ogma/ogma-*/' \
+      '  copilot/copilot/' \
+      '  copilot/copilot-c99/' \
+      '  copilot/copilot-core/' \
+      '  copilot/copilot-interpreter/' \
+      '  copilot/copilot-language/' \
+      '  copilot/copilot-libraries/' \
+      '  copilot/copilot-prettyprinter/' \
+      '  copilot/copilot-theorem/' \
+      'jobs: 4' \
+      'tests: False' \
+      'benchmarks: False' \
+      > /opt/fm/cabal.project \
+ && cd /opt/fm && cabal update \
+ && cabal build ogma-cli:exe:ogma copilot copilot-c99 copilot-libraries copilot-language \
+ && install -m 0755 "$(cabal list-bin ogma-cli:exe:ogma)" /usr/local/bin/ogma \
+ && OGMA_SHARE="$(strings /usr/local/bin/ogma | grep -E '/ogma-core-1\.15\.0$' | grep '/share/' | head -1)" \
+ && mkdir -p "${OGMA_SHARE}" \
+ && cp -a /opt/fm/ogma/ogma-core/data "${OGMA_SHARE}/" \
+ && cp -a /opt/fm/ogma/ogma-core/templates "${OGMA_SHARE}/" \
+ && rm -rf /root/.cabal/packages/hackage.haskell.org/*.tar.gz
+
+# runghc inside the cabal project environment, so Copilot.hs sees the pinned Copilot libraries.
+RUN printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' \
+      'exec cabal --project-dir=/opt/fm exec --verbose=0 -- runghc "$@"' \
+      > /usr/local/bin/copilot-runghc \
+ && chmod 0755 /usr/local/bin/copilot-runghc
+
+# FRET formalizer: only the FRETish parser/semantics sources are needed; the Electron GUI is not built.
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+      | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_MAJOR}.x nodistro main" \
+      > /etc/apt/sources.list.d/nodesource.list \
+ && apt-get update -y --quiet \
+ && apt-get install -y --quiet --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/* \
+ && npm_config_loglevel=error corepack enable pnpm
+RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${FRET_REF} --filter=blob:none --sparse \
+      https://github.com/NASA-SW-VnV/fret.git /opt/fm/fret \
+ && git -C /opt/fm/fret sparse-checkout set fret-electron/app/parser fret-electron/support \
+ && test "$(git -C /opt/fm/fret rev-parse HEAD)" = "${FRET_COMMIT}"
+
+WORKDIR /work
