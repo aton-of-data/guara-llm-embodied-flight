@@ -9,3 +9,6 @@ log/
 
 .DS_Store
 .claude/settings.local.json
+
+# SITL run artifacts (ULog, logs); summaries are produced by scripts
+results/
