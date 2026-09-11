@@ -12,4 +12,7 @@ log/
 
 # SITL run artifacts (ULog, logs); summaries are produced by scripts
 results/
+
+# Ogma generation scratch (committed outputs live in guara_monitors/generated/)
+ros2_ws/src/guara_monitors/.ogma_out/
 __pycache__/
