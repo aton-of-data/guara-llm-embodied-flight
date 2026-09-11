@@ -2,10 +2,16 @@
 # Concave keep-in fence for AC-9 (U-notch east of home). Vertices are (lat, lon) pairs
 # corresponding to NED offsets from home (-22.0087, -47.8909): the analytic notch of
 # test_predictor_analytic shifted so the takeoff point is (N,E)=(0,0).
+#
+# tau_gf: the canonical 1.0 s of SPEC §3.2 is kept. Obligation O-1 requires tau_gf > delta_lat p99;
+# the M7 batch measured delta_lat p99 = 0.068 s (results/batch_latency/metrics.json), so 1.0 s holds
+# with a wide margin. The 6.0 s used in the first AC-9 run was an undocumented change (review of
+# 2026-09-11, AC-9 gap) and is not reinstated.
 guara_rta:
   ros__parameters:
     geofence.enabled: true
-    core.tau_gf_s: 6.0
+    inputs.geofence.enabled: true
+    core.tau_gf_s: 1.0
     geofence.polygon_lat_lon_deg:
       - -22.00887986
       - -47.89138500

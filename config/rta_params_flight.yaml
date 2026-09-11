@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+# Reference flight configuration of the Guará arbiter (review 2026-09-11 H-3, H-4, H-5).
+#
+# safety.profile: flight rejects the node start unless every protection channel is enabled and at
+# least one monitor is expected by name. A protection that a given operation genuinely does not have
+# (for example DAA on a site without any traffic source) must be listed in safety.accepted_omissions;
+# the declaration is logged at start, copied into the run configuration and published in RtaState, so
+# flying without a protection is a recorded decision instead of a silent default.
+#
+# The values below are [HYPOTHESIS] except where a milestone report records a measurement; the
+# gateway envelope must be filled in from the airframe's PX4 parameters (MPC_XY_VEL_MAX,
+# MPC_Z_VEL_MAX_UP, MPC_Z_VEL_MAX_DN, MPC_YAWRAUTO_MAX) and from the braking measurement of ADR 0004
+# before any flight. See docs/adr/0010-untrusted-complex-function-contract.md.
+guara_rta:
+  ros__parameters:
+    safety.profile: "flight"
+
+    decision.period_s: 0.05
+    core.tau_daa_s: 30.0
+    core.tau_gf_s: 1.0
+    core.h_daa_s: 5.0
+    core.h_gf_s: 1.0
+    core.dwell_s: 5.0
+    core.n_max: 3
+    core.window_s: 120.0
+    core.return_enabled: true
+    core.escalation_enabled: true
+    core.escalation_s: 30.0
+
+    # Every channel below is consumed by the arbiter and therefore fails closed: missing, stale or
+    # invalid sets V(k) and the vehicle goes to Hold.
+    inputs.local_position.enabled: true
+    inputs.local_position.max_age_s: 0.2
+    inputs.vehicle_status.enabled: true
+    inputs.vehicle_status.max_age_s: 1.0
+    inputs.monitor.enabled: true
+    inputs.monitor.max_age_s: 0.5
+    inputs.monitor.expected_ids: ["REQ-ALT-01"]
+    inputs.daa.enabled: true
+    inputs.daa.max_age_s: 1.0
+    inputs.geofence.enabled: true
+    inputs.geofence.max_age_s: 0.2
+
+    actuator.retry_period_s: 0.3
+    actuator.n_retry: 3
+    actuator.confirm_timeout_s: 1.0
+
+    # Envelope applied to every CF setpoint before it reaches PX4, and shadow check of the proposed
+    # motion against the fence.
+    gateway.cf_timeout_s: 0.5
+    gateway.heartbeat_max_age_s: 0.25
+    gateway.max_speed_h_m_s: 5.0
+    gateway.max_climb_rate_m_s: 3.0
+    gateway.max_descent_rate_m_s: 2.0
+    gateway.max_yaw_rate_rad_s: 1.0
+    gateway.future_stamp_tolerance_s: 0.05
+    gateway.shadow_check: true
+
+    telemetry.state_rate_hz: 5.0
+
+    geofence.enabled: true
+    geofence.alt_min_m: 0.0
+    geofence.alt_max_m: 120.0
+    geofence.a_brake_h_m_s2: 3.0
+    geofence.a_brake_v_m_s2: 2.0
+    geofence.k_sigma: 2.0
+    geofence.v_min_m_s: 0.2
+    geofence.horizon_s: 30.0
+    # geofence.polygon_lat_lon_deg must be supplied per operation (3..64 lat/lon pairs).

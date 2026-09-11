@@ -1,6 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
-# Default RTA parameters (SPEC §3.2). Every value is a [HYPOTHESIS] until measured (SPEC R-12).
+# SITL bench parameter file (SPEC §3.2). Every value is a [HYPOTHESIS] until measured (SPEC R-12).
 # Copied into results/{run_id}/config.yaml by the SITL runner.
+#
+# safety.profile is 'sitl': scenarios exercise one protection channel at a time and enable the
+# others through per-scenario overlays. The reference flight configuration, in which every
+# protection channel is enabled and every omission has to be declared, is
+# config/rta_params_flight.yaml. The node default is 'flight', so a configuration that forgets to
+# declare a profile gets the strict one.
 guara_rta:
   ros__parameters:
     decision.period_s: 0.05
@@ -14,20 +20,28 @@ guara_rta:
     core.return_enabled: true
     core.escalation_enabled: false
     core.escalation_s: 30.0
-    inputs.local_position.required: true
+    inputs.local_position.enabled: true
     inputs.local_position.max_age_s: 0.2
-    inputs.vehicle_status.required: true
+    inputs.vehicle_status.enabled: true
     inputs.vehicle_status.max_age_s: 1.0
-    inputs.monitor.required: false
+    inputs.monitor.enabled: false
     inputs.monitor.max_age_s: 0.5
-    inputs.daa.required: false
+    inputs.daa.enabled: false
     inputs.daa.max_age_s: 1.0
-    inputs.geofence.required: false
+    inputs.geofence.enabled: false
     inputs.geofence.max_age_s: 0.2
+    safety.profile: "sitl"
     actuator.retry_period_s: 0.3
     actuator.n_retry: 3
+    actuator.confirm_timeout_s: 1.0
     gateway.cf_timeout_s: 0.5
     gateway.heartbeat_max_age_s: 0.25
+    gateway.max_speed_h_m_s: 5.0
+    gateway.max_climb_rate_m_s: 3.0
+    gateway.max_descent_rate_m_s: 2.0
+    gateway.max_yaw_rate_rad_s: 1.0
+    gateway.future_stamp_tolerance_s: 0.05
+    gateway.shadow_check: true
     telemetry.state_rate_hz: 5.0
     geofence.enabled: false
     geofence.alt_min_m: -1.0e9

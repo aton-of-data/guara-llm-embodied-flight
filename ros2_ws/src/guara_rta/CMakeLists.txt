@@ -73,6 +73,18 @@ if(BUILD_TESTING)
   target_link_libraries(latch_policy guara_rta_core)
   ament_add_gtest(gateway_blocks_cf test/test_gateway_blocks_cf.cpp)
   target_link_libraries(gateway_blocks_cf guara_rta_core)
+  # Review remediation of 2026-09-11: gateway envelope (H-1, H-2), monitor aggregation (H-4, H-6),
+  # channel gating and safety profile (H-3, H-5), mode-effect confirmation and return policy.
+  ament_add_gtest(gateway_envelope test/test_gateway_envelope.cpp)
+  target_link_libraries(gateway_envelope guara_rta_core)
+  ament_add_gtest(monitor_table test/test_monitor_table.cpp)
+  target_link_libraries(monitor_table guara_rta_core)
+  ament_add_gtest(channel_gating test/test_channel_gating.cpp)
+  target_link_libraries(channel_gating guara_rta_core)
+  ament_add_gtest(actuator_confirmation test/test_actuator_confirmation.cpp)
+  target_link_libraries(actuator_confirmation guara_rta_core)
+  ament_add_gtest(return_policy test/test_return_policy.cpp)
+  target_link_libraries(return_policy guara_rta_core)
 endif()
 
 ament_export_include_directories(include)

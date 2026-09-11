@@ -19,8 +19,10 @@ done
 cd "${root}"
 ./scripts/sitl_run.sh --scenario "${scenario}" --seed "${seed}" --headless --run-suffix _rta_on
 on_id="$(readlink results/latest)"
+# The predictor and its input channel are switched together: since the review of 2026-09-11 the
+# arbiter refuses a configuration in which only one of the two is set (finding H-5).
 ./scripts/sitl_run.sh --scenario "${scenario}" --seed "${seed}" --headless --run-suffix _rta_off \
-  --param geofence.enabled:=false
+  --param geofence.enabled:=false --param inputs.geofence.enabled:=false
 off_id="$(readlink results/latest)"
 
 pair_id="$(date -u +%Y%m%dT%H%M%SZ)_${scenario}_s${seed}_pair"

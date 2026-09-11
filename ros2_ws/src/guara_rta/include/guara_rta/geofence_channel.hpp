@@ -4,10 +4,18 @@
 // The fence polygon is configured in geographic coordinates and projected into the local NED frame
 // with the estimator reference point carried by each sample; a change of the reference point triggers
 // reprojection. A sample without a valid global reference (xy_global false) or without valid position
-// and velocity is reported as an invalid geofence input.
+// and velocity is reported as an invalid geofence input, which sets V(k) on the enabled geofence
+// channel (review 2026-09-11 H-5) instead of reading as "no violation".
+//
+// The channel also answers the shadow question "would this proposed velocity violate the fence?"
+// (review §4). The decision group writes the most recent vehicle state into a lock-free snapshot;
+// the gateway callback, which runs in another callback group, reads it to filter CF setpoints before
+// they reach PX4. The snapshot is a two-slot sequence buffer: single writer, wait-free reader, no
+// allocation and no lock on either path.
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <cstdint>
 #include <limits>
 #include <stdexcept>
@@ -18,6 +26,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include "guara_geofence/predictor.hpp"
+#include "guara_rta/gateway_logic.hpp"
 
 namespace guara_rta
 {
@@ -64,6 +73,7 @@ public:
   {
     GeofenceSample out;
     if (!msg.xy_global || !state_valid) {
+      invalidateSnapshot();
       return out;
     }
     if (!projected_ || msg.ref_timestamp != ref_timestamp_ || msg.ref_lat != ref_lat_ ||
@@ -75,6 +85,7 @@ public:
       }
       if (fence_.polygon.set(local.data(), n_) != guara_geofence::PolygonError::kNone) {
         projected_ = false;
+        invalidateSnapshot();
         return out;
       }
       ref_timestamp_ = msg.ref_timestamp;
@@ -89,6 +100,7 @@ public:
     s.climb_rate_m_s = -static_cast<double>(msg.vz);
     s.eph_m = msg.eph;
     s.epv_m = msg.epv;
+    publishSnapshot(s);
     const guara_geofence::Prediction p = guara_geofence::predict(fence_, params_, s);
     out.t_gf_s = p.t_gf_s;
     out.inside = p.inside;
@@ -96,7 +108,63 @@ public:
     return out;
   }
 
+  // Predicted T_gf if the vehicle followed `velocity_ned_m_s` from the latest known position.
+  // Returns +inf when no usable snapshot exists (the caller decides what that means).
+  double predictWithVelocity(const std::array<float, 3> & velocity_ned_m_s, bool * have_state) const
+  {
+    guara_geofence::VehicleState s;
+    const bool ok = readSnapshot(&s);
+    if (have_state != nullptr) {
+      *have_state = ok;
+    }
+    if (!ok) {
+      return std::numeric_limits<double>::infinity();
+    }
+    s.velocity = {static_cast<double>(velocity_ned_m_s[0]), static_cast<double>(velocity_ned_m_s[1])};
+    s.climb_rate_m_s = -static_cast<double>(velocity_ned_m_s[2]);
+    return guara_geofence::predict(fence_, params_, s).t_gf_s;
+  }
+
 private:
+  struct Snapshot
+  {
+    guara_geofence::VehicleState state{};
+    bool valid{false};
+  };
+
+  void publishSnapshot(const guara_geofence::VehicleState & s) noexcept
+  {
+    const std::uint32_t c = snapshot_seq_.load(std::memory_order_relaxed);
+    snapshot_[(c + 1U) & 1U] = Snapshot{s, true};
+    snapshot_seq_.store(c + 1U, std::memory_order_release);
+  }
+
+  void invalidateSnapshot() noexcept
+  {
+    const std::uint32_t c = snapshot_seq_.load(std::memory_order_relaxed);
+    snapshot_[(c + 1U) & 1U] = Snapshot{};
+    snapshot_seq_.store(c + 1U, std::memory_order_release);
+  }
+
+  bool readSnapshot(guara_geofence::VehicleState * out) const noexcept
+  {
+    for (int attempt = 0; attempt < 2; ++attempt) {
+      const std::uint32_t before = snapshot_seq_.load(std::memory_order_acquire);
+      if (before == 0U) {
+        return false;
+      }
+      const Snapshot s = snapshot_[before & 1U];
+      if (snapshot_seq_.load(std::memory_order_acquire) == before) {
+        if (!s.valid) {
+          return false;
+        }
+        *out = s.state;
+        return true;
+      }
+    }
+    return false;
+  }
+
   bool enabled_{false};
   bool projected_{false};
   std::size_t n_{0};
@@ -106,6 +174,35 @@ private:
   std::uint64_t ref_timestamp_{0};
   double ref_lat_{0.0};
   double ref_lon_{0.0};
+  Snapshot snapshot_[2]{};
+  std::atomic<std::uint32_t> snapshot_seq_{0};
+};
+
+// Shadow check installed in the gateway: a proposed CF velocity is admissible only if its predicted
+// time to geofence violation stays above tau_gf + h_gf, the same margin the decision core requires
+// before returning control to the CF (SPEC §3.5). The check runs in the setpoint callback, so it is
+// allocation-free and bounded by the predictor cost.
+class GeofenceSetpointGuard : public SetpointGuard
+{
+public:
+  GeofenceSetpointGuard(const GeofenceChannel & channel, double margin_s) noexcept
+  : channel_(channel), margin_s_(margin_s) {}
+
+  bool admissible(const std::array<float, 3> & velocity_ned_m_s, double) const noexcept override
+  {
+    bool have_state = false;
+    const double t_gf = channel_.predictWithVelocity(velocity_ned_m_s, &have_state);
+    if (!have_state) {
+      // No usable position: the geofence channel is invalid, the core is about to see V(k) and the
+      // gateway must not forward CF motion in the meantime.
+      return false;
+    }
+    return t_gf > margin_s_;
+  }
+
+private:
+  const GeofenceChannel & channel_;
+  double margin_s_;
 };
 
 }  // namespace guara_rta

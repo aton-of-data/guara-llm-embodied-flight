@@ -60,6 +60,8 @@
 #include "guara_rta/gateway_logic.hpp"
 #include "guara_rta/geofence_channel.hpp"
 #include "guara_rta/input_manager.hpp"
+#include "guara_rta/monitor_table.hpp"
+#include "guara_rta/safety_profile.hpp"
 
 namespace guara_rta
 {
@@ -67,8 +69,14 @@ namespace
 {
 
 constexpr const char * kModeName = "Guara CF Gateway";
-constexpr std::size_t kMaxMonitors = 16;
 constexpr double kInf = std::numeric_limits<double>::infinity();
+
+// The encodings the MonitorTable assumes must equal the message constants.
+static_assert(monitor::kClassLog == guara_msgs::msg::MonitorVerdict::CLASS_LOG, "CLASS_LOG");
+static_assert(monitor::kClassSwitch == guara_msgs::msg::MonitorVerdict::CLASS_SWITCH, "CLASS_SWITCH");
+static_assert(monitor::kActionHold == guara_msgs::msg::MonitorVerdict::ACTION_HOLD, "ACTION_HOLD");
+static_assert(monitor::kActionRtl == guara_msgs::msg::MonitorVerdict::ACTION_RTL, "ACTION_RTL");
+static_assert(monitor::kActionLand == guara_msgs::msg::MonitorVerdict::ACTION_LAND, "ACTION_LAND");
 
 double steadySeconds() noexcept
 {
@@ -93,31 +101,58 @@ px4_ros2::ModeBase::ModeID navStateFor(Command c) noexcept
   return px4_ros2::ModeBase::kModeIDInvalid;
 }
 
-// State shared between the default callback group and the decision callback group.
+// State shared between the default callback group and the decision callback group. Every field is
+// an atomic: the two groups never hold a lock in common, so a stalled decision group keeps the
+// arming-check replies alive (SPEC FM-4).
 struct SharedState
 {
   std::atomic<std::uint8_t> core_state{static_cast<std::uint8_t>(State::kInactive)};
   std::atomic<std::int64_t> last_tick_ns{0};
   std::atomic<bool> in_charge{false};
   std::atomic<bool> owned_mode_active{false};
+  // Set when a mode request was neither accepted nor confirmed within the budget (SPEC FM-7). The
+  // owned mode then fails its own arming check, so PX4's fallback chain takes the vehicle instead of
+  // leaving it hovering in a mode the arbiter can no longer steer (review 2026-09-11 §4).
+  std::atomic<bool> actuation_failed{false};
+  // Latest CF proposal, republished by the gateway for the decision group's shadow check.
+  std::atomic<float> cf_vx{0.0F};
+  std::atomic<float> cf_vy{0.0F};
+  std::atomic<float> cf_vz{0.0F};
+  std::atomic<double> cf_recv_s{-kInf};
+  // Gateway rejection counters, for telemetry and for the CF-behaviour evidence of an LLM run.
+  std::atomic<std::uint32_t> cf_rejected_stamp{0};
+  std::atomic<std::uint32_t> cf_rejected_non_finite{0};
+  std::atomic<std::uint32_t> cf_rejected_guard{0};
+  std::atomic<std::uint32_t> cf_clamped{0};
 };
 
 class GuaraCfGateway : public px4_ros2::ModeBase
 {
 public:
-  GuaraCfGateway(rclcpp::Node & node, SharedState & shared, double cf_timeout_s, double heartbeat_max_age_s)
-  : ModeBase(node, Settings{kModeName}), shared_(shared), logic_(cf_timeout_s),
+  GuaraCfGateway(rclcpp::Node & node, SharedState & shared, double cf_timeout_s,
+    double heartbeat_max_age_s, const GatewayLimits & limits)
+  : ModeBase(node, Settings{kModeName}), shared_(shared), logic_(cf_timeout_s, limits),
     heartbeat_max_age_ns_(static_cast<std::int64_t>(heartbeat_max_age_s * 1e9))
   {
     setpoint_ = std::make_shared<px4_ros2::TrajectorySetpointType>(*this);
     cf_sub_ = node.create_subscription<guara_msgs::msg::CfSetpoint>(
       "/guara/cf/setpoint", rclcpp::QoS(1).best_effort(),
       [this](const guara_msgs::msg::CfSetpoint & msg) {
-        logic_.onCfSetpoint(rclcpp::Time(msg.stamp).seconds(),
-          {msg.velocity_ned_m_s[0], msg.velocity_ned_m_s[1], msg.velocity_ned_m_s[2]},
-          msg.yaw_ned_rad);
+        // Freshness and ordering are measured from this reception instant on the gateway clock; the
+        // CF-supplied stamp is only checked for plausibility (review 2026-09-11 H-1).
+        const double t_recv_s = this->node().get_clock()->now().seconds();
+        const std::array<float, 3> v{msg.velocity_ned_m_s[0], msg.velocity_ned_m_s[1],
+          msg.velocity_ned_m_s[2]};
+        logic_.onCfSetpoint(t_recv_s, rclcpp::Time(msg.stamp).seconds(), v, msg.yaw_ned_rad);
+        shared_.cf_vx.store(v[0]);
+        shared_.cf_vy.store(v[1]);
+        shared_.cf_vz.store(v[2]);
+        shared_.cf_recv_s.store(t_recv_s);
+        publishCounters();
       });
   }
+
+  void setGuard(const SetpointGuard * guard) noexcept {logic_.setGuard(guard);}
 
   void onActivate() override {shared_.owned_mode_active.store(true);}
 
@@ -133,6 +168,14 @@ public:
         px4_ros2::events::ID("guara_decision_core_stalled"), px4_ros2::events::Log::Error,
         "Guara decision core stalled");
     }
+    // SPEC FM-7: the arbiter can no longer actuate the recovery. Failing the owned mode's check
+    // hands the vehicle to PX4's fallback chain [G A.5, A.6] instead of latching in a mode nobody
+    // steers (review 2026-09-11 §4).
+    if (shared_.actuation_failed.load()) {
+      reporter.armingCheckFailureExt(
+        px4_ros2::events::ID("guara_actuation_failed"), px4_ros2::events::Log::Error,
+        "Guara mode request not effective");
+    }
   }
 
   void updateSetpoint(float /*dt_s*/) override
@@ -140,6 +183,7 @@ public:
     const double now_s = node().get_clock()->now().seconds();
     logic_.onCoreState(static_cast<State>(shared_.core_state.load()), now_s);
     const GatewaySetpoint sp = logic_.compute(now_s);
+    publishCounters();
     const Eigen::Vector3f v{sp.velocity_ned_m_s[0], sp.velocity_ned_m_s[1], sp.velocity_ned_m_s[2]};
     if (std::isfinite(sp.yaw_ned_rad)) {
       setpoint_->update(v, std::nullopt, sp.yaw_ned_rad);
@@ -149,6 +193,14 @@ public:
   }
 
 private:
+  void publishCounters() noexcept
+  {
+    shared_.cf_rejected_stamp.store(logic_.rejectedImplausibleStamp());
+    shared_.cf_rejected_non_finite.store(logic_.rejectedNonFinite());
+    shared_.cf_rejected_guard.store(logic_.rejectedByGuard());
+    shared_.cf_clamped.store(logic_.clamped());
+  }
+
   SharedState & shared_;
   GatewayLogic logic_;
   std::int64_t heartbeat_max_age_ns_;
@@ -170,17 +222,6 @@ private:
   SharedState & shared_;
 };
 
-struct MonitorSlot
-{
-  std::array<char, 48> id{};
-  bool used{false};
-  bool violated{false};
-  bool inputs_complete{false};
-  std::uint8_t monitor_class{0};
-  Recovery action{Recovery::kHold};
-  double t_recv_s{-kInf};
-};
-
 class ArbiterNode : public rclcpp::Node
 {
 public:
@@ -192,11 +233,27 @@ public:
     if (invalid != nullptr) {
       throw std::invalid_argument(std::string("invalid RTA parameters: ") + invalid);
     }
+    // The geofence channel exists only if the predictor is configured; the two switches must agree,
+    // otherwise a fence is either evaluated without being checked for freshness (review H-5) or a
+    // channel is checked that never publishes.
+    if (geofence_.enabled() != input_config_[static_cast<std::size_t>(Channel::kGeofence)].enabled) {
+      throw std::invalid_argument(
+        "geofence.enabled and inputs.geofence.enabled must be set together");
+    }
+    if (const char * bad = validateProfile(profile_, input_config_, expected_monitors_, omissions_)) {
+      throw std::invalid_argument(std::string("safety profile rejected the configuration: ") + bad);
+    }
     core_ = std::make_unique<DecisionCore>(params_);
     actuator_ = std::make_unique<ActuatorLogic>(actuator_params_);
     inputs_ = std::make_unique<InputManager>(input_config_);
 
-    gateway_ = std::make_unique<GuaraCfGateway>(*this, shared_, cf_timeout_s_, heartbeat_max_age_s_);
+    gateway_ = std::make_unique<GuaraCfGateway>(*this, shared_, cf_timeout_s_, heartbeat_max_age_s_,
+      gateway_limits_);
+    if (geofence_.enabled() && shadow_check_) {
+      // Shadow check of every forwarded setpoint against the fence (review 2026-09-11 §4).
+      guard_ = std::make_unique<GeofenceSetpointGuard>(geofence_, params_.tau_gf_s + params_.h_gf_s);
+      gateway_->setGuard(guard_.get());
+    }
     executor_ = std::make_unique<GuaraExecutor>(*gateway_, shared_);
     if (!executor_->doRegister()) {
       throw std::runtime_error("registration of executor and owned mode failed");
@@ -218,8 +275,10 @@ public:
     status_sub_ = create_subscription<px4_msgs::msg::VehicleStatus>(
       "fmu/out/vehicle_status" + px4_ros2::getMessageNameVersion<px4_msgs::msg::VehicleStatus>(),
       sensor_qos, [this](const px4_msgs::msg::VehicleStatus & msg) {
-        inputs_->onReceive(Channel::kVehicleStatus, steadySeconds(), true);
+        const double t = steadySeconds();
+        inputs_->onReceive(Channel::kVehicleStatus, t, true);
         nav_state_ = msg.nav_state;
+        actuator_->onNavState(msg.nav_state, t);
       }, opts);
     ack_sub_ = create_subscription<px4_msgs::msg::VehicleCommandAck>(
       "fmu/out/vehicle_command_ack" +
@@ -232,8 +291,10 @@ public:
       "/guara/daa/status", sensor_qos,
       [this](const guara_msgs::msg::DaaStatus & msg) {
         const double t = steadySeconds();
+        // An invalid ownship is an invalid input on the enabled channel, never "no conflict".
         t_daa_s_ = msg.ownship_valid ? msg.time_to_corrective_volume_s : kInf;
-        inputs_->onReceive(Channel::kDaa, t, msg.ownship_valid);
+        inputs_->onReceive(Channel::kDaa, t, msg.ownship_valid &&
+          !std::isnan(msg.time_to_corrective_volume_s));
         last_input_recv_s_ = t;
       }, opts);
 
@@ -271,22 +332,66 @@ private:
       params_.escalation_enabled);
     params_.escalation_s = declare_parameter("core.escalation_s", params_.escalation_s);
 
-    const auto channel = [this](Channel c, const std::string & name, bool required, double age) {
+    // An *enabled* channel is a channel the arbiter depends on; it contributes to V(k) when it is
+    // missing, stale or invalid (review 2026-09-11 H-3, H-5). There is no "consumed but not
+    // checked" channel any more.
+    const auto channel = [this](Channel c, const std::string & name, bool enabled, double age) {
         input_config_[static_cast<std::size_t>(c)] = ChannelConfig{
-          declare_parameter("inputs." + name + ".required", required),
+          declare_parameter("inputs." + name + ".enabled", enabled),
           declare_parameter("inputs." + name + ".max_age_s", age)};
       };
     channel(Channel::kLocalPosition, "local_position", true, 0.2);
     channel(Channel::kVehicleStatus, "vehicle_status", true, 1.0);
-    channel(Channel::kMonitor, "monitor", false, 0.5);
+    channel(Channel::kMonitor, "monitor", true, 0.5);
     channel(Channel::kDaa, "daa", false, 1.0);
     channel(Channel::kGeofence, "geofence", false, 0.2);
+
+    const double monitor_age = input_config_[static_cast<std::size_t>(Channel::kMonitor)].max_age_s;
+    monitors_.configure(monitor_age);
+    for (const auto & id : declare_parameter("inputs.monitor.expected_ids",
+      std::vector<std::string>{}))
+    {
+      if (!monitors_.expect(id.c_str())) {
+        throw std::invalid_argument("inputs.monitor.expected_ids: '" + id +
+          "' does not fit the monitor table");
+      }
+      ++expected_monitors_;
+    }
+
+    const std::string profile_name = declare_parameter("safety.profile", std::string("flight"));
+    if (const char * bad = parseProfile(profile_name.c_str(), &profile_)) {
+      throw std::invalid_argument(bad);
+    }
+    for (const auto & name : declare_parameter("safety.accepted_omissions",
+      std::vector<std::string>{}))
+    {
+      const std::uint32_t bit = omissionBit(name.c_str());
+      if (bit == 0U) {
+        throw std::invalid_argument("safety.accepted_omissions: unknown protection '" + name + "'");
+      }
+      omissions_ |= bit;
+      RCLCPP_WARN(get_logger(), "safety.accepted_omissions declares '%s': this protection is off",
+        name.c_str());
+    }
 
     actuator_params_.retry_period_s = declare_parameter("actuator.retry_period_s",
       actuator_params_.retry_period_s);
     actuator_params_.n_retry = static_cast<std::uint16_t>(declare_parameter("actuator.n_retry",
       static_cast<int>(actuator_params_.n_retry)));
+    actuator_params_.confirm_timeout_s = declare_parameter("actuator.confirm_timeout_s",
+      actuator_params_.confirm_timeout_s);
     cf_timeout_s_ = declare_parameter("gateway.cf_timeout_s", 0.5);
+    gateway_limits_.max_speed_h_m_s = declare_parameter("gateway.max_speed_h_m_s",
+      gateway_limits_.max_speed_h_m_s);
+    gateway_limits_.max_climb_rate_m_s = declare_parameter("gateway.max_climb_rate_m_s",
+      gateway_limits_.max_climb_rate_m_s);
+    gateway_limits_.max_descent_rate_m_s = declare_parameter("gateway.max_descent_rate_m_s",
+      gateway_limits_.max_descent_rate_m_s);
+    gateway_limits_.max_yaw_rate_rad_s = declare_parameter("gateway.max_yaw_rate_rad_s",
+      gateway_limits_.max_yaw_rate_rad_s);
+    gateway_limits_.future_stamp_tolerance_s = declare_parameter(
+      "gateway.future_stamp_tolerance_s", gateway_limits_.future_stamp_tolerance_s);
+    shadow_check_ = declare_parameter("gateway.shadow_check", true);
     heartbeat_max_age_s_ = declare_parameter("gateway.heartbeat_max_age_s", 0.25);
     state_rate_hz_ = declare_parameter("telemetry.state_rate_hz", 5.0);
     geofence_.configure(*this);
@@ -364,37 +469,26 @@ private:
   {
     const double t = steadySeconds();
     const double ros_s = get_clock()->now().seconds();
-    inputs_->onReceive(Channel::kMonitor, t, true);
     l2_s_ = msg.processing_s;
     const rclcpp::Time stamp(msg.stamp, get_clock()->get_clock_type());
     l3_s_ = ros_s - stamp.seconds();
-    MonitorSlot * slot = nullptr;
-    for (auto & s : monitors_) {
-      if (s.used && std::strncmp(s.id.data(), msg.monitor_id.c_str(), s.id.size() - 1U) == 0) {
-        slot = &s;
-        break;
-      }
+
+    MonitorVerdictSample sample;
+    sample.id = msg.monitor_id.c_str();
+    sample.monitor_class = msg.monitor_class;
+    sample.action = msg.action;
+    sample.violated = msg.violated;
+    sample.inputs_complete = msg.inputs_complete;
+    const MonitorAccept accept = monitors_.observe(sample, t);
+    // A malformed or undeliverable verdict is an invalid monitor input (review H-4, H-6); the table
+    // records it and evaluate() reports it, so the arbiter still reacts.
+    if (accept != MonitorAccept::kAccepted) {
+      RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+        "monitor verdict from '%s' rejected (%s); monitor channel reported invalid",
+        msg.monitor_id.c_str(),
+        accept == MonitorAccept::kTableFull ? "table full" : "field out of contract");
     }
-    if (slot == nullptr) {
-      for (auto & s : monitors_) {
-        if (!s.used) {
-          slot = &s;
-          slot->used = true;
-          std::strncpy(slot->id.data(), msg.monitor_id.c_str(), slot->id.size() - 1U);
-          break;
-        }
-      }
-    }
-    if (slot == nullptr) {
-      RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000, "monitor table full; verdict of %s ignored",
-        msg.monitor_id.c_str());
-      return;
-    }
-    slot->violated = msg.violated;
-    slot->inputs_complete = msg.inputs_complete;
-    slot->monitor_class = msg.monitor_class;
-    slot->action = static_cast<Recovery>(msg.action + 1U);  // ACTION_HOLD=0 -> Recovery::kHold=1
-    slot->t_recv_s = t;
+    inputs_->onReceive(Channel::kMonitor, t, accept == MonitorAccept::kAccepted);
     if (msg.violated && msg.monitor_class == guara_msgs::msg::MonitorVerdict::CLASS_SWITCH) {
       last_input_recv_s_ = t;
     }
@@ -408,8 +502,9 @@ private:
       return;
     }
     const bool accepted = msg.result == px4_msgs::msg::VehicleCommandAck::VEHICLE_CMD_RESULT_ACCEPTED;
-    // The acknowledgement does not carry the requested nav_state; it is attributed to the pending
-    // request (limitation recorded in the M3 report).
+    // The acknowledgement does not carry the requested nav_state, so it is attributed to the pending
+    // request; the *effect* is confirmed separately against vehicle_status.nav_state, and a request
+    // that is accepted but never takes effect is failed by ActuatorLogic (review 2026-09-11 §4).
     actuator_->onAck(actuator_->pending(), accepted, steadySeconds());
   }
 
@@ -432,31 +527,24 @@ private:
       noteCf(t);
     }
 #endif
-    in.t_daa_s = input_config_[static_cast<std::size_t>(Channel::kDaa)].required ? t_daa_s_ : kInf;
+    in.t_daa_s = input_config_[static_cast<std::size_t>(Channel::kDaa)].enabled ? t_daa_s_ : kInf;
     in.t_gf_s = geofence_.enabled() ? t_gf_s_ : kInf;
     std::uint32_t invalid = inputs_->invalidMask(t);
-    const double monitor_age = input_config_[static_cast<std::size_t>(Channel::kMonitor)].max_age_s;
-    bool monitors_required = input_config_[static_cast<std::size_t>(Channel::kMonitor)].required;
-    first_violating_monitor_ = nullptr;
-    in.monitor_violation = false;
-    in.monitor_action = Recovery::kHold;
-    for (const auto & s : monitors_) {
-      if (!s.used) {
-        continue;
-      }
-      if (monitors_required && (t - s.t_recv_s > monitor_age || !s.inputs_complete)) {
-        invalid |= 1U << static_cast<unsigned>(Channel::kMonitor);
-      }
-      if (s.violated && s.monitor_class == guara_msgs::msg::MonitorVerdict::CLASS_SWITCH &&
-        t - s.t_recv_s <= monitor_age)
-      {
-        if (!in.monitor_violation) {
-          first_violating_monitor_ = s.id.data();
-        }
-        in.monitor_violation = true;
-        in.monitor_action = maxRank(in.monitor_action, s.action);
+
+    const MonitorEvaluation monitors = monitors_.evaluate(t);
+    first_violating_monitor_ = monitors.first_violating_id;
+    in.monitor_violation = monitors.violation;
+    in.monitor_action = monitors.action;
+    if (monitors.invalid &&
+      input_config_[static_cast<std::size_t>(Channel::kMonitor)].enabled)
+    {
+      invalid |= 1U << static_cast<unsigned>(Channel::kMonitor);
+      if (monitors.first_invalid_id != nullptr) {
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+          "monitor '%s' missing, stale or incomplete: V(k) set", monitors.first_invalid_id);
       }
     }
+    in.cf_intent_unsafe = cfIntentUnsafe(t);
     in.input_invalid = invalid != 0U;
     input_invalid_mask_ = invalid;
 
@@ -470,7 +558,7 @@ private:
     if (out.transition.id == transition::kT1) {
       actuator_->cancel();
     }
-    actuator_->request(out.command, t);
+    actuator_->request(out.command, expectedNavState(out.command), t);
     actuate(t);
 
     if (out.transition.id != transition::kNone) {
@@ -480,6 +568,40 @@ private:
     if (state_rate_hz_ > 0.0 && t - t_last_state_pub_s_ >= 1.0 / state_rate_hz_) {
       publishState(out, in, t);
     }
+  }
+
+  // nav_state the request must produce, for the effect confirmation of ActuatorLogic.
+  std::uint8_t expectedNavState(Command c) const noexcept
+  {
+    if (c == Command::kOwnedMode) {
+      return static_cast<std::uint8_t>(gateway_->id());
+    }
+    const px4_ros2::ModeBase::ModeID id = navStateFor(c);
+    return id == px4_ros2::ModeBase::kModeIDInvalid ? kNavStateUnknown :
+           static_cast<std::uint8_t>(id);
+  }
+
+  // Shadow check of the setpoint the CF is currently proposing (review 2026-09-11 §4). It only
+  // withholds the return T5; while the vehicle is in CF the gateway already filters the setpoint.
+  bool cfIntentUnsafe(double t)
+  {
+    if (!geofence_.enabled() || !shadow_check_) {
+      return false;
+    }
+    const double t_recv_ros_s = shared_.cf_recv_s.load();
+    const double age = get_clock()->now().seconds() - t_recv_ros_s;
+    if (!std::isfinite(t_recv_ros_s) || age > cf_timeout_s_) {
+      return false;  // no live CF proposal: nothing to shadow-check
+    }
+    const std::array<float, 3> v{shared_.cf_vx.load(), shared_.cf_vy.load(), shared_.cf_vz.load()};
+    bool have_state = false;
+    const double t_gf = geofence_.predictWithVelocity(v, &have_state);
+    if (!have_state) {
+      return false;  // the geofence channel is invalid; V(k) already covers it
+    }
+    cf_intent_t_gf_s_ = t_gf;
+    (void)t;
+    return t_gf <= params_.tau_gf_s + params_.h_gf_s;
   }
 
   void actuate(double t)
@@ -498,8 +620,13 @@ private:
       t_last_cmd_pub_s_ = t;
       t_cmd_pub_ros_s_ = get_clock()->now().seconds();
     } else if (action == ActuatorAction::kFailed) {
-      RCLCPP_ERROR(get_logger(), "mode request %s not accepted after %u publications",
-        toString(pending), static_cast<unsigned>(actuator_params_.n_retry));
+      RCLCPP_ERROR(get_logger(),
+        "mode request %s not accepted after %u publications, or accepted without taking effect "
+        "within %.2f s (nav_state=%u)", toString(pending),
+        static_cast<unsigned>(actuator_params_.n_retry), actuator_params_.confirm_timeout_s,
+        static_cast<unsigned>(nav_state_));
+      // The owned mode now fails its arming check, so PX4 falls back on its own (SPEC FM-7).
+      shared_.actuation_failed.store(true);
       const Output latched = core_->latchOnActuationFailure(t);
       shared_.core_state.store(static_cast<std::uint8_t>(latched.state));
       if (latched.transition.id != transition::kNone) {
@@ -564,6 +691,17 @@ private:
     st.clock_err_s = clock_err_s_;
     st.t_px4_timestamp_s = t_px4_timestamp_s_;
     st.t_ros_recv_s = t_ros_recv_s_;
+    st.invalid_mask = input_invalid_mask_;
+    st.nav_state = nav_state_;
+    st.safety_profile = static_cast<std::uint8_t>(profile_);
+    st.accepted_omissions = omissions_;
+    st.actuation_failed = shared_.actuation_failed.load();
+    st.cf_intent_unsafe = in.cf_intent_unsafe;
+    st.cf_intent_t_gf_s = cf_intent_t_gf_s_;
+    st.cf_rejected_stamp = shared_.cf_rejected_stamp.load();
+    st.cf_rejected_non_finite = shared_.cf_rejected_non_finite.load();
+    st.cf_rejected_guard = shared_.cf_rejected_guard.load();
+    st.cf_clamped = shared_.cf_clamped.load();
     state_pub_->publish(st);
     t_last_state_pub_s_ = t;
   }
@@ -573,6 +711,12 @@ private:
   ActuatorParameters actuator_params_;
   InputManager::Config input_config_{};
   GeofenceChannel geofence_;
+  MonitorTable monitors_;
+  std::size_t expected_monitors_{0};
+  SafetyProfile profile_{SafetyProfile::kFlight};
+  std::uint32_t omissions_{0};
+  GatewayLimits gateway_limits_{};
+  bool shadow_check_{true};
   double period_s_{0.05};
   double cf_timeout_s_{0.5};
   double heartbeat_max_age_s_{0.25};
@@ -590,6 +734,7 @@ private:
   std::unique_ptr<InputManager> inputs_;
   std::unique_ptr<GuaraCfGateway> gateway_;
   std::unique_ptr<GuaraExecutor> executor_;
+  std::unique_ptr<GeofenceSetpointGuard> guard_;
   std::uint16_t source_component_{0};
 
   rclcpp::CallbackGroup::SharedPtr decision_group_;
@@ -603,10 +748,10 @@ private:
   rclcpp::Publisher<guara_msgs::msg::RtaState>::SharedPtr state_pub_;
   rclcpp::TimerBase::SharedPtr decision_timer_;
 
-  std::array<MonitorSlot, kMaxMonitors> monitors_{};
   const char * first_violating_monitor_{nullptr};
   double t_daa_s_{kInf};
   double t_gf_s_{kInf};
+  double cf_intent_t_gf_s_{kInf};
   double last_input_recv_s_{std::numeric_limits<double>::quiet_NaN()};
   double t_last_cmd_pub_s_{std::numeric_limits<double>::quiet_NaN()};
   double t_cmd_pub_ros_s_{std::numeric_limits<double>::quiet_NaN()};
