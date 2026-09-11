@@ -1,0 +1,11 @@
+# Package search paths for colcon, relative to the repository root (/work in the dev container).
+# PX4 message and interface packages build from the pinned clones in third_party/ (VERSIONS.md),
+# so the compiled API is the same source GROUNDING.md cites.
+build:
+  base-paths:
+    - ros2_ws/src
+    - third_party/px4_msgs
+    - third_party/px4-ros2-interface-lib/px4_ros2_cpp
+test:
+  base-paths:
+    - ros2_ws/src
