@@ -142,7 +142,7 @@ Estados: `INACTIVE`, `CF`, `RF(r)`, `LATCHED(r)`; `r ∈ {HOLD, RTL, LAND}`.
 | T2b | `INACTIVE` | `IC(k)` ∧ owned mode ativo ∧ `U(k)` | `RF(select(k))` | igual a T3 (preserva P-2 na ativação) |
 | T3 | `CF` | `U(k)` | `RF(select(k))` | gateway bloqueia CF no mesmo tick; atuador agenda `r`; registra `t_sw` |
 | T4 | `RF(r)` | `S(k) ≥ N_max` | `LATCHED(r)` | nenhum retorno até `¬IC` |
-| T5 | `RF(r)` | `C(k)` ∧ `Cdur(k) ≥ T_d` ∧ `t_k − t_sw ≥ T_d` ∧ `return_enabled` | `CF` | atuador agenda owned mode |
+| T5 | `RF(HOLD)` | `C(k)` ∧ `Cdur(k) ≥ T_d` ∧ `t_k − t_sw ≥ T_d` ∧ `return_enabled` | `CF` | atuador agenda owned mode |
 | T6 | `RF(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `RF(select(k))` | escalonamento (ADR-0005) |
 | T7 | `LATCHED(r)` | `U(k)` ∧ `rank(select(k)) > rank(r)` | `LATCHED(select(k))` | escalonamento permitido, retorno não |
 
