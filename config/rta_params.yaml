@@ -30,7 +30,6 @@ guara_rta:
     gateway.heartbeat_max_age_s: 0.25
     telemetry.state_rate_hz: 5.0
     geofence.enabled: false
-    geofence.polygon_lat_lon_deg: []
     geofence.alt_min_m: -1.0e9
     geofence.alt_max_m: 1.0e9
     geofence.a_brake_h_m_s2: 3.0
