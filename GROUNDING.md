@@ -187,6 +187,18 @@ Same rule as P0: cloned code only. These items support SPEC and ADR decisions.
 
 ---
 
+## Addendum C — facts for M1 (headless SITL, 2026-09-11)
+
+| # | answer | evidence | confidence |
+|---|---|---|---|
+| A.17 | SIH runs "as SITL" without a flight controller and without Gazebo: `make px4_sitl sihsim_quadx`. The make target runs the `px4` binary with env `PX4_SIM_MODEL=sihsim_<model>` `PX4_SIMULATOR=sihsim` in `SITL_WORKING_DIR`. Airframe `10040_sihsim_quadx` enables `SENS_EN_GPSSIM/BAROSIM/MAGSIM`. `PX4_SIM_SPEED_FACTOR` speeds up; `PX4_HOME_LAT/LON/ALT` set takeoff location. | `PX4@d6f12ad:src/modules/simulation/simulator_sih/CMakeLists.txt:51-107`; `PX4@d6f12ad:ROMFS/px4fmu_common/init.d-posix/airframes/10040_sihsim_quadx:10-18`; `PX4@d6f12ad:docs/en/sim_sih/index.md:184-261` | HIGH |
+| A.18 | `px4 [-d] [-s <startup_file>] [-w <working_directory>] [<rootfs_directory>]`: `-d` = daemon, no pxh shell; default startup `etc/init.d-posix/rcS`; working dir is created/changed into and symlinks to the data path are created there. Clients: `px4-<module> [--instance N] <cmd>` (e.g. `px4-commander status`). Commander CLI has `check`, `arm [-f]`, `disarm [-f]`, `takeoff`, `land`, `mode`. | `PX4@d6f12ad:platforms/posix/src/px4/common/main.cpp:210-310,618-636`; `PX4@d6f12ad:cmd/Commander.cpp:296-349,3038-3063` | HIGH |
+| A.19 | SITL `rcS` always starts `uxrce_dds_client start -t udp -p ${PX4_UXRCE_DDS_PORT:-8888}`, with `UXRCE_DDS_DOM_ID = ROS_DOMAIN_ID` (or 0), agent IP default 127.0.0.1. Docs: agent `Micro-XRCE-DDS-Agent` `v2.4.3`, run `MicroXRCEAgent udp4 -p 8888`. | `PX4@d6f12ad:ROMFS/px4fmu_common/init.d-posix/rcS:193,293-325`; `PX4@d6f12ad:docs/en/ros2/user_guide.md:144-168` | HIGH |
+| A.20 | Simulated sensor noise uses libc `rand()`; `SensorBaroSim` calls `srand(1234)` once, and `SensorGpsSim` draws from the same global `rand()`. ⇒ PX4 sim noise has a **fixed, non-configurable seed**; Guará's `--seed` can only drive scenario-level randomness. Bit-exact run repeatability is additionally affected by thread scheduling: [UNKNOWN]. | `PX4@d6f12ad:src/modules/simulation/sensor_baro_sim/SensorBaroSim.cpp:44,58`; `PX4@d6f12ad:src/modules/simulation/sensor_gps_sim/SensorGpsSim.cpp:59-74` | HIGH (code); MEDIUM (effect) |
+| A.21 | Logger `SDLOG_MODE` default `0` = log "when armed until disarm" ⇒ a `.ulg` exists only if the vehicle armed. PX4 `Tools/setup/ubuntu.sh` supports Ubuntu 22.04/24.04 with `--no-nuttx` and `--no-sim-tools`; on Python < 3.11 it installs `requirements.txt` with `pip --user`. | `PX4@d6f12ad:src/modules/logger/module.yaml` (`SDLOG_MODE`); `PX4@d6f12ad:Tools/setup/ubuntu.sh:5-25,100-113` | HIGH |
+
+---
+
 ## UNKNOWN / MEDIUM questions blocking P1 — status
 
 None of the 6 questions ended UNKNOWN. Items below are MEDIUM or gaps that P1
