@@ -19,6 +19,7 @@ Acceptance-criterion tracker: [`docs/milestones/STATUS.md`](docs/milestones/STAT
 | Switching logic | `ros2_ws/src/guara_rta` (`DecisionCore`, ModeExecutor node) |
 | Geofence predictor | `ros2_ws/src/guara_geofence` |
 | Copilot monitors | `ros2_ws/src/guara_monitors` (Ogma template + generated C) |
+| DAA (NOSA) | `nosa/guara_daidalus` (not on the default colcon path) |
 | Messages | `ros2_ws/src/guara_msgs` |
 | Parameters | `config/rta_params.yaml` |
 | Pinned APIs | `third_party/VERSIONS.md` |
@@ -33,6 +34,10 @@ Acceptance-criterion tracker: [`docs/milestones/STATUS.md`](docs/milestones/STAT
 ./scripts/dev.sh colcon build --symlink-install
 ./scripts/dev.sh colcon test --packages-select guara_rta guara_geofence guara_monitors
 ./scripts/sitl_run.sh --scenario hover --seed 42 --headless
+
+# NOSA-isolated DAIDALUS node (ADR 0003); omitted from the default colcon path
+./scripts/daa.sh build
+./scripts/daa.sh test
 
 # Formal-methods image: FRET sources + Ogma + Copilot (generation only)
 ./scripts/fm.sh ros2_ws/src/guara_monitors/scripts/generate.sh
