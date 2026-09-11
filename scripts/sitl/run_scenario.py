@@ -58,10 +58,90 @@ def is_airborne() -> bool:
     return is_armed() and listener_field("vehicle_land_detected", "landed") in ("False", "0", "false")
 
 
+NAV_LOITER = 4  # VehicleStatus.NAVIGATION_STATE_AUTO_LOITER
+REGISTERED_RE = re.compile(r"registered '.*' \(executor id \d+, nav_state (\d+)\)")
+
+
+def is_loiter() -> bool:
+    return listener_field("vehicle_status", "nav_state") == str(NAV_LOITER)
+
+
 CONDITIONS = {
     "airborne": is_airborne,
     "disarmed": lambda: listener_field("vehicle_status", "arming_state") not in (None, str(ARMING_STATE_ARMED)),
+    "loiter": is_loiter,
 }
+
+
+def owned_nav_state(run_dir: pathlib.Path) -> int:
+    log_path = run_dir / "guara_rta_node.log"
+    text = log_path.read_text(errors="replace") if log_path.is_file() else ""
+    matches = list(REGISTERED_RE.finditer(text))
+    if not matches:
+        raise RuntimeError(f"owned nav_state not found in {log_path}")
+    return int(matches[-1].group(1))
+
+
+def ros_action(*args: str) -> None:
+    cmd = [sys.executable, str(ROOT / "scripts" / "sitl" / "ros_action.py"), *args]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    log(f"ros_action {' '.join(args)} -> rc={result.returncode} {result.stderr.strip()[-200:]}")
+    if result.returncode != 0:
+        raise RuntimeError(f"ros_action failed: {' '.join(args)}")
+
+
+def run_steps(scenario: dict, run_dir: pathlib.Path) -> None:
+    ready_timeout = scenario["timeouts_s"]["ready"]
+    for step in scenario["steps"]:
+        if "sleep_s" in step:
+            log(f"sleep {step['sleep_s']} s")
+            time.sleep(step["sleep_s"])
+            continue
+        if set(step) <= {"wait_until", "timeout_s"} and "wait_until" in step:
+            cond, timeout_s = step["wait_until"], float(step.get("timeout_s", 15))
+            if not wait_for(CONDITIONS[cond], timeout_s):
+                raise RuntimeError(f"timeout waiting for '{cond}'")
+            log(f"condition '{cond}' reached")
+            continue
+        if "user_nav_state" in step:
+            nav = owned_nav_state(run_dir) if step["user_nav_state"] == "owned" else int(step["user_nav_state"])
+            ros_action("set-nav-state", str(nav))
+            cond = step.get("wait_until")
+            timeout_s = float(step.get("timeout_s", 15))
+            if cond == "owned":
+                if ros_action_wait_nav(nav, timeout_s) != 0:
+                    raise RuntimeError("timeout waiting for owned nav_state")
+            elif cond:
+                if not wait_for(CONDITIONS[cond], timeout_s):
+                    raise RuntimeError(f"timeout waiting for '{cond}' after user_nav_state")
+            continue
+        if "inject_verdict" in step:
+            spec = step["inject_verdict"]
+            ros_action("inject-verdict", spec["monitor_id"], "--duration", str(spec.get("duration_s", 3)))
+            continue
+        if "wait_rta" in step:
+            if ros_action("wait-rta", str(step["wait_rta"]), "--timeout", str(step.get("timeout_s", 15))):
+                pass  # ros_action raises on failure
+            continue
+        cmd, cond, timeout_s = step["cmd"], step["wait_until"], step["timeout_s"]
+        condition = CONDITIONS[cond]
+        deadline = time.monotonic() + max(timeout_s, ready_timeout)
+        while True:
+            result = px4_client(cmd)
+            log(f"{cmd} -> rc={result.returncode} {result.stdout.strip()[-200:]}")
+            if wait_for(condition, min(10.0, timeout_s)):
+                log(f"condition '{cond}' reached")
+                break
+            if time.monotonic() > deadline:
+                raise RuntimeError(f"timeout waiting for '{cond}' after '{cmd}'")
+
+
+def ros_action_wait_nav(nav: int, timeout_s: float) -> int:
+    cmd = [sys.executable, str(ROOT / "scripts" / "sitl" / "ros_action.py"),
+           "wait-nav", str(nav), "--timeout", str(timeout_s)]
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_s + 10)
+    log(f"wait-nav {nav} -> rc={result.returncode} {result.stderr.strip()[-200:]}")
+    return result.returncode
 
 
 def wait_for(predicate, timeout_s: float) -> bool:
@@ -102,27 +182,6 @@ def build_config(args, scenario: dict, scenario_path: pathlib.Path, run_id: str,
         "steps": scenario["steps"],
         "expect": scenario.get("expect", {}),
     }
-
-
-def run_steps(scenario: dict) -> None:
-    ready_timeout = scenario["timeouts_s"]["ready"]
-    for step in scenario["steps"]:
-        if "sleep_s" in step:
-            log(f"sleep {step['sleep_s']} s")
-            time.sleep(step["sleep_s"])
-            continue
-        cmd, cond, timeout_s = step["cmd"], step["wait_until"], step["timeout_s"]
-        condition = CONDITIONS[cond]
-        deadline = time.monotonic() + max(timeout_s, ready_timeout)
-        # Takeoff is rejected until preflight checks pass; resend until the condition holds.
-        while True:
-            result = px4_client(cmd)
-            log(f"{cmd} -> rc={result.returncode} {result.stdout.strip()[-200:]}")
-            if wait_for(condition, min(10.0, timeout_s)):
-                log(f"condition '{cond}' reached")
-                break
-            if time.monotonic() > deadline:
-                raise RuntimeError(f"timeout waiting for '{cond}' after '{cmd}'")
 
 
 def stop(proc: subprocess.Popen, name: str) -> None:
@@ -194,14 +253,19 @@ def main() -> int:
             ros_procs.append(("record_verdicts", rec, verdict_log))
         for spec in scenario.get("ros_nodes", []):
             node_log = (run_dir / f"{spec['executable']}.log").open("w")
-            proc = subprocess.Popen(
-                ["ros2", "run", spec["package"], spec["executable"]],
-                stdout=node_log, stderr=subprocess.STDOUT)
+            cmd = ["ros2", "run", spec["package"], spec["executable"]]
+            if spec.get("params_file"):
+                cmd += ["--ros-args", "--params-file", str(ROOT / spec["params_file"])]
+            proc = subprocess.Popen(cmd, stdout=node_log, stderr=subprocess.STDOUT)
             ros_procs.append((spec["executable"], proc, node_log))
             log(f"started ros2 run {spec['package']} {spec['executable']}")
+        if any(s.get("executable") == "guara_rta_node" for s in scenario.get("ros_nodes", [])):
+            if not wait_for_log(run_dir / "guara_rta_node.log", "registered '", 30):
+                raise RuntimeError("arbiter did not register with PX4")
+            log(f"arbiter registered nav_state={owned_nav_state(run_dir)}")
         if ros_procs:
             time.sleep(2.0)
-        run_steps(scenario)
+        run_steps(scenario, run_dir)
         log("scenario complete")
     except Exception as exc:  # report and still shut down cleanly
         log(f"FAIL {exc}")
