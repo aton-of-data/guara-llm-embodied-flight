@@ -12,7 +12,7 @@ Runtime Assurance alinhado à ASTM F3269 para PX4 via ROS 2:
 - Fonte de API: somente código clonado em third_party/ com commit pinado
   em third_party/VERSIONS.md. Nunca inferir API de memória.
 - PX4, px4_msgs e px4-ros2-interface-lib em commits compatíveis entre si.
-- Distro ROS 2: <PREENCHER>. Versão PX4: <PREENCHER>. Ogma: <PREENCHER>.
+- Distro ROS 2: Humble. Versão PX4: v1.17.0. Ogma: v1.15.0.
 
 ## Engenharia
 - C++17, colcon/ament, gtest + launch_testing.

@@ -169,5 +169,5 @@ lacunas que o P1 deve tratar como **hipóteses** ou que exigem novo P0/SITL:
    e o alerter na SPEC; parâmetros DO-365B para drones pequenos são hipótese (5.8).
 5. **Termos da NOSA** (5.10): ler `DAIDALUS2-NOSA.pdf` antes do ADR 0003.
 6. **Fluxo FRET → Ogma** (4.7): não verificado; necessário para P3/M2.
-7. **Divergência de distro** (R0.2 vs R0.4): PX4 recomenda Humble; template Ogma
-   usa Jazzy. Decisão do usuário no CLAUDE.md.
+7. **Divergência de distro** (R0.2 vs R0.4): RESOLVIDO em 2026-09-11 — usuário confirmou Humble; template Ogma
+   (Jazzy) será substituído por template próprio em M2.
