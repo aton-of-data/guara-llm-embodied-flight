@@ -1,11 +1,11 @@
 # GROUNDING.md — P0
 
-Fatos verificados no código-fonte clonado em `third_party/` (commits em
-`third_party/VERSIONS.md`). Nenhuma resposta vem de memória.
+Facts verified in the source code cloned under `third_party/` (commits in
+`third_party/VERSIONS.md`). No answer comes from memory.
 
-Abreviações de evidência (`repo@commit:arquivo:linha`):
+Evidence abbreviations (`repo@commit:file:line`):
 
-| Alias | Repositório@commit |
+| Alias | Repository@commit |
 |---|---|
 | `PX4@d6f12ad` | PX4-Autopilot v1.17.0 |
 | `msgs@86d8239` | px4_msgs release/1.17 |
@@ -13,85 +13,86 @@ Abreviações de evidência (`repo@commit:arquivo:linha`):
 | `ogma@69485b3` | ogma v1.15.0 |
 | `daa@0647596` | daidalus DAIDALUSv2.0.3a |
 | `cop@365fb21` | copilot v4.8.1 |
+| `fret@58db455` | fret v3.1.0 |
 
-Caminhos curtos: `lib/…` = `px4_ros2_cpp/…`; `cmd/…` = `src/modules/commander/…`;
+Short paths: `lib/…` = `px4_ros2_cpp/…`; `cmd/…` = `src/modules/commander/…`;
 `dds/…` = `src/modules/uxrce_dds_client/…`.
 
-Confiança: **ALTA** = lido diretamente no código; **MÉDIA** = inferido
-combinando trechos lidos, sem execução; **DESCONHECIDO** = sem evidência.
+Confidence: **HIGH** = read directly in code; **MEDIUM** = inferred by
+combining read excerpts, not executed; **UNKNOWN** = no evidence.
 
 ---
 
-## R0 — Pré-condições de versão
+## R0 — Version preconditions
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| R0.1 | Mensagens de `px4_msgs@86d8239` são idênticas às de PX4 v1.17.0 (0 arquivos diferentes). | comando em `third_party/VERSIONS.md`; `PX4@d6f12ad:msg/versioned/` | ALTA |
-| R0.2 | A documentação do PX4 v1.17.0 declara ROS 2 **Humble** (Ubuntu 22.04) como plataforma suportada e recomendada. | `PX4@d6f12ad:docs/en/ros2/user_guide.md:53` | ALTA |
-| R0.3 | CI da interface-lib compila contra Humble; pacotes Debian são gerados para Humble e Jazzy. | `lib@4a3370f:.github/workflows/build_and_test.yml:22,33`; `lib@4a3370f:.github/workflows/build-publish-debian-packages.yml:23,25` | ALTA |
-| R0.4 | O Dockerfile do template ROS do Ogma usa `osrf/space-ros:jazzy-2026.04.0` (Jazzy), divergente de R0.2. | `ogma@69485b3:ogma-core/templates/ros/Dockerfile:1,21` | ALTA |
+| R0.1 | Messages in `px4_msgs@86d8239` are identical to PX4 v1.17.0 (0 differing files). | command in `third_party/VERSIONS.md`; `PX4@d6f12ad:msg/versioned/` | HIGH |
+| R0.2 | PX4 v1.17.0 docs declare ROS 2 **Humble** (Ubuntu 22.04) as the supported and recommended platform. | `PX4@d6f12ad:docs/en/ros2/user_guide.md:53` | HIGH |
+| R0.3 | Interface-lib CI builds against Humble; Debian packages are built for Humble and Jazzy. | `lib@4a3370f:.github/workflows/build_and_test.yml:22,33`; `lib@4a3370f:.github/workflows/build-publish-debian-packages.yml:23,25` | HIGH |
+| R0.4 | The Ogma ROS template Dockerfile uses `osrf/space-ros:jazzy-2026.04.0` (Jazzy), diverging from R0.2. | `ogma@69485b3:ogma-core/templates/ros/Dockerfile:1,21` | HIGH |
 
 ---
 
-## Q1 — ModeExecutor ativando modos internos (Hold, RTL, Land)
+## Q1 — ModeExecutor activating internal modes (Hold, RTL, Land)
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 1.1 | API genérica: `void scheduleMode(ModeBase::ModeID mode_id, const CompletedCallback& on_completed, bool forced=false)`. Atalhos: `takeoff(cb, alt, heading)`, `land(cb)`, `rtl(cb)`. `CompletedCallback = std::function<void(Result)>`. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:34,102-108` | ALTA |
-| 1.2 | IDs de modo internos expostos: `kModeIDLand` (`NAVIGATION_STATE_AUTO_LAND`=18), `kModeIDRtl` (`AUTO_RTL`=5), `kModeIDLoiter` (`AUTO_LOITER`=4), `kModeIDDescend`, `kModeIDPosctl`, `kModeIDTakeoff`, `kModeIDPrecisionLand`. **Não existe `kModeIDHold`**; "Hold" corresponde a `AUTO_LOITER` (o próprio PX4 usa `AUTO_LOITER` ao "switch to Hold"). | `lib@4a3370f:lib/include/px4_ros2/components/mode.hpp:73-89`; `msgs@86d8239:msg/VehicleStatus.msg:40,41,54`; `PX4@d6f12ad:cmd/ModeManagement.cpp:358-361` | ALTA |
-| 1.3 | Implementação: `scheduleMode` envia `VEHICLE_CMD_SET_NAV_STATE` com `param1=mode_id` via `sendCommandSync` (bloqueia até ACK); cancela agendamento anterior; se desarmado e `forced=false`, retorna `Result::Rejected` sem enviar. O callback é chamado quando o modo publica `ModeCompleted` ou quando o executor é desativado. | `lib@4a3370f:lib/src/components/mode_executor.cpp:225-261` | ALTA |
-| 1.4 | Comandos do executor saem no tópico `fmu/in/vehicle_command_mode_executor`, distinto de `fmu/in/vehicle_command`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:48`; `PX4@d6f12ad:dds/dds_topics.yaml:176-177` | ALTA |
-| 1.5 | Sequência de chamadas: (a) subclasse de `ModeExecutorBase` com um `ModeBase` próprio ("owned mode"); (b) `doRegister()` do executor e do modo no startup (bloqueante) — `NodeWithModeExecutor` faz isso; (c) PX4 chama `onActivate()` quando o executor fica "in charge"; (d) dentro da máquina de estados, `rtl(cb)` / `land(cb)` / `scheduleMode(kModeIDLoiter, cb)`; (e) `onDeactivate(reason)` quando perde o controle. Exemplo real: takeoff → `scheduleMode(ownedMode().id())` → `rtl` → `waitUntilDisarmed`. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:59-78`; `lib@4a3370f:lib/include/px4_ros2/components/node_with_mode.hpp:117-120`; `lib@4a3370f:examples/cpp/modes/mode_with_executor/include/mode.hpp:75-120` | ALTA |
-| 1.6 | **Condição de "in charge"**: `VehicleStatus.executor_in_charge == id()` e (armado ou `ActivateAlways` ou `ActivateImmediately` na 1ª vez). O PX4 só coloca o executor no comando quando o usuário entra no **owned mode**; se o usuário (RC/GCS) troca para um modo não pertencente ao executor, o controle volta ao autopiloto (`AUTOPILOT_EXECUTOR_ID`) e o executor recebe `onDeactivate(Other)`; em failsafe recebe `onDeactivate(FailsafeActivated)`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:369-385`; `PX4@d6f12ad:cmd/ModeManagement.cpp:415-434`; `msgs@86d8239:msg/VehicleStatus.msg:69` | ALTA |
-| 1.7 | Consequência para o árbitro: modos agendados pelo executor (Hold/RTL/Land) **mantêm** o executor in charge; o árbitro só arbitra enquanto o owned mode (função complexa) ou um modo que ele agendou estiver ativo. | `lib@4a3370f:lib/src/components/mode_executor.cpp:256-260,387-396` | MÉDIA |
-| 1.8 | `deferFailsafesSync(enabled, timeout_s)` adia a maioria dos failsafes enquanto o executor está in charge (0 = padrão do sistema, −1 = sem timeout); padrão do FMU = 30 s. Não adia limites de atitude nem "modo não pode rodar". `onFailsafeDeferred()` é chamado quando o FMU queria entrar em failsafe. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:80-84,127-139`; `PX4@d6f12ad:cmd/failsafe/framework.h:50` | ALTA |
+| 1.1 | Generic API: `void scheduleMode(ModeBase::ModeID mode_id, const CompletedCallback& on_completed, bool forced=false)`. Shortcuts: `takeoff(cb, alt, heading)`, `land(cb)`, `rtl(cb)`. `CompletedCallback = std::function<void(Result)>`. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:34,102-108` | HIGH |
+| 1.2 | Exposed internal mode IDs: `kModeIDLand` (`NAVIGATION_STATE_AUTO_LAND`=18), `kModeIDRtl` (`AUTO_RTL`=5), `kModeIDLoiter` (`AUTO_LOITER`=4), `kModeIDDescend`, `kModeIDPosctl`, `kModeIDTakeoff`, `kModeIDPrecisionLand`. **There is no `kModeIDHold`**; "Hold" corresponds to `AUTO_LOITER` (PX4 itself uses `AUTO_LOITER` when it "switches to Hold"). | `lib@4a3370f:lib/include/px4_ros2/components/mode.hpp:73-89`; `msgs@86d8239:msg/VehicleStatus.msg:40,41,54`; `PX4@d6f12ad:cmd/ModeManagement.cpp:358-361` | HIGH |
+| 1.3 | Implementation: `scheduleMode` sends `VEHICLE_CMD_SET_NAV_STATE` with `param1=mode_id` via `sendCommandSync` (blocks until ACK); cancels any previous schedule; if disarmed and `forced=false`, returns `Result::Rejected` without sending. The callback fires when the mode publishes `ModeCompleted` or when the executor is deactivated. | `lib@4a3370f:lib/src/components/mode_executor.cpp:225-261` | HIGH |
+| 1.4 | Executor commands go out on topic `fmu/in/vehicle_command_mode_executor`, distinct from `fmu/in/vehicle_command`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:48`; `PX4@d6f12ad:dds/dds_topics.yaml:176-177` | HIGH |
+| 1.5 | Call sequence: (a) subclass `ModeExecutorBase` with its own `ModeBase` ("owned mode"); (b) `doRegister()` of executor and mode at startup (blocking) — `NodeWithModeExecutor` does this; (c) PX4 calls `onActivate()` when the executor becomes "in charge"; (d) inside the state machine, `rtl(cb)` / `land(cb)` / `scheduleMode(kModeIDLoiter, cb)`; (e) `onDeactivate(reason)` when it loses control. Real example: takeoff → `scheduleMode(ownedMode().id())` → `rtl` → `waitUntilDisarmed`. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:59-78`; `lib@4a3370f:lib/include/px4_ros2/components/node_with_mode.hpp:117-120`; `lib@4a3370f:examples/cpp/modes/mode_with_executor/include/mode.hpp:75-120` | HIGH |
+| 1.6 | **"In charge" condition**: `VehicleStatus.executor_in_charge == id()` and (armed or `ActivateAlways` or `ActivateImmediately` the first time). PX4 only puts the executor in charge when the user enters the **owned mode**; if the user (RC/GCS) switches to a mode not owned by the executor, control returns to the autopilot (`AUTOPILOT_EXECUTOR_ID`) and the executor receives `onDeactivate(Other)`; on failsafe it receives `onDeactivate(FailsafeActivated)`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:369-385`; `PX4@d6f12ad:cmd/ModeManagement.cpp:415-434`; `msgs@86d8239:msg/VehicleStatus.msg:69` | HIGH |
+| 1.7 | Consequence for the arbiter: modes scheduled by the executor (Hold/RTL/Land) **keep** the executor in charge; the arbiter only arbitrates while the owned mode (complex function) or a mode it scheduled is active. | `lib@4a3370f:lib/src/components/mode_executor.cpp:256-260,387-396` | MEDIUM |
+| 1.8 | `deferFailsafesSync(enabled, timeout_s)` defers most failsafes while the executor is in charge (0 = system default, −1 = no timeout); FMU default = 30 s. It does not defer attitude limits nor "mode cannot run". `onFailsafeDeferred()` is called when the FMU wanted to enter failsafe. | `lib@4a3370f:lib/include/px4_ros2/components/mode_executor.hpp:80-84,127-139`; `PX4@d6f12ad:cmd/failsafe/framework.h:50` | HIGH |
 
 ---
 
-## Q2 — Executor / modo externo que para de responder
+## Q2 — External executor / mode that stops responding
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 2.1 | Mecanismo de vida: o commander publica `ArmingCheckRequest` a cada `UPDATE_INTERVAL = 300 ms`; resposta esperada em `REQUEST_TIMEOUT = 50 ms`. Constantes **compiladas** (`static constexpr`), não parâmetros. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.hpp:69-71`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.cpp:286-305` | ALTA |
-| 2.2 | Registro é marcado **unresponsive** quando `++num_no_response > NUM_NO_REPLY_UNTIL_UNRESPONSIVE (3)`; logo após registrar, o limite é `NUM_NO_REPLY_UNTIL_UNRESPONSIVE_INIT (10)`. Uma resposta zera o contador. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.hpp:72-75`; `…/externalChecks.cpp:237-238,256-278` | ALTA |
-| 2.3 | Tempo de detecção derivado: ~4 ciclos × 300 ms ≈ 1,2 s (+ até 50 ms) após a última resposta. **HIPÓTESE a medir** — não medido. | derivado de 2.1 + 2.2 | MÉDIA |
-| 2.4 | Efeito com o veículo armado no modo externo: o bit `mode_req_other` do modo é setado → `modeCanRun()` falso → `checkModeFallback` retorna `Action::RTL`, marcado `cannotBeDeferred()` e `allowUserTakeover(Always)` (por isso **sem** o atraso `COM_FAIL_ACT_T`). Se RTL também não puder rodar, o framework cai para os fallbacks seguintes (Land/Descend…). Evento: "Mode is unresponsive". | `…/externalChecks.cpp:130-135,207-214`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/modeCheck.cpp:184-186`; `PX4@d6f12ad:cmd/failsafe/framework.cpp:699-716`; `PX4@d6f12ad:cmd/failsafe/failsafe.cpp:638-641,698-702`; `PX4@d6f12ad:cmd/failsafe/framework.cpp:350-360` | MÉDIA (cadeia lida; não exercitada em SITL) |
-| 2.5 | Se o modo substitui um modo interno (`replaces_nav_state`) e está unresponsive, o PX4 usa o modo interno ("External mode is unresponsive, falling back to internal"). | `PX4@d6f12ad:cmd/ModeManagement.cpp:437-461` | ALTA |
-| 2.6 | O timeout rastreia o **registro do arming check do modo**, não o executor em si. Se o árbitro morrer enquanto um modo **interno** agendado por ele (ex.: Hold) está ativo, nenhum código lido força saída desse modo interno. | `…/externalChecks.cpp:130-135` (só age com `nav_mode_id != -1`) | MÉDIA |
-| 2.7 | **Com o veículo armado** (padrão `COM_MODE_ARM_CHK=0`): novos registros são rejeitados ("Not accepting registration requests while armed") e remoções/unregistrations só são processadas desarmado. ⇒ um árbitro que reinicia em voo **não consegue se re-registrar**. | `PX4@d6f12ad:cmd/ModeManagement.cpp:372-388,389-408`; `PX4@d6f12ad:cmd/commander_params.c:1039-1048` | ALTA |
-| 2.8 | Unregister explícito do modo ativo (desarmado) → troca para Hold (`AUTO_LOITER`). No `onDisarm`, modo unresponsive → Hold. | `PX4@d6f12ad:cmd/ModeManagement.cpp:358-361,485-489` | ALTA |
-| 2.9 | Parâmetros relacionados: `COM_FAIL_ACT_T` (padrão 5 s, atraso em Hold antes do failsafe para ações com takeover `Auto`); `COM_OF_LOSS_T` (padrão 1 s, só para o nav_state `OFFBOARD`, não para modos externos); `COM_MODE_ARM_CHK` (padrão 0). | `PX4@d6f12ad:cmd/commander_params.c:298-311,340`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/offboardCheck.cpp:38-66`; `PX4@d6f12ad:cmd/failsafe/failsafe.cpp:665` | ALTA |
-| 2.10 | Não há watchdog de setpoint para modos externos equivalente a `COM_OF_LOSS_T`: um processo com a thread de setpoints travada mas callbacks de arming check ativos (multi-thread) não seria detectado por 2.1–2.4. | ausência verificada em `offboardCheck.cpp` (só `OFFBOARD`) e `externalChecks.cpp` | MÉDIA |
+| 2.1 | Liveness mechanism: commander publishes `ArmingCheckRequest` every `UPDATE_INTERVAL = 300 ms`; reply expected within `REQUEST_TIMEOUT = 50 ms`. Constants are **compiled** (`static constexpr`), not parameters. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.hpp:69-71`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.cpp:286-305` | HIGH |
+| 2.2 | Registration is marked **unresponsive** when `++num_no_response > NUM_NO_REPLY_UNTIL_UNRESPONSIVE (3)`; right after registering the limit is `NUM_NO_REPLY_UNTIL_UNRESPONSIVE_INIT (10)`. A reply resets the counter. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.hpp:72-75`; `…/externalChecks.cpp:237-238,256-278` | HIGH |
+| 2.3 | Derived detection time: ~4 cycles × 300 ms ≈ 1.2 s (+ up to 50 ms) after the last reply. **HYPOTHESIS to measure** — not measured. | derived from 2.1 + 2.2 | MEDIUM |
+| 2.4 | Effect with vehicle armed in the external mode: the mode's `mode_req_other` bit is set → `modeCanRun()` false → `checkModeFallback` returns `Action::RTL`, marked `cannotBeDeferred()` and `allowUserTakeover(Always)` (hence **no** `COM_FAIL_ACT_T` delay). If RTL cannot run either, the framework falls through to the next fallbacks (Land/Descend…). Event: "Mode is unresponsive". | `…/externalChecks.cpp:130-135,207-214`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/modeCheck.cpp:184-186`; `PX4@d6f12ad:cmd/failsafe/framework.cpp:699-716`; `PX4@d6f12ad:cmd/failsafe/failsafe.cpp:638-641,698-702`; `PX4@d6f12ad:cmd/failsafe/framework.cpp:350-360` | MEDIUM (chain read; not exercised in SITL) |
+| 2.5 | If the mode replaces an internal mode (`replaces_nav_state`) and is unresponsive, PX4 uses the internal mode ("External mode is unresponsive, falling back to internal"). | `PX4@d6f12ad:cmd/ModeManagement.cpp:437-461` | HIGH |
+| 2.6 | The timeout tracks the **mode's arming-check registration**, not the executor itself. If the arbiter dies while an **internal** mode it scheduled (e.g. Hold) is active, no code read forces exit from that internal mode. | `…/externalChecks.cpp:130-135` (only acts with `nav_mode_id != -1`) | MEDIUM |
+| 2.7 | **With vehicle armed** (default `COM_MODE_ARM_CHK=0`): new registrations are rejected ("Not accepting registration requests while armed") and removals/unregistrations are only processed while disarmed. ⇒ an arbiter that restarts in flight **cannot re-register**. | `PX4@d6f12ad:cmd/ModeManagement.cpp:372-388,389-408`; `PX4@d6f12ad:cmd/commander_params.c:1039-1048` | HIGH |
+| 2.8 | Explicit unregister of the active mode (disarmed) → switch to Hold (`AUTO_LOITER`). On `onDisarm`, unresponsive mode → Hold. | `PX4@d6f12ad:cmd/ModeManagement.cpp:358-361,485-489` | HIGH |
+| 2.9 | Related parameters: `COM_FAIL_ACT_T` (default 5 s, delay in Hold before failsafe for actions with takeover `Auto`); `COM_OF_LOSS_T` (default 1 s, only for nav_state `OFFBOARD`, not external modes); `COM_MODE_ARM_CHK` (default 0). | `PX4@d6f12ad:cmd/commander_params.c:298-311,340`; `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/offboardCheck.cpp:38-66`; `PX4@d6f12ad:cmd/failsafe/failsafe.cpp:665` | HIGH |
+| 2.10 | There is no setpoint watchdog for external modes equivalent to `COM_OF_LOSS_T`: a process whose setpoint thread hangs while arming-check callbacks stay alive (multi-threaded) would not be detected by 2.1–2.4. | absence verified in `offboardCheck.cpp` (only `OFFBOARD`) and `externalChecks.cpp` | MEDIUM |
 
 ---
 
-## Q3 — Tópicos `/fmu/out/*` padrão e tráfego
+## Q3 — Default `/fmu/out/*` topics and traffic
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 3.1 | Publicações padrão (27): `register_ext_component_reply`, `arming_check_request` (5 Hz), `mode_completed` (50), `battery_status` (1), `collision_constraints` (50), `estimator_status_flags` (5), `failsafe_flags` (5), `manual_control_setpoint` (25), `message_format_response`, `position_setpoint_triplet` (5), `sensor_combined`, `timesync_status` (10), `transponder_report`, `vehicle_land_detected` (5), `vehicle_attitude`, `vehicle_control_mode` (50), `vehicle_command_ack`, `vehicle_global_position` (50), `vehicle_gps_position` (50), `vehicle_local_position` (50), `vehicle_odometry`, `vehicle_status` (5), `airspeed_validated` (50), `vtol_vehicle_status`, `home_position` (5), `wind` (1), `gimbal_device_attitude_status` (20). Sem `rate_limit` = taxa de publicação uORB. | `PX4@d6f12ad:dds/dds_topics.yaml:6-109` | ALTA |
-| 3.2 | **`/fmu/out/transponder_report` é exposto por padrão** (`px4_msgs::msg::TransponderReport`: lat/lon em graus, altitude AMSL m, heading rad, hor/ver velocity m/s, `tslc`, `flags` de validade). | `PX4@d6f12ad:dds/dds_topics.yaml:53-54`; `msgs@86d8239:msg/TransponderReport.msg:1-25` | ALTA |
-| 3.3 | Fontes de `transponder_report` no PX4: MAVLink `ADSB_VEHICLE` (mavlink_receiver), driver Sagetech MXS e `navigator fake_traffic` (publica 24 relatórios falsos em torno da posição atual). **Não há** `/fmu/in/transponder_report`; injetar intrusos pelo ROS 2 exige MAVLink `ADSB_VEHICLE`, `fake_traffic`, ou adicionar a assinatura em `dds_topics.yaml` (build custom). | `PX4@d6f12ad:src/modules/mavlink/mavlink_receiver.cpp:224`; `PX4@d6f12ad:src/modules/navigator/navigator_main.cpp:1258-1260,1331-1333,1688`; `PX4@d6f12ad:dds/dds_topics.yaml:112-225` | ALTA |
-| 3.4 | Nenhum tópico de geofence (`geofence_result`, `geofence_status`) é exposto por padrão, embora as mensagens existam. Preditor de geofence precisa manter o polígono no companion ou customizar `dds_topics.yaml`. | `grep -c geofence dds_topics.yaml` = 0; `PX4@d6f12ad:msg/GeofenceResult.msg`, `msg/GeofenceStatus.msg` | ALTA |
-| 3.5 | Nomes de tópico recebem sufixo `_v<N>` quando `MESSAGE_VERSION != 0`: `vehicle_status` → `/fmu/out/vehicle_status_v1`, `vehicle_local_position` → `/fmu/out/vehicle_local_position_v1`; `vehicle_global_position`, `vehicle_attitude`, `vehicle_odometry` sem sufixo (versão 0). Interface-lib aplica o mesmo sufixo (exceto com rmw_zenoh). | `PX4@d6f12ad:dds/utilities.hpp:26-41`; `msgs@86d8239:msg/VehicleStatus.msg:3`; `msgs@86d8239:msg/VehicleLocalPosition.msg:4`; `msgs@86d8239:msg/VehicleGlobalPosition.msg:8`; `lib@4a3370f:lib/include/px4_ros2/utils/message_version.hpp:54-62` | ALTA |
-| 3.6 | QoS dos publishers do PX4: `BEST_EFFORT`, `TRANSIENT_LOCAL`, `KEEP_LAST`. Assinantes ROS 2 **devem** usar QoS compatível (docs: `rmw_qos_profile_sensor_data`). | `PX4@d6f12ad:dds/utilities.hpp:78-83`; `PX4@d6f12ad:docs/en/ros2/user_guide.md:403-413` | ALTA |
-| 3.7 | `vehicle_status` é limitado a 5 Hz no bridge: a confirmação de troca de modo observada via `vehicle_status` tem granularidade ≥ 200 ms; `vehicle_command_ack` não tem rate limit. Relevante para o orçamento de latência. | `PX4@d6f12ad:dds/dds_topics.yaml:70-71,88-90` | ALTA |
+| 3.1 | Default publications (27): `register_ext_component_reply`, `arming_check_request` (5 Hz), `mode_completed` (50), `battery_status` (1), `collision_constraints` (50), `estimator_status_flags` (5), `failsafe_flags` (5), `manual_control_setpoint` (25), `message_format_response`, `position_setpoint_triplet` (5), `sensor_combined`, `timesync_status` (10), `transponder_report`, `vehicle_land_detected` (5), `vehicle_attitude`, `vehicle_control_mode` (50), `vehicle_command_ack`, `vehicle_global_position` (50), `vehicle_gps_position` (50), `vehicle_local_position` (50), `vehicle_odometry`, `vehicle_status` (5), `airspeed_validated` (50), `vtol_vehicle_status`, `home_position` (5), `wind` (1), `gimbal_device_attitude_status` (20). No `rate_limit` = uORB publish rate. | `PX4@d6f12ad:dds/dds_topics.yaml:6-109` | HIGH |
+| 3.2 | **`/fmu/out/transponder_report` is exposed by default** (`px4_msgs::msg::TransponderReport`: lat/lon in degrees, altitude AMSL m, heading rad, hor/ver velocity m/s, `tslc`, validity `flags`). | `PX4@d6f12ad:dds/dds_topics.yaml:53-54`; `msgs@86d8239:msg/TransponderReport.msg:1-25` | HIGH |
+| 3.3 | Sources of `transponder_report` in PX4: MAVLink `ADSB_VEHICLE` (mavlink_receiver), Sagetech MXS driver and `navigator fake_traffic` (publishes 24 fake reports around the current position). There is **no** `/fmu/in/transponder_report`; injecting intruders via ROS 2 requires MAVLink `ADSB_VEHICLE`, `fake_traffic`, or adding the subscription to `dds_topics.yaml` (custom build). | `PX4@d6f12ad:src/modules/mavlink/mavlink_receiver.cpp:224`; `PX4@d6f12ad:src/modules/navigator/navigator_main.cpp:1258-1260,1331-1333,1688`; `PX4@d6f12ad:dds/dds_topics.yaml:112-225` | HIGH |
+| 3.4 | No geofence topic (`geofence_result`, `geofence_status`) is exposed by default, although the messages exist. The geofence predictor must keep the polygon on the companion or customize `dds_topics.yaml`. | `grep -c geofence dds_topics.yaml` = 0; `PX4@d6f12ad:msg/GeofenceResult.msg`, `msg/GeofenceStatus.msg` | HIGH |
+| 3.5 | Topic names get suffix `_v<N>` when `MESSAGE_VERSION != 0`: `vehicle_status` → `/fmu/out/vehicle_status_v1`, `vehicle_local_position` → `/fmu/out/vehicle_local_position_v1`; `vehicle_global_position`, `vehicle_attitude`, `vehicle_odometry` have no suffix (version 0). Interface-lib applies the same suffix (except with rmw_zenoh). | `PX4@d6f12ad:dds/utilities.hpp:26-41`; `msgs@86d8239:msg/VehicleStatus.msg:3`; `msgs@86d8239:msg/VehicleLocalPosition.msg:4`; `msgs@86d8239:msg/VehicleGlobalPosition.msg:8`; `lib@4a3370f:lib/include/px4_ros2/utils/message_version.hpp:54-62` | HIGH |
+| 3.6 | PX4 publisher QoS: `BEST_EFFORT`, `TRANSIENT_LOCAL`, `KEEP_LAST`. ROS 2 subscribers **must** use compatible QoS (docs: `rmw_qos_profile_sensor_data`). | `PX4@d6f12ad:dds/utilities.hpp:78-83`; `PX4@d6f12ad:docs/en/ros2/user_guide.md:403-413` | HIGH |
+| 3.7 | `vehicle_status` is limited to 5 Hz at the bridge: mode-change confirmation observed via `vehicle_status` has ≥ 200 ms granularity; `vehicle_command_ack` has no rate limit. Relevant for the latency budget. | `PX4@d6f12ad:dds/dds_topics.yaml:70-71,88-90` | HIGH |
 
 ---
 
-## Q4 — Variable DB do Ogma para o backend `ros`
+## Q4 — Ogma variable DB for the `ros` backend
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 4.1 | Formato JSON com três chaves: `inputs` (nome, tipo C, `active`, `connections[{scope:"ros/message", topic, field}]`), `topics` (`scope`, `topic`, `type` da mensagem ROS 2) e `types` (mapeamento `fromScope/fromType/fromField` → `toScope:"C"/toType`). `field` permite extrair um campo de mensagem composta. | `ogma@69485b3:ogma-cli/README.md:444-485`; `ogma@69485b3:ogma-core/CHANGELOG.md:29` (#499) | ALTA |
-| 4.2 | **Exemplo mínimo real** (turtlesim, campo `x` de `turtlesim::msg::Pose`): ver bloco abaixo. | `ogma@69485b3:ogma-cli/examples/ros2-turtlesim/vars-db-turtlesim.json:1-27` | ALTA |
-| 4.3 | Invocação real: `ogma ros --project ogma-cli/examples/ros2-turtlesim/project.ogma`, ou flags `--input-file`, `--input-format`, `--variable-file`, `--variable-db`, `--handlers-file`, `--template-dir`, `--template-vars`, `--target-dir`, `--testing-app`. **O README cita `--handlers`, mas o código define `--handlers-file`**. | `ogma@69485b3:ogma-cli/examples/ros2-turtlesim/README.md:59`; `ogma@69485b3:ogma-cli/src/CLI/CommandROSApp.hs:179-270`; `ogma@69485b3:ogma-cli/README.md:414,422` | ALTA |
-| 4.4 | Template gerado: `msg->{{varDeclMsgField}}` se houver `field`, senão `msg->data`. | `ogma@69485b3:ogma-core/templates/ros/copilot/src/copilot_monitor.cpp:88-93` | ALTA |
-| 4.5 | **Incompatibilidade de QoS**: o template assina com `create_subscription<T>(topic, 10, …)` (QoS padrão = RELIABLE). Com publishers BEST_EFFORT do PX4 (3.6), a assinatura não recebe dados. ⇒ M2 precisa de `--template-dir` próprio com QoS best-effort. | `ogma@69485b3:ogma-core/templates/ros/copilot/src/copilot_monitor.cpp:38-40`; `PX4@d6f12ad:dds/utilities.hpp:78-83` | ALTA (código); efeito em execução MÉDIA |
-| 4.6 | Limitação documentada: o código C dos monitores Copilot não é gerado pelo comando `ros`; deve ser colocado em `monitor.h` / `monitor.c`. | `ogma@69485b3:ogma-cli/README.md:556-560` | ALTA |
-| 4.7 | Ogma aceita especificações de componente do FRET (formatos `fcs_smv`, `fcs_lustre`). | `ogma@69485b3:ogma-core/data/formats/` | MÉDIA (formatos listados; fluxo FRET→Ogma não executado) |
+| 4.1 | JSON format with three keys: `inputs` (name, C type, `active`, `connections[{scope:"ros/message", topic, field}]`), `topics` (`scope`, `topic`, ROS 2 message `type`) and `types` (`fromScope/fromType/fromField` → `toScope:"C"/toType` mapping). `field` extracts a field from a composite message. | `ogma@69485b3:ogma-cli/README.md:444-485`; `ogma@69485b3:ogma-core/CHANGELOG.md:29` (#499) | HIGH |
+| 4.2 | **Real minimal example** (turtlesim, field `x` of `turtlesim::msg::Pose`): see block below. | `ogma@69485b3:ogma-cli/examples/ros2-turtlesim/vars-db-turtlesim.json:1-27` | HIGH |
+| 4.3 | Real invocation: `ogma ros --project ogma-cli/examples/ros2-turtlesim/project.ogma`, or flags `--input-file`, `--input-format`, `--variable-file`, `--variable-db`, `--handlers-file`, `--template-dir`, `--template-vars`, `--target-dir`, `--testing-app`. **The README cites `--handlers`, but the code defines `--handlers-file`**. | `ogma@69485b3:ogma-cli/examples/ros2-turtlesim/README.md:59`; `ogma@69485b3:ogma-cli/src/CLI/CommandROSApp.hs:179-270`; `ogma@69485b3:ogma-cli/README.md:414,422` | HIGH |
+| 4.4 | Generated template: `msg->{{varDeclMsgField}}` if `field` is present, else `msg->data`. | `ogma@69485b3:ogma-core/templates/ros/copilot/src/copilot_monitor.cpp:88-93` | HIGH |
+| 4.5 | **QoS incompatibility**: the template subscribes with `create_subscription<T>(topic, 10, …)` (default QoS = RELIABLE). With PX4 BEST_EFFORT publishers (3.6), the subscription receives no data. ⇒ M2 needs its own `--template-dir` with best-effort QoS. | `ogma@69485b3:ogma-core/templates/ros/copilot/src/copilot_monitor.cpp:38-40`; `PX4@d6f12ad:dds/utilities.hpp:78-83` | HIGH (code); runtime effect MEDIUM |
+| 4.6 | Documented limitation: the C code of the Copilot monitors is not generated by the `ros` command; it must be placed in `monitor.h` / `monitor.c`. | `ogma@69485b3:ogma-cli/README.md:556-560` | HIGH |
+| 4.7 | Ogma accepts FRET component specifications (formats `fcs_smv`, `fcs_lustre`). Field-level match with FRET's export: see A.15. | `ogma@69485b3:ogma-core/data/formats/` | MEDIUM (formats and fields matched; FRET→Ogma flow not executed) |
 
-Exemplo real (`vars-db-turtlesim.json`, íntegra):
+Real example (`vars-db-turtlesim.json`, verbatim):
 
 ```json
 { "inputs":
@@ -125,71 +126,78 @@ Exemplo real (`vars-db-turtlesim.json`, íntegra):
 
 ---
 
-## Q5 — API C++ do DAIDALUS v2
+## Q5 — DAIDALUS v2 C++ API
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 5.1 | Ownship: `void setOwnshipState(const std::string& id, const Position& pos, const Velocity& vel, double time)` (e sobrecarga sem `time`). Deve ser chamado antes dos intrusos. | `daa@0647596:C++/include/Daidalus.h:201,209` | ALTA |
-| 5.2 | Intrusos: `int addTrafficState(const std::string& id, const Position& pos, const Velocity& vel[, double time])` → índice (1..`lastTrafficIndex()`; 0 = ownship). | `daa@0647596:C++/include/Daidalus.h:222,232,275-279` | ALTA |
-| 5.3 | Construtores: `Position::makeLatLonAlt(lat,"deg", lon,"deg", alt,"ft")` e `Velocity::makeTrkGsVs(trk,"deg", gs,"knot", vs,"fpm")` (unidades como string). Vento: `setWindVelocityFrom(Velocity)`. | `daa@0647596:C++/include/Position.h:75,88`; `daa@0647596:C++/include/Velocity.h:244,260`; `daa@0647596:C++/include/Daidalus.h:317`; `daa@0647596:C++/examples/DaidalusExample.cpp:350-368` | ALTA |
-| 5.4 | Tempo até violação: `double timeToCorrectiveVolume(int ac_idx)` (s relativo; `+inf` = sem conflito no lookahead; `NaN` = índice inválido). Por nível: `ConflictData violationOfAlertThresholds(int ac_idx, int alert_level)` → `conflict()`, `getTimeIn()`, `getTimeOut()`. Nível: `alertLevel(ac_idx)`, `alertLevelAllTraffic()`. | `daa@0647596:C++/include/Daidalus.h:2502-2515,2526-2551`; `daa@0647596:C++/include/ConflictData.h:27`; `daa@0647596:C++/include/LossData.h:66`; `daa@0647596:C++/examples/DaidalusExample.cpp:55-66` | ALTA |
-| 5.5 | Qual função corresponde a "perda de well-clear" depende do alerter/região configurados (`corrective_region = MID` no DO-365B). Mapear "tempo até perda de DWC" para `timeToCorrectiveVolume` vs `violationOfAlertThresholds(idx, nível)` é decisão de SPEC. | `daa@0647596:Configurations/DO_365B_no_SUM.conf:72-80` | MÉDIA |
-| 5.6 | Bandas: `horizontalDirectionBandsLength()`, `horizontalDirectionIntervalAt(i[, unit])`, `horizontalDirectionRegionAt(i)`; também resoluções e `horizontalDirectionRecoveryInformation()`. Existem famílias análogas para velocidade horizontal, vertical e altitude. | `daa@0647596:C++/include/Daidalus.h:1898-1923`; `daa@0647596:C++/examples/DaidalusExample.cpp:107-131` | ALTA |
-| 5.7 | Configuração DO-365B: programática `set_DO_365B(bool type=true, bool sum=true)` (alerters Phase I, Phase II, Non-Cooperative) ou arquivo `loadFromFile("Configurations/DO_365B_SUM.conf")` / `DO_365B_no_SUM.conf`. | `daa@0647596:C++/include/Daidalus.h:142-153,1810`; `daa@0647596:Configurations/DO_365B_SUM.conf`; `daa@0647596:C++/examples/DaidalusExample.cpp:305-309,343` | ALTA |
-| 5.8 | Valores do arquivo DO-365B (configuração do repositório, não afirmação regulatória): `lookahead_time = 180 s`, DWC Phase I `DTHR = 0.66 nmi`, `ZTHR = 700/450 ft`. Dimensionados para aeronaves maiores; uso com drones pequenos exige configuração própria — **HIPÓTESE a validar**. | `daa@0647596:Configurations/DO_365B_no_SUM.conf:4`; `daa@0647596:Configurations/DO_365B_SUM.conf:85-99` | ALTA (valores); MÉDIA (adequação) |
-| 5.9 | Build C++: `Makefile` (sem CMake no repositório) ⇒ o pacote ROS 2 do DAIDALUS precisará de CMake próprio. | `daa@0647596:C++/Makefile`; `find C++ -name CMakeLists.txt` vazio | ALTA |
-| 5.10 | Licença: NASA Open Source Agreement (`DAIDALUS2-NOSA.pdf`). Termos específicos do PDF não foram lidos nesta sessão. | `daa@0647596:README.md:66-69`; `daa@0647596:LICENSES/DAIDALUS2-NOSA.pdf` | ALTA (tipo); DESCONHECIDO (termos) |
+| 5.1 | Ownship: `void setOwnshipState(const std::string& id, const Position& pos, const Velocity& vel, double time)` (and overload without `time`). Must be called before intruders. | `daa@0647596:C++/include/Daidalus.h:201,209` | HIGH |
+| 5.2 | Intruders: `int addTrafficState(const std::string& id, const Position& pos, const Velocity& vel[, double time])` → index (1..`lastTrafficIndex()`; 0 = ownship). | `daa@0647596:C++/include/Daidalus.h:222,232,275-279` | HIGH |
+| 5.3 | Constructors: `Position::makeLatLonAlt(lat,"deg", lon,"deg", alt,"ft")` and `Velocity::makeTrkGsVs(trk,"deg", gs,"knot", vs,"fpm")` (units as strings). Wind: `setWindVelocityFrom(Velocity)`. | `daa@0647596:C++/include/Position.h:75,88`; `daa@0647596:C++/include/Velocity.h:244,260`; `daa@0647596:C++/include/Daidalus.h:317`; `daa@0647596:C++/examples/DaidalusExample.cpp:350-368` | HIGH |
+| 5.4 | Time to violation: `double timeToCorrectiveVolume(int ac_idx)` (relative s; `+inf` = no conflict within lookahead; `NaN` = invalid index). Per level: `ConflictData violationOfAlertThresholds(int ac_idx, int alert_level)` → `conflict()`, `getTimeIn()`, `getTimeOut()`. Level: `alertLevel(ac_idx)`, `alertLevelAllTraffic()`. | `daa@0647596:C++/include/Daidalus.h:2502-2515,2526-2551`; `daa@0647596:C++/include/ConflictData.h:27`; `daa@0647596:C++/include/LossData.h:66`; `daa@0647596:C++/examples/DaidalusExample.cpp:55-66` | HIGH |
+| 5.5 | Which function corresponds to "loss of well-clear" depends on the configured alerter/region (`corrective_region = MID` in DO-365B). Mapping "time to loss of DWC" to `timeToCorrectiveVolume` vs `violationOfAlertThresholds(idx, level)` is a SPEC decision. Code semantics now resolved in A.14. | `daa@0647596:Configurations/DO_365B_no_SUM.conf:72-80` | MEDIUM → see A.14 (HIGH) |
+| 5.6 | Bands: `horizontalDirectionBandsLength()`, `horizontalDirectionIntervalAt(i[, unit])`, `horizontalDirectionRegionAt(i)`; also resolutions and `horizontalDirectionRecoveryInformation()`. Analogous families exist for horizontal speed, vertical speed and altitude. | `daa@0647596:C++/include/Daidalus.h:1898-1923`; `daa@0647596:C++/examples/DaidalusExample.cpp:107-131` | HIGH |
+| 5.7 | DO-365B configuration: programmatic `set_DO_365B(bool type=true, bool sum=true)` (alerters Phase I, Phase II, Non-Cooperative) or file `loadFromFile("Configurations/DO_365B_SUM.conf")` / `DO_365B_no_SUM.conf`. | `daa@0647596:C++/include/Daidalus.h:142-153,1810`; `daa@0647596:Configurations/DO_365B_SUM.conf`; `daa@0647596:C++/examples/DaidalusExample.cpp:305-309,343` | HIGH |
+| 5.8 | Values in the DO-365B file (repository configuration, not a regulatory claim): `lookahead_time = 180 s`, DWC Phase I `DTHR = 0.66 nmi`, `ZTHR = 700/450 ft`. Sized for larger aircraft; use with small drones requires a custom configuration — **HYPOTHESIS to validate**. | `daa@0647596:Configurations/DO_365B_no_SUM.conf:4`; `daa@0647596:Configurations/DO_365B_SUM.conf:85-99` | HIGH (values); MEDIUM (suitability) |
+| 5.9 | C++ build: `Makefile` (no CMake in the repository) ⇒ the DAIDALUS ROS 2 package needs its own CMake. | `daa@0647596:C++/Makefile`; `find C++ -name CMakeLists.txt` empty | HIGH |
+| 5.10 | License: NASA Open Source Agreement (`DAIDALUS2-NOSA.pdf`). Specific terms of the PDF were not read in this session. | `daa@0647596:README.md:66-69`; `daa@0647596:LICENSES/DAIDALUS2-NOSA.pdf` | HIGH (type); UNKNOWN (terms) → see A.12 |
 
 ---
 
 ## Q6 — CopilotVerifier
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| 6.1 | Sim: `copilot-verifier` versão 4.8.1 está no monorepo do Copilot v4.8.1 e depende de `copilot-c99 >= 4.8.1 && < 4.9`. | `cop@365fb21:copilot-verifier/copilot-verifier.cabal:2-3,48` | ALTA |
-| 6.2 | Invocação (Haskell): `Copilot.Verifier.verify :: CSettings -> [String] -> String -> Spec -> IO ()` (`verify csettings props prefix spec`) ou `verifyWithOptions :: VerifierOptions -> …` (ex.: `sideCondVerifierOptions`). Gera C99, compila para bitcode LLVM com `clang`, interpreta com Crucible e envia VCs a SMT. | `cop@365fb21:copilot-verifier/src/Copilot/Verifier.hs:168-172,264-267`; `cop@365fb21:copilot-verifier/README.md:72-80,294` | ALTA |
-| 6.3 | Pré-requisitos: GHC 9.4/9.6/9.8 (`base < 4.20`), Cabal ≥ 3.10, `clang` + `llvm-link` **LLVM ≤ 16**, `z3` (ou cvc4/cvc5/yices). Deps: crucible 0.7, crucible-llvm 0.7, crux-llvm 0.9, what4 ≥1.6.1 <1.8. | `cop@365fb21:copilot-verifier/README.md:28-45`; `cop@365fb21:copilot-verifier/copilot-verifier.cabal:44-65` | ALTA |
-| 6.4 | Escopo: verifica o C gerado pelo `copilot-c99` contra a semântica do `Spec`; não cobre o glue C++/ROS gerado pelo Ogma. | `cop@365fb21:copilot-verifier/copilot-verifier.cabal:13-18` | ALTA |
-| 6.5 | Nenhuma ferramenta Haskell (ghc/cabal/stack), LLVM ou z3 está instalada nesta máquina; verifier não executado. | `which ghc cabal stack` → not found | ALTA |
+| 6.1 | Yes: `copilot-verifier` version 4.8.1 is in the Copilot v4.8.1 monorepo and depends on `copilot-c99 >= 4.8.1 && < 4.9`. | `cop@365fb21:copilot-verifier/copilot-verifier.cabal:2-3,48` | HIGH |
+| 6.2 | Invocation (Haskell): `Copilot.Verifier.verify :: CSettings -> [String] -> String -> Spec -> IO ()` (`verify csettings props prefix spec`) or `verifyWithOptions :: VerifierOptions -> …` (e.g. `sideCondVerifierOptions`). Generates C99, compiles to LLVM bitcode with `clang`, interprets with Crucible and sends VCs to SMT. | `cop@365fb21:copilot-verifier/src/Copilot/Verifier.hs:168-172,264-267`; `cop@365fb21:copilot-verifier/README.md:72-80,294` | HIGH |
+| 6.3 | Prerequisites: GHC 9.4/9.6/9.8 (`base < 4.20`), Cabal ≥ 3.10, `clang` + `llvm-link` **LLVM ≤ 16**, `z3` (or cvc4/cvc5/yices). Deps: crucible 0.7, crucible-llvm 0.7, crux-llvm 0.9, what4 ≥1.6.1 <1.8. | `cop@365fb21:copilot-verifier/README.md:28-45`; `cop@365fb21:copilot-verifier/copilot-verifier.cabal:44-65` | HIGH |
+| 6.4 | Scope: verifies the C generated by `copilot-c99` against the `Spec` semantics; does not cover the C++/ROS glue generated by Ogma. | `cop@365fb21:copilot-verifier/copilot-verifier.cabal:13-18` | HIGH |
+| 6.5 | No Haskell tooling (ghc/cabal/stack), LLVM or z3 is installed on this machine; verifier not executed. | `which ghc cabal stack` → not found | HIGH |
 
 ---
 
-## Adendo A — fatos adicionais verificados durante o P1 (2026-09-11)
+## Addendum A — additional facts verified during P1 (2026-09-11)
 
-Mesma regra do P0: somente código clonado. Estes itens sustentam decisões da SPEC e dos ADRs.
+Same rule as P0: cloned code only. These items support SPEC and ADR decisions.
 
-| # | resposta | evidência | confiança |
+| # | answer | evidence | confidence |
 |---|---|---|---|
-| A.1 | `sendCommandSync` (usado por `scheduleMode`/`rtl`/`land`) **cria uma subscription a cada chamada** (alocação dinâmica), faz espera ativa de até 3000 ms pela descoberta do publisher de `vehicle_command_ack`, depois publica o comando até 3 vezes esperando 300 ms por ACK. Pior caso de bloqueio da thread chamadora ≈ 3,9 s. O comando é publicado **antes** da espera pelo ACK. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141-222` | ALTA |
-| A.2 | `source_component = COMPONENT_MODE_EXECUTOR_START + id()`; o commander classifica comandos com `source_component >= COMPONENT_MODE_EXECUTOR_START` como `ModeChangeSource::ModeExecutor`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141`; `PX4@d6f12ad:cmd/Commander.cpp:1561,1567-1574` | ALTA |
-| A.3 | Ao trocar para um nav_state sem executor associado, o executor in charge **só muda** se a fonte for `User` (RC/MAVLink); com fonte `ModeExecutor` permanece. | `PX4@d6f12ad:cmd/ModeManagement.cpp:415-434`; `PX4@d6f12ad:cmd/UserModeIntention.hpp:39-42` | ALTA |
-| A.4 | `ModeBase` expõe `checkArmingAndRunConditions(reporter)` (chamado periodicamente, inclusive com o modo ativo), `onActivate/onDeactivate`, `setSetpointUpdateRate(hz)` e `updateSetpoint(dt_s)`. | `lib@4a3370f:lib/include/px4_ros2/components/mode.hpp:132-161` | ALTA |
-| A.5 | A resposta ao `ArmingCheckRequest` é produzida no callback da subscription do próprio nó (QoS best-effort, depth 1), chamando o callback de checagem do modo; `reporter.armingCheckFailureExt(...)` põe `can_arm_and_run=false`. | `lib@4a3370f:lib/src/components/health_and_arming_checks.cpp:29-56`; `lib@4a3370f:lib/include/px4_ros2/components/health_and_arming_checks.hpp:30-37` | ALTA |
-| A.6 | No PX4, `can_arm_and_run=false` de um modo externo seta `mode_req_other` para esse modo → mesma cadeia de fallback de 2.4 (modo não pode rodar → RTL). Latência de detecção ≤ 1 período de requisição (300 ms) + processamento. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.cpp:157-159`; itens 2.1 e 2.4 | MÉDIA (tempo não medido) |
-| A.7 | Setpoints de trajetória: `px4_ros2::TrajectorySetpointType::update(velocity_ned, accel?, yaw?, yaw_rate?)`, `update(TrajectorySetpoint)`, `updatePosition(position_ned)`; `MulticopterGotoSetpointType` existe. | `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/experimental/trajectory.hpp:26-66`; `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/multicopter/goto.hpp:24,44` | ALTA |
-| A.8 | `VehicleLocalPosition` (tópico `_v1`): `timestamp`, `timestamp_sample` (µs), `x,y,z` NED (m), `vx,vy,vz` (m/s), `ax,ay,az`, flags `xy_valid`, `v_xy_valid`, `z_valid`, `v_z_valid`, contadores de reset, `ref_lat/ref_lon/ref_alt`, `eph/epv/evh/evv`, `dead_reckoning`. | `msgs@86d8239:msg/VehicleLocalPosition.msg:6-77` | ALTA |
-| A.9 | Na serialização DDS, os campos `timestamp` e `timestamp_sample` recebem `+ time_offset` da sessão uXRCE (sincronização com o agente); os demais campos de tempo não. | `PX4@d6f12ad:Tools/msg/templates/ucdr/msg.h.em:127-144`; `PX4@d6f12ad:dds/dds_topics.h.em:126,176` | ALTA (código); relógio de referência resultante no ROS 2: MÉDIA |
-| A.10 | ULog registra por padrão `vehicle_status`, `vehicle_command`, `vehicle_local_position` e `transponder_report`. | `PX4@d6f12ad:src/modules/logger/logged_topics.cpp:132,138,145,150` | ALTA |
-| A.11 | Geofence interno do PX4: `GF_ACTION` (padrão 2 = Hold; 3 RTL; 4 Terminate; 5 Land), `GF_SOURCE`, `GF_MAX_HOR_DIST`/`GF_MAX_VER_DIST` (0 = desabilitado), `GF_PREDICT` (padrão 0, marcado **[EXPERIMENTAL]** "may cause flyaways"). | `PX4@d6f12ad:src/modules/navigator/geofence_params.c:46-119` | ALTA |
-| A.12 | Licença do DAIDALUS = **NASA Open Source Agreement v1.3**. Obrigações lidas: distribuição sob o próprio acordo com cópia do texto (3.A.1); distribuição não-fonte exige disponibilizar o fonte (3.A.2); aviso de copyright NASA proeminente (3.B); modificações descritas em arquivo de changelog identificando o autor (3.C); vedação de sugerir endosso da NASA (3.E); "Larger Work" combinando com software sob outra licença é permitido, mantendo a parte NOSA sob a NOSA (3.I); incluir o software em Larger Work não é, por si, Modification (1.F); aviso de controle de exportação dos EUA (3.J). Interpretação jurídica de compatibilidade com Apache-2.0/BSD **não** consta do texto. | `daa@0647596:LICENSES/DAIDALUS2-NOSA.pdf` (p. 1-5, cláusulas 1.E, 1.F, 3.A-3.J) | ALTA (texto); DESCONHECIDO (interpretação jurídica) |
-| A.13 | `TrajectorySetpoint` não tem campo de identidade do emissor (só `timestamp`, `position`, `velocity`, `acceleration`, `jerk`, `yaw`, `yawspeed`); `/fmu/in/trajectory_setpoint` é assinado sem autenticação de origem. Qualquer nó ROS 2 no mesmo domínio pode publicar nele. | `msgs@86d8239:msg/TrajectorySetpoint.msg`; `PX4@d6f12ad:dds/dds_topics.yaml:158-159` | ALTA (formato); MÉDIA (efeito com modo externo ativo não exercitado) |
+| A.1 | `sendCommandSync` (used by `scheduleMode`/`rtl`/`land`) **creates a subscription on every call** (dynamic allocation), busy-waits up to 3000 ms for discovery of the `vehicle_command_ack` publisher, then publishes the command up to 3 times waiting 300 ms for ACK. Worst-case blocking of the calling thread ≈ 3.9 s. The command is published **before** waiting for the ACK. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141-222` | HIGH |
+| A.2 | `source_component = COMPONENT_MODE_EXECUTOR_START + id()`; commander classifies commands with `source_component >= COMPONENT_MODE_EXECUTOR_START` as `ModeChangeSource::ModeExecutor`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141`; `PX4@d6f12ad:cmd/Commander.cpp:1561,1567-1574` | HIGH |
+| A.3 | When switching to a nav_state with no associated executor, the executor in charge **only changes** if the source is `User` (RC/MAVLink); with source `ModeExecutor` it stays. | `PX4@d6f12ad:cmd/ModeManagement.cpp:415-434`; `PX4@d6f12ad:cmd/UserModeIntention.hpp:39-42` | HIGH |
+| A.4 | `ModeBase` exposes `checkArmingAndRunConditions(reporter)` (called periodically, including while the mode is active), `onActivate/onDeactivate`, `setSetpointUpdateRate(hz)` and `updateSetpoint(dt_s)`. | `lib@4a3370f:lib/include/px4_ros2/components/mode.hpp:132-161` | HIGH |
+| A.5 | The reply to `ArmingCheckRequest` is produced in the node's own subscription callback (best-effort QoS, depth 1), calling the mode's check callback; `reporter.armingCheckFailureExt(...)` sets `can_arm_and_run=false`. | `lib@4a3370f:lib/src/components/health_and_arming_checks.cpp:29-56`; `lib@4a3370f:lib/include/px4_ros2/components/health_and_arming_checks.hpp:30-37` | HIGH |
+| A.6 | In PX4, `can_arm_and_run=false` from an external mode sets `mode_req_other` for that mode → same fallback chain as 2.4 (mode cannot run → RTL). Detection latency ≤ 1 request period (300 ms) + processing. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.cpp:157-159`; items 2.1 and 2.4 | MEDIUM (timing not measured) |
+| A.7 | Trajectory setpoints: `px4_ros2::TrajectorySetpointType::update(velocity_ned, accel?, yaw?, yaw_rate?)`, `update(TrajectorySetpoint)`, `updatePosition(position_ned)`; `MulticopterGotoSetpointType` exists. | `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/experimental/trajectory.hpp:26-66`; `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/multicopter/goto.hpp:24,44` | HIGH |
+| A.8 | `VehicleLocalPosition` (topic `_v1`): `timestamp`, `timestamp_sample` (µs), `x,y,z` NED (m), `vx,vy,vz` (m/s), `ax,ay,az`, flags `xy_valid`, `v_xy_valid`, `z_valid`, `v_z_valid`, reset counters, `ref_lat/ref_lon/ref_alt`, `eph/epv/evh/evv`, `dead_reckoning`. | `msgs@86d8239:msg/VehicleLocalPosition.msg:6-77` | HIGH |
+| A.9 | In DDS serialization, fields `timestamp` and `timestamp_sample` get `+ time_offset` of the uXRCE session (sync with the agent); other time fields do not. | `PX4@d6f12ad:Tools/msg/templates/ucdr/msg.h.em:127-144`; `PX4@d6f12ad:dds/dds_topics.h.em:126,176` | HIGH (code); resulting reference clock in ROS 2: MEDIUM |
+| A.10 | ULog logs by default `vehicle_status`, `vehicle_command`, `vehicle_local_position` and `transponder_report`. | `PX4@d6f12ad:src/modules/logger/logged_topics.cpp:132,138,145,150` | HIGH |
+| A.11 | PX4 internal geofence: `GF_ACTION` (default 2 = Hold; 3 RTL; 4 Terminate; 5 Land), `GF_SOURCE`, `GF_MAX_HOR_DIST`/`GF_MAX_VER_DIST` (0 = disabled), `GF_PREDICT` (default 0, marked **[EXPERIMENTAL]** "may cause flyaways"). | `PX4@d6f12ad:src/modules/navigator/geofence_params.c:46-119` | HIGH |
+| A.12 | DAIDALUS license = **NASA Open Source Agreement v1.3**. Obligations read: distribution under the agreement itself with a copy of the text (3.A.1); non-source distribution requires making source available (3.A.2); prominent NASA copyright notice (3.B); modifications described in a changelog file identifying the author (3.C); prohibition on implying NASA endorsement (3.E); "Larger Work" combining with software under another license is allowed, keeping the NOSA part under NOSA (3.I); including the software in a Larger Work is not, by itself, a Modification (1.F); US export control notice (3.J). Legal interpretation of compatibility with Apache-2.0/BSD is **not** in the text. | `daa@0647596:LICENSES/DAIDALUS2-NOSA.pdf` (pp. 1-5, clauses 1.E, 1.F, 3.A-3.J) | HIGH (text); UNKNOWN (legal interpretation) |
+| A.13 | `TrajectorySetpoint` has no sender identity field (only `timestamp`, `position`, `velocity`, `acceleration`, `jerk`, `yaw`, `yawspeed`); `/fmu/in/trajectory_setpoint` is subscribed without origin authentication. Any ROS 2 node in the same domain can publish to it. | `msgs@86d8239:msg/TrajectorySetpoint.msg`; `PX4@d6f12ad:dds/dds_topics.yaml:158-159` | HIGH (format); MEDIUM (effect with external mode active not exercised) |
 
 ---
 
-## Perguntas DESCONHECIDO / MÉDIA que bloqueiam o P1
+## Addendum B — facts verified while resolving P1 blockers (2026-09-11)
 
-Nenhuma das 6 perguntas ficou DESCONHECIDO. Os itens abaixo são MÉDIA ou
-lacunas que o P1 deve tratar como **hipóteses** ou que exigem novo P0/SITL:
+| # | answer | evidence | confidence |
+|---|---|---|---|
+| A.14 | `timeToCorrectiveVolume(i)` returns `violationOfCorrectiveThresholds(i).getTimeIn()` if `conflict()`, else `+inf`; `violationOfCorrectiveThresholds(i)` = `violationOfAlertThresholds(i, 0)`; level `0` is replaced by `correctiveAlertLevel(alerter_idx)` = **first** alert level (1-based) whose region equals `corrective_region`; detection runs that level's detector over `[0, lookahead_time]`. In `DO_365B_no_SUM.conf`, `corrective_region = MID` and alerter `DWC_Phase_I` level 2 is the first `MID` level, detector `det_2` = `WCV_TAUMOD` with `DTHR 0.66 nmi`, `ZTHR 450 ft`, `TTHR 35 s`. ⇒ `T_daa` via `timeToCorrectiveVolume` = time until entering the **corrective-level WCV volume of the intruder's alerter**, not the level-1 (700 ft) volume. | `daa@0647596:C++/src/Daidalus.cpp:3725-3751,3770-3772,3780-3791`; `daa@0647596:C++/src/DaidalusParameters.cpp:1856-1864`; `daa@0647596:C++/src/Alerter.cpp:434-441`; `daa@0647596:Configurations/DO_365B_no_SUM.conf:4,75-76,90-102` | HIGH |
+| A.15 | FRET's CoPilot export template emits JSON `{"<componentName>": {"Internal_variables":[{name,type,assignmentLustre,assignmentCopilot}], "Other_variables":[{name,type}], "Requirements":[{CoCoSpecCode,fretish,name,PCTL,ptLTL}]}}`. Ogma `fcs_smv` reads `..Internal_variables[*]` (`.name`, `.assignmentCopilot`, `.type`), `..Other_variables[*]` (`.name`, `.type`), `..Requirements[*]` (`.name`, `.fretish`, `.ptLTL`) — keys match field by field. `ogma ros` defaults are `--input-format fcs` and `--prop-format smv` (i.e. `fcs_smv`). | `fret@58db455:fret-electron/support/CoPilotTemplates/Component.ejs:2`, `InternalVariables.ejs`, `OtherVariables.ejs`, `RequirementDefinitions.ejs:1-12`; `ogma@69485b3:ogma-core/data/formats/fcs_smv`; `ogma@69485b3:ogma-cli/src/CLI/CommandROSApp.hs:233-248` | HIGH (field match); MEDIUM (end-to-end flow not executed) |
+| A.16 | `COM_MODE_ARM_CHK` description: "Allow external mode registration while armed. By default disabled for safety reasons." With it `0`, armed registration requests are answered with `success = false`. | `PX4@d6f12ad:cmd/commander_params.c:1039-1048`; `PX4@d6f12ad:cmd/ModeManagement.cpp:370-388` | HIGH |
 
-1. **Tempo real de detecção de executor morto** (2.3, 2.4): cadeia lida mas não
-   exercitada. Precisa de teste SITL (M3) matando o processo em voo.
-2. **Árbitro morto durante modo interno agendado** (2.6): comportamento
-   inferido por ausência de código. Precisa de teste SITL.
-3. **Árbitro não pode se re-registrar armado** (2.7, ALTA): o P1 precisa decidir
-   entre aceitar essa limitação ou exigir `COM_MODE_ARM_CHK=1` (e avaliar risco).
-4. **Semântica de "perda de well-clear" no DAIDALUS** (5.5): escolher a função
-   e o alerter na SPEC; parâmetros DO-365B para drones pequenos são hipótese (5.8).
-5. **Termos da NOSA** (5.10): RESOLVIDO no texto (A.12); interpretação jurídica segue [REVISAR].
-6. **Fluxo FRET → Ogma** (4.7): não verificado; necessário para P3/M2.
-7. **Divergência de distro** (R0.2 vs R0.4): RESOLVIDO em 2026-09-11 — usuário confirmou Humble; template Ogma
-   (Jazzy) será substituído por template próprio em M2.
+---
+
+## UNKNOWN / MEDIUM questions blocking P1 — status
+
+None of the 6 questions ended UNKNOWN. Items below are MEDIUM or gaps that P1
+treats as **hypotheses** or that need a new P0/SITL run.
+
+| # | Item | Status | Resolution / next action |
+|---|---|---|---|
+| 1 | **Real detection time of dead executor** (2.3, 2.4) | OPEN — needs SITL | Chain read, not exercised. AC-15 (M3): `kill -9` in flight, extract `nav_state` transition time from ULog. Blocked by R-11 (Docker/disk). |
+| 2 | **Arbiter dead while scheduled internal mode is active** (2.6) | OPEN — needs SITL | Inferred from absence of code. AC-15b (M3). Mitigation if confirmed: accept (Hold is a safe terminal state; PX4 failsafes remain active) and document in SPEC §7. |
+| 3 | **Arbiter cannot re-register while armed** (2.7) | DECIDED | ADR 0001 rule 6: keep `COM_MODE_ARM_CHK=0` (PX4 itself labels enabling it unsafe, A.16); accept FM-3. Verified by AC-15c. |
+| 4 | **"Loss of well-clear" semantics in DAIDALUS** (5.5) | CODE RESOLVED (A.14); parameters OPEN | Use `timeToCorrectiveVolume` = corrective-level WCV volume. DO-365B thresholds for small drones remain [HYPOTHESIS] (5.8); custom `.conf` with sourced thresholds in M5 ([PARAMETER TBD]). |
+| 5 | **NOSA terms** (5.10) | TEXT RESOLVED (A.12) | Legal interpretation remains [REVIEW]. |
+| 6 | **FRET → Ogma flow** (4.7) | FORMAT RESOLVED (A.15); execution OPEN | Keys match; run FRET export → `ogma ros` on one requirement at M2 start. |
+| 7 | **Distro divergence** (R0.2 vs R0.4) | RESOLVED 2026-09-11 | User confirmed Humble; Ogma template (Jazzy) replaced by own template in M2. |
