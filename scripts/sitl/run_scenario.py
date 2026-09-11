@@ -112,8 +112,13 @@ def start_ros_node(spec: dict, run_dir: pathlib.Path, ros_procs: list, suffix: s
     exe = spec["executable"]
     handle = (run_dir / f"{exe}{suffix}.log").open("w")
     cmd = ["ros2", "run", spec["package"], exe]
+    ros_args: list[str] = []
     if spec.get("params_file"):
-        cmd += ["--ros-args", "--params-file", str(ROOT / spec["params_file"])]
+        ros_args += ["--params-file", str(ROOT / spec["params_file"])]
+    for key, value in (spec.get("params") or {}).items():
+        ros_args += ["--param", f"{key}:={value}"]
+    if ros_args:
+        cmd += ["--ros-args", *ros_args]
     proc = subprocess.Popen(cmd, stdout=handle, stderr=subprocess.STDOUT)
     ros_procs.append((exe + suffix, proc, handle))
     log(f"started ros2 run {spec['package']} {exe}{suffix}")
@@ -302,6 +307,13 @@ def main() -> int:
                  str(run_dir / "verdicts.jsonl")],
                 stdout=verdict_log, stderr=subprocess.STDOUT)
             ros_procs.append(("record_verdicts", rec, verdict_log))
+        if scenario.get("record_events"):
+            event_log = (run_dir / "record_events.log").open("w")
+            rec_e = subprocess.Popen(
+                [sys.executable, str(ROOT / "scripts" / "sitl" / "record_events.py"),
+                 str(run_dir / "events.jsonl")],
+                stdout=event_log, stderr=subprocess.STDOUT)
+            ros_procs.append(("record_events", rec_e, event_log))
         for spec in scenario.get("ros_nodes", []):
             start_ros_node(spec, run_dir, ros_procs)
         if any(s.get("executable") == "guara_rta_node" for s in scenario.get("ros_nodes", [])):
