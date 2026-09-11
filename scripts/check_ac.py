@@ -84,6 +84,134 @@ def check_ac7(run_dir: pathlib.Path) -> list[str]:
     return []
 
 
+def _transitions(log_text: str) -> list[str]:
+    found = []
+    for line in log_text.splitlines():
+        if "]: T" in line and " -> " in line:
+            found.append(line)
+    return found
+
+
+def check_ac14(run_dir: pathlib.Path) -> list[str]:
+    """User mode switch → INACTIVE; no executor command afterwards."""
+    log_path = run_dir / "guara_rta_node.log"
+    if not log_path.is_file():
+        return ["missing guara_rta_node.log"]
+    lines = _transitions(log_path.read_text(errors="replace"))
+    seen_t2 = False
+    seen_t1_after_t2 = False
+    for ln in lines:
+        if " T2 " in ln:
+            seen_t2 = True
+        if seen_t2 and " T1 " in ln:
+            seen_t1_after_t2 = True
+            continue
+        if seen_t1_after_t2 and (" T3 " in ln or " T6 " in ln or " T5 " in ln):
+            return [f"executor commanded after T1: {ln.strip()}"]
+    if not seen_t2:
+        return ["no T2 (enter CF) in arbiter log"]
+    if not seen_t1_after_t2:
+        return ["no T1 (INACTIVE) after CF (pilot override)"]
+    return []
+
+
+def check_ac15(run_dir: pathlib.Path) -> list[str]:
+    """FM-1: kill arbiter in CF → AUTO_RTL in ULog."""
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"]
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"]
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
+    if not datasets:
+        return ["ULog has no vehicle_status"]
+    ts = datasets[0].data["timestamp"]
+    nav = datasets[0].data["nav_state"]
+    t_owned = None
+    t_rtl = None
+    for t, ns in zip(ts, nav):
+        if 23 <= int(ns) <= 30:
+            t_owned = int(t)
+        elif t_owned is not None and int(ns) == 5 and t_rtl is None:
+            t_rtl = int(t)
+    if t_owned is None:
+        return ["ULog never shows owned/external nav_state"]
+    if t_rtl is None:
+        return ["ULog shows owned mode but no AUTO_RTL afterwards"]
+    px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
+    if "flagging unresponsive" not in px4_log:
+        return ["px4.log has no mode-executor unresponsive warning"]
+    if "Failsafe activated" not in px4_log:
+        return ["px4.log has no 'Failsafe activated'"]
+    if "RTL: start return" not in px4_log:
+        return ["px4.log has no 'RTL: start return'"]
+    dt_s = (t_rtl - t_owned) * 1e-6
+    metrics = {
+        "AC-15": {
+            "t_owned_us": t_owned,
+            "t_rtl_us": t_rtl,
+            "dt_last_owned_to_rtl_s": dt_s,
+            "px4_unresponsive": True,
+            "px4_failsafe": True,
+            "note": "ULog dt is last owned-mode sample to first AUTO_RTL (logger period). FM-1 detection is kill→rtl in sitl_run.log.",
+        }
+    }
+    (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"owned→AUTO_RTL dt={dt_s:.3f} s (written to metrics.json)")
+    return []
+
+
+def check_ac15b(run_dir: pathlib.Path) -> list[str]:
+    """FM-2: kill arbiter in Hold → AUTO_LOITER persists, no AUTO_RTL."""
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"]
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"]
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
+    if not datasets:
+        return ["ULog has no vehicle_status"]
+    ts = datasets[0].data["timestamp"]
+    nav = datasets[0].data["nav_state"]
+    t_owned = None
+    t_loiter = None
+    saw_rtl_after_loiter = False
+    last_after = None
+    for t, ns in zip(ts, nav):
+        nsi = int(ns)
+        if 23 <= nsi <= 30:
+            t_owned = int(t)
+        elif t_owned is not None and nsi == 4 and t_loiter is None:
+            t_loiter = int(t)
+        if t_loiter is not None:
+            last_after = nsi
+            if nsi == 5:
+                saw_rtl_after_loiter = True
+    if t_owned is None:
+        return ["ULog never shows owned/external nav_state"]
+    if t_loiter is None:
+        return ["ULog shows owned mode but no AUTO_LOITER afterwards"]
+    if saw_rtl_after_loiter:
+        return ["AUTO_RTL after Hold; FM-2 expected Hold to persist"]
+    metrics = {
+        "AC-15b": {
+            "t_owned_us": t_owned,
+            "t_loiter_us": t_loiter,
+            "last_nav_state_after_hold": last_after,
+            "rtl_after_hold": False,
+        }
+    }
+    (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"Hold persisted after arbiter kill (last nav_state={last_after})")
+    return []
+
+
 def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
@@ -97,6 +225,9 @@ CHECKERS = {
     "AC-3": check_ac3,
     "AC-7": check_ac7,
     "AC-11": check_ac11,
+    "AC-14": check_ac14,
+    "AC-15": check_ac15,
+    "AC-15b": check_ac15b,
     "AC-20": check_ac20,
 }
 

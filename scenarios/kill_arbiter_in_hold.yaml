@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: Apache-2.0
+# M3 AC-15b / FM-2: kill -9 the arbiter after Hold is active; Hold must persist.
+name: kill_arbiter_in_hold
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+ros_nodes:
+  - {package: guara_rta, executable: guara_rta_node, params_file: config/rta_params.yaml}
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 8}
+  - {user_nav_state: owned, wait_until: owned, timeout_s: 20}
+  - {wait_rta: 1, timeout_s: 15}
+  - {inject_verdict: {monitor_id: REQ-INJECT, duration_s: 4}}
+  - {wait_until: loiter, timeout_s: 15}
+  - {kill: guara_rta_node, signal: 9}
+  - {sleep_s: 8}
+  - {wait_until: loiter, timeout_s: 5}
+expect:
+  min_altitude_m: 2.0
+  nav_state_after_kill: AUTO_LOITER
