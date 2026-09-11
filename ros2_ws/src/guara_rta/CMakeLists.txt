@@ -40,6 +40,8 @@ if(BUILD_TESTING)
   target_link_libraries(hysteresis_dwell guara_rta_core)
   ament_add_gtest(latch_policy test/test_latch_policy.cpp TIMEOUT 300)
   target_link_libraries(latch_policy guara_rta_core)
+  ament_add_gtest(gateway_blocks_cf test/test_gateway_blocks_cf.cpp)
+  target_link_libraries(gateway_blocks_cf guara_rta_core)
 endif()
 
 ament_export_include_directories(include)
