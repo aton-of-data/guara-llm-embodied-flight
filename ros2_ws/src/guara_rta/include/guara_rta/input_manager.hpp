@@ -1,9 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 // InputManager: computes the invalid-input signal V(k) of SPEC §3.1 from the reception instants and
-// validity flags of the mandatory input channels. Ages are measured on the arbiter monotonic clock
-// from message reception; transport delay upstream of reception (stages L0-L1 of SPEC §4.1) is part
-// of the latency budget, not of the age.
+// validity flags of the input channels the arbiter depends on. Ages are measured on the arbiter
+// monotonic clock from message reception; transport delay upstream of reception (stages L0-L1 of
+// SPEC §4.1) is part of the latency budget, not of the age.
+//
+// A channel is either *enabled* — the arbiter consumes its value and therefore depends on it — or
+// disabled, in which case its value is not consumed either. There is no third case: before the
+// review of 2026-09-11 (findings H-3 and H-5) a channel could be consumed while staying out of
+// V(k), so a dead DAIDALUS node or a geofence sample without a global reference was
+// indistinguishable from "no conflict". Enabling a channel now means failing closed on it.
 #pragma once
 
 #include <array>
@@ -25,7 +31,7 @@ enum class Channel : std::uint8_t
 
 struct ChannelConfig
 {
-  bool required{false};
+  bool enabled{false};
   double max_age_s{std::numeric_limits<double>::infinity()};  // A_i
 };
 
@@ -46,12 +52,12 @@ public:
     s.received = true;
   }
 
-  // Bit i set  <=>  channel i is required and is missing, stale (age > A_i) or invalid at t_s.
+  // Bit i set  <=>  channel i is enabled and is missing, stale (age > A_i) or invalid at t_s.
   std::uint32_t invalidMask(double t_s) const noexcept
   {
     std::uint32_t mask = 0U;
     for (std::size_t i = 0; i < config_.size(); ++i) {
-      if (!config_[i].required) {
+      if (!config_[i].enabled) {
         continue;
       }
       const auto & s = state_[i];
