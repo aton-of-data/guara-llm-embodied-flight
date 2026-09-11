@@ -10,7 +10,7 @@
 static float input_signal_cpy;
 
 static bool handlerAltitudeBelowCeiling_0_guard(void) {
-  return !((input_signal_cpy) >= ((float)(0.0f)));
+  return !((input_signal_cpy) >= ((float)(-2.0f)));
 }
 
 void step(void) {

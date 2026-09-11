@@ -1,3 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+//
+// Derived from the ROS application template of Ogma v1.15.0 (github.com/nasa/ogma,
+// Apache-2.0; commit pinned in third_party/VERSIONS.md), adapted for Guara. Ogma is
+// released by NASA; this derivative is not endorsed by NASA (see NOTICE).
 #include <functional>
 #include <memory>
 

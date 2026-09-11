@@ -2,13 +2,17 @@
   "REQ-ALT-01": {
     "internal_variables": [],
     "external_variables": [
-      { "name": "input_signal", "type": "Float", "meaning": "InputF32" }
+      {
+        "name": "input_signal",
+        "type": "Float",
+        "meaning": "InputF32"
+      }
     ],
     "properties": [
       {
         "id": "AltitudeBelowCeiling",
-        "formula": "input_signal >= 0",
-        "text": "Local NED z stays non-negative (the vehicle does not climb). z is down-positive; a normal PX4 takeoff drives z negative and violates the property so AC-3 can observe a Copilot trigger. Numeric ceiling in metres is [PARAMETER TBD] pending a sourced limit; this smoke requirement only needs a climb to fire."
+        "formula": "input_signal >= (0.0 - 2.0)",
+        "text": "Local NED z stays at or above -2.0 m, i.e. the altitude above the local origin stays at or below the 2.0 m ceiling of the M2 bench scenario. z is down-positive. The ceiling is deliberately below the PX4 takeoff altitude (MIS_TAKEOFF_ALT, 2.5 m by default) so that the run contains both verdicts: not violated on the ground and during the first part of the climb, violated after the ceiling is crossed. A requirement that is violated from the first sample makes AC-3 vacuous (review of 2026-09-11, AC-3 gap)."
       }
     ]
   }

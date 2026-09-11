@@ -15,10 +15,10 @@ input_signal = extern "input_signal" Nothing
 
 -- | AltitudeBelowCeiling
 --   @
---   Local NED z stays non-negative (the vehicle does not climb). z is down-positive; a normal PX4 takeoff drives z negative and violates the property so AC-3 can observe a Copilot trigger. Numeric ceiling in metres is [PARAMETER TBD] pending a sourced limit; this smoke requirement only needs a climb to fire.
+--   Local NED z stays at or above -2.0 m, i.e. the altitude above the local origin stays at or below the 2.0 m ceiling of the M2 bench scenario. z is down-positive. The ceiling is deliberately below the PX4 takeoff altitude (MIS_TAKEOFF_ALT, 2.5 m by default) so that the run contains both verdicts: not violated on the ground and during the first part of the climb, violated after the ceiling is crossed. A requirement that is violated from the first sample makes AC-3 vacuous (review of 2026-09-11, AC-3 gap).
 --   @
 propAltitudeBelowCeiling :: Stream Bool
-propAltitudeBelowCeiling = input_signal >= 0
+propAltitudeBelowCeiling = input_signal >= (0.0 - 2.0)
 
 -- | Clock that increases in one-unit steps.
 clock :: Stream Int64
