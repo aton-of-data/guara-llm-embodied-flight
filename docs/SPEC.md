@@ -28,6 +28,9 @@ function (CF) commands the vehicle; an arbiter switches to PX4 internal modes
 3. violation of formal requirements (FRETish → Ogma → Copilot);
 4. invalid or stale inputs.
 
+Vehicles: tiered per ADR 0007 — `sihsim_quadx` for batches, `gz_x500` ↔ Holybro X500 V2 + Pixhawk
+as reference. Use cases beyond the RTA core are capability packs (ADR 0009).
+
 Out of scope: certification, real hardware (phase 1), fixed-wing/VTOL, target
 selection or weapons (CLAUDE.md), security against adversaries on the ROS 2 network.
 
@@ -330,7 +333,7 @@ Scripts and scenarios cited are deliverables of the indicated milestones; they d
 | R-6 | RF=Hold does not resolve conflict with a converging intruder (§7 item 2) | Weak DAA result / overclaiming | State in the paper; evaluate escalation in M6 |
 | R-7 | Traffic injection in SITL depends on MAVLink `ADSB_VEHICLE` or `fake_traffic` [G 3.3]; neither exercised | M5/P4 blocked | New short P0 at start of M5 |
 | R-8 | ASTM F3269 text unavailable; §2 mapping not checked | Incorrect terminology/claims | Human review against the standard [REVIEW] |
-| R-9 | Legal interpretation NOSA × Apache-2.0/BSD and Guará's own license undefined [G A.12] | Blocks distribution of containers and P7 | Human review; ADR 0003 item 7 |
+| R-9 | Guará license decided: Apache-2.0 (ADR 0006). Legal interpretation NOSA × Apache-2.0/BSD still open [G A.12] | Blocks distribution of containers that include DAIDALUS | Human legal review [REVIEW] |
 | R-10 | FRET → Ogma flow: export keys match Ogma `fcs_smv` [G A.15], not executed | P3/M2 may need manual conversion | Run one requirement end-to-end at M2 start |
 | R-11 | Environment (updated 2026-09-11): Docker daemon running, 54 GB free, arm64 host; no Haskell/LLVM ≤ 16/z3 toolchain | CopilotVerifier (RQ4) blocked; SITL image must build on arm64 | Install toolchain in container before RQ4 |
 | R-12 | All parameters in §3.2 and stages in §4.1 are [HYPOTHESIS] | No publishable number until M7 | AC-18, AC-22 |
