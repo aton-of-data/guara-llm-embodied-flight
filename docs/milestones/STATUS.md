@@ -8,7 +8,7 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-1 | M1 | PASS | `docs/milestones/M1.md` |
 | AC-2 | M1 | PASS | `docs/milestones/M1.md` |
 | AC-2b | M1 | PASS | `docs/milestones/M1.md` |
-| AC-3 | M2 | OPEN | Monitor node and generated Copilot C exist; SITL scenario `alt_ceiling_violation` not yet run |
+| AC-3 | M2 | PASS | `docs/milestones/M2.md` |
 | AC-3b | M2 | PASS | `docs/milestones/M2.md` |
 | AC-4 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-5 | M3 | PASS | `docs/milestones/M3.md` |
@@ -17,7 +17,7 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-8 | M4 | PASS | `docs/milestones/M4.md` |
 | AC-9 | M4 | OPEN | Predictor integrated in the arbiter; pair scenario not yet run |
 | AC-10 | M5 | OPEN | `nosa/` reserved; DAIDALUS node not started |
-| AC-11 | M5 | OPEN | Isolation checker not yet written |
+| AC-11 | M5 | PASS (isolation with DAIDALUS absent) | `python3 scripts/check_license_isolation.py` |
 | AC-12 | M6 | PASS | `docs/milestones/M3.md` (hysteresis_dwell, same package) |
 | AC-13 | M6 | PASS | `docs/milestones/M3.md` (latch_policy) |
 | AC-14 | M3 | OPEN | SITL `pilot_override` not yet run |
