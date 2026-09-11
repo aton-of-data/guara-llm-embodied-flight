@@ -23,7 +23,7 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-14 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-15 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-15b | M3 | PASS | `docs/milestones/M3.md` |
-| AC-15c | M3 | OPEN | SITL `restart_arbiter_armed` not yet run |
+| AC-15c | M3 | PASS | `docs/milestones/M3.md` |
 | AC-16 | M3 | OPEN | SITL `hang_decision_thread` not yet run |
 | AC-16b | M3 | OPEN | SITL `hang_ros_executor` not yet run |
 | AC-17 | M3 | OPEN | SITL `stale_local_position` not yet run |
