@@ -343,6 +343,13 @@ def main() -> int:
                  str(run_dir / "events.jsonl")],
                 stdout=event_log, stderr=subprocess.STDOUT)
             ros_procs.append(("record_events", rec_e, event_log))
+        if scenario.get("record_latency"):
+            lat_log = (run_dir / "record_latency.log").open("w")
+            rec_l = subprocess.Popen(
+                [sys.executable, str(ROOT / "scripts" / "sitl" / "record_latency.py"),
+                 str(run_dir / "events.jsonl"), str(run_dir / "states.jsonl")],
+                stdout=lat_log, stderr=subprocess.STDOUT)
+            ros_procs.append(("record_latency", rec_l, lat_log))
         for spec in scenario.get("ros_nodes", []):
             start_ros_node(spec, run_dir, ros_procs)
         if any(s.get("executable") == "guara_rta_node" for s in scenario.get("ros_nodes", [])):

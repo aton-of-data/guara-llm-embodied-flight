@@ -438,7 +438,63 @@ def check_ac9(pair_dir: pathlib.Path) -> list[str]:
     return errors
 
 
-def check_ac11(_path: pathlib.Path) -> list[str]:
+def check_ac18(batch: pathlib.Path) -> list[str]:
+    """p50/p99 of L0..L6 and δ_lat from ≥ 30 runs; every stage present."""
+    metrics_path = batch / "metrics.json"
+    if not metrics_path.is_file():
+        return [f"missing {metrics_path}; run python3 scripts/aggregate.py {batch}"]
+    m = json.loads(metrics_path.read_text(encoding="utf-8"))
+    errors = []
+    if int(m.get("n_runs", 0)) < 30:
+        errors.append(f"n_runs={m.get('n_runs')} < 30")
+    stages = m.get("stages") or {}
+    for name in ("L0", "L1", "L2", "L3", "L4", "L5", "L6"):
+        st = stages.get(name) or {}
+        if int(st.get("n") or 0) < 30:
+            errors.append(f"{name} n={st.get('n')} < 30")
+        if st.get("p50_s") is None or st.get("p99_s") is None:
+            errors.append(f"{name} missing p50/p99")
+    dl = m.get("delta_lat") or {}
+    if int(dl.get("n") or 0) < 30:
+        errors.append(f"delta_lat n={dl.get('n')} < 30")
+    if dl.get("p50_s") is None or dl.get("p99_s") is None:
+        errors.append("delta_lat missing p50/p99")
+    print(json.dumps({"AC-18": {"n_runs": m.get("n_runs"), "stages": stages, "delta_lat": dl}}, indent=2))
+    return errors
+
+
+def check_ac19(batch: pathlib.Path) -> list[str]:
+    """PX4↔ROS 2 clock alignment p99 measured; cross-process latencies gated at 10 ms."""
+    metrics_path = batch / "metrics.json"
+    if not metrics_path.is_file():
+        return [f"missing {metrics_path}"]
+    m = json.loads(metrics_path.read_text(encoding="utf-8"))
+    ca = m.get("clock_alignment") or {}
+    p99 = ca.get("abs_p99_s")
+    if p99 is None:
+        return ["clock_alignment.abs_p99_s missing"]
+    print(json.dumps({"AC-19": ca}, indent=2))
+    return []
+
+
+def check_ac22(batch: pathlib.Path) -> list[str]:
+    """O-1 with measured δ_lat and τ_rec."""
+    metrics_path = batch / "metrics.json"
+    if not metrics_path.is_file():
+        return [f"missing {metrics_path}"]
+    m = json.loads(metrics_path.read_text(encoding="utf-8"))
+    o1 = m.get("o1") or {}
+    if o1.get("delta_lat_p99_s") is None:
+        return ["o1.delta_lat_p99_s missing"]
+    if o1.get("tau_rec_p99_s") is None:
+        return ["o1.tau_rec_p99_s missing (ULog speed after Hold)"]
+    print(json.dumps({"AC-22": o1}, indent=2))
+    errors = []
+    if not o1.get("geofence_satisfied"):
+        errors.append("O-1 geofence: tau_gf < delta_lat p99")
+    if not o1.get("daa_satisfied"):
+        errors.append("O-1 DAA: tau_daa < tau_rec p99 + delta_lat p99")
+    return errors
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
     result = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
@@ -459,7 +515,10 @@ CHECKERS = {
     "AC-16": check_ac16,
     "AC-16b": check_ac16b,
     "AC-17": check_ac17,
+    "AC-18": check_ac18,
+    "AC-19": check_ac19,
     "AC-20": check_ac20,
+    "AC-22": check_ac22,
 }
 
 
