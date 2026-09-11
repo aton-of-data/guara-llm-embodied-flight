@@ -27,7 +27,7 @@ install(TARGETS guara_rta_core EXPORT export_guara_rta
   ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 
 # Arbiter process: ModeExecutor + owned CF gateway (SPEC §2, ADR 0001).
-option(GUARA_SIM_FAULT_INJECTION "Enable SITL-only fault injection parameters (FM-4/FM-5)" OFF)
+option(GUARA_SIM_FAULT_INJECTION "Enable SITL-only fault injection parameters (FM-4/FM-5/FM-6)" OFF)
 find_package(eigen3_cmake_module REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(rclcpp REQUIRED)

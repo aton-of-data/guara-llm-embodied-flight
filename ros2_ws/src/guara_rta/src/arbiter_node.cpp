@@ -247,6 +247,11 @@ public:
       std::chrono::duration<double>(period_s_));
     decision_timer_ = create_wall_timer(period, [this]() {onTick();}, decision_group_);
     t_start_s_ = steadySeconds();
+#ifdef GUARA_SIM_FAULT_INJECTION
+    if (hang_ros_executor_after_s_ >= 0.0) {
+      fault_timer_ = create_wall_timer(std::chrono::milliseconds(50), [this]() {maybeHangRosExecutor();});
+    }
+#endif
   }
 
 private:
@@ -287,11 +292,55 @@ private:
     geofence_.configure(*this);
 #ifdef GUARA_SIM_FAULT_INJECTION
     hang_decision_after_s_ = declare_parameter("fault_injection.hang_decision_after_s", -1.0);
+    hang_ros_executor_after_s_ = declare_parameter("fault_injection.hang_ros_executor_after_s", -1.0);
+    drop_local_position_after_s_ = declare_parameter("fault_injection.drop_local_position_after_s", -1.0);
 #endif
   }
 
+#ifdef GUARA_SIM_FAULT_INJECTION
+  void noteCf(double t)
+  {
+    std::int64_t expected = 0;
+    const auto ns = static_cast<std::int64_t>(t * 1e9);
+    t_cf_ns_.compare_exchange_strong(expected, ns);
+  }
+
+  bool pastCfDelay(double delay_s) const
+  {
+    const std::int64_t cf = t_cf_ns_.load();
+    if (cf <= 0 || delay_s < 0.0) {
+      return false;
+    }
+    return steadyNanoseconds() - cf > static_cast<std::int64_t>(delay_s * 1e9);
+  }
+
+  [[noreturn]] static void hangForever(const char * what)
+  {
+    RCLCPP_WARN(rclcpp::get_logger("guara_rta"), "fault injection: %s", what);
+    for (;;) {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+  }
+
+  void maybeHangRosExecutor()
+  {
+    if (shared_.in_charge.load() && shared_.owned_mode_active.load()) {
+      noteCf(steadySeconds());
+    }
+    if (pastCfDelay(hang_ros_executor_after_s_)) {
+      hangForever("ROS executor hang");
+    }
+  }
+#endif
+
   void onLocalPosition(const px4_msgs::msg::VehicleLocalPosition & msg)
   {
+#ifdef GUARA_SIM_FAULT_INJECTION
+    if (pastCfDelay(drop_local_position_after_s_)) {
+      RCLCPP_WARN_ONCE(get_logger(), "fault injection: drop local position");
+      return;
+    }
+#endif
     const double t = steadySeconds();
     const bool valid = msg.xy_valid && msg.z_valid && msg.v_xy_valid && msg.v_z_valid;
     inputs_->onReceive(Channel::kLocalPosition, t, valid);
@@ -355,11 +404,8 @@ private:
   void onTick()
   {
 #ifdef GUARA_SIM_FAULT_INJECTION
-    if (hang_decision_after_s_ >= 0.0 && steadySeconds() - t_start_s_ > hang_decision_after_s_) {
-      RCLCPP_WARN_ONCE(get_logger(), "fault injection: decision thread hang");
-      for (;;) {
-        std::this_thread::sleep_for(std::chrono::seconds(1));
-      }
+    if (hang_decision_after_s_ >= 0.0 && pastCfDelay(hang_decision_after_s_)) {
+      hangForever("decision thread hang");
     }
 #endif
     const double t = steadySeconds();
@@ -369,6 +415,11 @@ private:
     in.t_s = t;
     in.in_charge = shared_.in_charge.load();
     in.owned_mode_active = shared_.owned_mode_active.load();
+#ifdef GUARA_SIM_FAULT_INJECTION
+    if (in.in_charge && in.owned_mode_active) {
+      noteCf(t);
+    }
+#endif
     in.t_daa_s = input_config_[static_cast<std::size_t>(Channel::kDaa)].required ? t_daa_s_ : kInf;
     in.t_gf_s = geofence_.enabled() ? t_gf_s_ : kInf;
     std::uint32_t invalid = inputs_->invalidMask(t);
@@ -501,6 +552,10 @@ private:
   double state_rate_hz_{5.0};
 #ifdef GUARA_SIM_FAULT_INJECTION
   double hang_decision_after_s_{-1.0};
+  double hang_ros_executor_after_s_{-1.0};
+  double drop_local_position_after_s_{-1.0};
+  std::atomic<std::int64_t> t_cf_ns_{0};
+  rclcpp::TimerBase::SharedPtr fault_timer_;
 #endif
 
   std::unique_ptr<DecisionCore> core_;
