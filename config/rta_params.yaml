@@ -1,0 +1,40 @@
+# SPDX-License-Identifier: Apache-2.0
+# Canonical RTA parameter file (SPEC §3.2). The arbiter package installs a copy
+# at share/guara_rta/config/rta_params.yaml; keep the two in sync.
+guara_rta:
+  ros__parameters:
+    decision.period_s: 0.05
+    core.tau_daa_s: 30.0
+    core.tau_gf_s: 1.0
+    core.h_daa_s: 5.0
+    core.h_gf_s: 1.0
+    core.dwell_s: 5.0
+    core.n_max: 3
+    core.window_s: 120.0
+    core.return_enabled: true
+    core.escalation_enabled: false
+    core.escalation_s: 30.0
+    inputs.local_position.required: true
+    inputs.local_position.max_age_s: 0.2
+    inputs.vehicle_status.required: true
+    inputs.vehicle_status.max_age_s: 1.0
+    inputs.monitor.required: false
+    inputs.monitor.max_age_s: 0.5
+    inputs.daa.required: false
+    inputs.daa.max_age_s: 1.0
+    inputs.geofence.required: false
+    inputs.geofence.max_age_s: 0.2
+    actuator.retry_period_s: 0.3
+    actuator.n_retry: 3
+    gateway.cf_timeout_s: 0.5
+    gateway.heartbeat_max_age_s: 0.25
+    telemetry.state_rate_hz: 5.0
+    geofence.enabled: false
+    geofence.polygon_lat_lon_deg: []
+    geofence.alt_min_m: -1.0e9
+    geofence.alt_max_m: 1.0e9
+    geofence.a_brake_h_m_s2: 3.0
+    geofence.a_brake_v_m_s2: 2.0
+    geofence.k_sigma: 2.0
+    geofence.v_min_m_s: 0.2
+    geofence.horizon_s: 30.0
