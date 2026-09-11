@@ -495,6 +495,9 @@ def check_ac22(batch: pathlib.Path) -> list[str]:
     if not o1.get("daa_satisfied"):
         errors.append("O-1 DAA: tau_daa < tau_rec p99 + delta_lat p99")
     return errors
+
+
+def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
     result = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
