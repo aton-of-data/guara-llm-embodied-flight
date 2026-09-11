@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>guara_daidalus</name>
+  <version>0.2.0</version>
+  <description>NOSA-isolated DAIDALUS v2 node publishing DaaStatus (ADR 0003, SPEC §3.1 T_daa).</description>
+  <maintainer email="dornfeld.in@gmail.com">aton-of-data</maintainer>
+  <license>NOSA-1.3</license>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>px4_msgs</depend>
+  <depend>px4_ros2_cpp</depend>
+  <depend>guara_msgs</depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
