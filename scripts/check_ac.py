@@ -44,6 +44,46 @@ def check_ac3(run_dir: pathlib.Path) -> list[str]:
     return errors
 
 
+def check_ac7(run_dir: pathlib.Path) -> list[str]:
+    """Injected monitor trigger drives nav_state to AUTO_LOITER (Hold)."""
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"]
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"]
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
+    if not datasets:
+        return ["ULog has no vehicle_status"]
+    ts = datasets[0].data["timestamp"]
+    nav = datasets[0].data["nav_state"]
+    t_owned = None
+    t_loiter = None
+    for t, ns in zip(ts, nav):
+        if 23 <= int(ns) <= 30:
+            t_owned = int(t)
+        elif t_owned is not None and int(ns) == 4 and t_loiter is None:
+            t_loiter = int(t)
+    if t_owned is None:
+        return ["ULog never shows owned/external nav_state (23-30)"]
+    if t_loiter is None:
+        return ["ULog shows owned mode but no AUTO_LOITER afterwards"]
+    dt_s = (t_loiter - t_owned) * 1e-6
+    metrics = {
+        "AC-7": {
+            "t_owned_us": t_owned,
+            "t_loiter_us": t_loiter,
+            "dt_owned_to_hold_s": dt_s,
+            "note": "dt is owned-mode sample to AUTO_LOITER; L6 needs the matching vehicle_command stamp (M7)",
+        }
+    }
+    (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"owned→AUTO_LOITER dt={dt_s:.3f} s (written to metrics.json)")
+    return []
+
+
 def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
@@ -55,6 +95,7 @@ def check_ac11(_path: pathlib.Path) -> list[str]:
 
 CHECKERS = {
     "AC-3": check_ac3,
+    "AC-7": check_ac7,
     "AC-11": check_ac11,
     "AC-20": check_ac20,
 }
