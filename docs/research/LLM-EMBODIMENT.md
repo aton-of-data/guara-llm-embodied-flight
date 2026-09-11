@@ -163,6 +163,25 @@ flowchart TB
 | Guará RTA | Assured (measured, verified monitors) | Switches to RF | PX4 fallback (FM-1..FM-5) |
 | PX4 | Assured baseline | Yes | Internal failsafes |
 
+### 5.1.1 What the gateway enforces today (ADR 0010)
+
+The trust table above says the CF "can only move the aircraft through the gateway". Since the review
+of 2026-09-11 the gateway also states *what it accepts* from that untrusted layer, which is the part
+that matters once a language model is behind it (`docs/adr/0010-untrusted-complex-function-contract.md`):
+
+| Threat from an LLM-driven CF | Enforced where | Evidence |
+|---|---|---|
+| Stalls, then a stale setpoint keeps flying | Freshness measured from reception on the gateway clock; implausible stamps rejected | `test_gateway_envelope.cpp` |
+| Confident but out-of-envelope command (speed, climb, yaw step) | Clamp to `gateway.max_*`, non-finite rejected | `test_gateway_envelope.cpp` |
+| Plausible command that flies at the fence | Shadow check of the *proposed* velocity against the predictor before forwarding | AC-9 re-run: 0.000 m outside, no mode switch |
+| Keeps proposing the unsafe motion after a recovery | T5 also requires the CF's intent to be clear | `test_return_policy.cpp` |
+| Resets the anti-chattering budget by toggling modes | Switch history survives T1 | `test_return_policy.cpp` |
+| Silent degradation (monitor or DAA process dies) | Enabled channels fail closed; the flight profile refuses an undeclared omission | `test_channel_gating.cpp` |
+
+Open before any LLM drives a CF, in order: transport authentication on `/guara/cf/*` and `fmu/in/*`
+(SROS2, FM-12); the RQ6b jailbreak corpus against the mission compiler; the RQ5 fuzz corpus against
+the gateway (future stamps, NaN, extreme values, mode-tool abuse).
+
 ### 5.2 Mission Intent (sketch, v0)
 
 Closed vocabulary; everything else is rejected.
