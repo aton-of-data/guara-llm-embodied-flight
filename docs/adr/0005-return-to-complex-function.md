@@ -1,50 +1,53 @@
-# ADR 0005 — Política de retorno à função complexa
+# ADR 0005 — Return-to-complex-function policy
 
-- Estado: Proposto (P1, 2026-09-11)
-- Relacionados: SPEC §3.4-§3.5 (T3-T7, P-3, P-4); AC-12, AC-13
+- Status: Proposed (P1, 2026-09-11)
+- Related: SPEC §3.4-§3.5 (T3-T7, P-3, P-4); AC-12, AC-13
 
-## Contexto
+## Context
 
-Retornar à CF depois de uma recuperação aumenta disponibilidade, mas arrisca
-chattering (CF→RF→CF repetido) e reentrada numa situação ainda perigosa.
-Condicionantes:
+Returning to the CF after a recovery increases availability, but risks
+chattering (repeated CF→RF→CF) and re-entering a still-dangerous situation.
+Constraints:
 
-- Voltar à CF significa o executor agendar o próprio owned mode, o que mantém
-  o executor in charge [G 1.7, A.3].
-- Qualquer troca de modo pelo piloto/GCS retira o executor do comando [G 1.6].
-- O callback de `scheduleMode` é chamado quando o modo publica `ModeCompleted`
-  ou quando o executor é desativado [G 1.3]. Quais modos internos publicam
-  `ModeCompleted` (em particular Hold) não foi verificado: [DESCONHECIDO];
-  a política não depende disso.
+- Returning to the CF means the executor schedules its own owned mode, which keeps
+  the executor in charge [G 1.7, A.3].
+- Any mode switch by the pilot/GCS removes the executor from charge [G 1.6].
+- The `scheduleMode` callback fires when the mode publishes `ModeCompleted`
+  or when the executor is deactivated [G 1.3]. Which internal modes publish
+  `ModeCompleted` (Hold in particular) was not verified: [UNKNOWN];
+  the policy does not depend on it.
 
-## Opções
+## Options
 
-A. Nunca retornar (RF é terminal).
-B. Retornar assim que `¬U`.
-C. Retornar com histerese `h`, dwell `T_d` e limite de chaveamentos (`N_max` em `W`).
-D. Retornar só com confirmação do operador.
+A. Never return (RF is terminal).
+B. Return as soon as `¬U`.
+C. Return with hysteresis `h`, dwell `T_d` and a switch limit (`N_max` in `W`).
+D. Return only with operator confirmation.
 
-## Decisão
+## Decision
 
-**C** para RF = HOLD; **A** para RTL e LAND.
+**C** for RF = HOLD; **A** for RTL and LAND.
 
-1. Retorno (T5) só a partir de `RF(HOLD)`, quando `C(k)` for verdadeiro
-   continuamente por `T_d` e `t_k − t_sw ≥ T_d`.
-2. De `RF(RTL)` ou `RF(LAND)` não há retorno automático: essas ações indicam
-   causa grave (monitor configurado ou escalonamento).
-3. `N_max` chaveamentos CF→RF em `W` ⇒ `LATCHED` (sem retorno até `¬IC`).
-4. Escalonamento (T6/T7) só aumenta o `rank` (`HOLD < RTL < LAND`), nunca reduz.
-5. Escalonamento por persistência: `RF(HOLD)` com `U` verdadeiro por mais de
-   `T_esc` = 30 s [HIPÓTESE] ⇒ `select` passa a retornar LAND. **Desabilitado
-   por padrão** em v1 (`escalation_enabled=false`) até M6 medir seu efeito.
-6. `return_enabled` é parâmetro de cenário; P4 compara políticas A e C com as mesmas seeds.
-7. Ao retornar, a CF recebe um evento de retomada; o gateway só libera setpoints
-   com timestamp posterior a `t_return` (evita setpoint velho acumulado).
+1. Return (T5) only from `RF(HOLD)`, when `C(k)` has been true
+   continuously for `T_d` and `t_k − t_sw ≥ T_d`.
+2. From `RF(RTL)` or `RF(LAND)` there is no automatic return: those actions indicate
+   a severe cause (configured monitor or escalation).
+3. `N_max` CF→RF switches within `W` ⇒ `LATCHED` (no return until `¬IC`).
+4. Escalation (T6/T7) only increases `rank` (`HOLD < RTL < LAND`), never decreases it.
+5. Persistence escalation: `RF(HOLD)` with `U` true for more than
+   `T_esc` = 30 s [HYPOTHESIS] ⇒ `select` returns LAND. **Disabled
+   by default** in v1 (`escalation_enabled=false`) until M6 measures its effect.
+6. `return_enabled` is a scenario parameter; P4 compares policies A and C with the same seeds.
+7. On return, the CF receives a resume event; the gateway only releases setpoints
+   with a timestamp later than `t_return` (avoids accumulated stale setpoints).
 
-## Consequências
+## Consequences
 
-- (+) Chattering limitado por construção (P-4), verificável em unidade (AC-13).
-- (+) Distingue interrupções transitórias (tráfego que passa) de causas graves.
-- (−) `T_d` e `h` aumentam o tempo fora da CF; efeito medido como taxa de conclusão de missão (P4).
-- (−) Reentrada após `T_d` ainda pode encontrar risco que o preditor não modela (SPEC §7).
-- Parâmetros `h`, `T_d`, `N_max`, `W`, `T_esc`: todos [HIPÓTESE], ajustados só com dados de `results/`.
+- (+) Chattering bounded by construction (P-4), verifiable in unit tests (AC-13).
+- (+) Distinguishes transient interruptions (passing traffic) from severe causes.
+- (−) `T_d` and `h` increase time outside the CF; effect measured as mission completion rate (P4).
+- (−) Re-entry after `T_d` may still meet risk the predictor does not model (SPEC §7).
+- Parameters `h`, `T_d`, `N_max`, `W`, `T_esc`: all [HYPOTHESIS], tuned only with data from `results/`.
+- Option D (operator confirmation) becomes relevant for the voice interface
+  (`docs/research/LLM-EMBODIMENT.md`): a spoken "resume" is a user intent, not a safety signal,
+  and must still satisfy T5.

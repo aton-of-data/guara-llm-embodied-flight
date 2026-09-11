@@ -1,68 +1,68 @@
-# ADR 0001 — Árbitro RTA como ModeExecutor vs. nó independente
+# ADR 0001 — RTA arbiter as ModeExecutor vs. independent node
 
-- Estado: Proposto (P1, 2026-09-11)
-- Relacionados: SPEC §2, §3.5, §4, §5; ADR 0005
+- Status: Proposed (P1, 2026-09-11)
+- Related: SPEC §2, §3.5, §4, §5; ADR 0005
 
-## Contexto
+## Context
 
-O árbitro precisa (a) retirar a função complexa (CF) do controle e (b) acionar
-Hold/RTL/Land com latência mensurável, e (c) ter falhas próprias com reação
-conhecida do PX4. Fatos relevantes:
+The arbiter must (a) take the complex function (CF) out of control, (b) trigger
+Hold/RTL/Land with measurable latency, and (c) have its own failures lead to a
+known PX4 reaction. Relevant facts:
 
-- `ModeExecutorBase::scheduleMode/rtl/land` acionam modos internos via
-  `VEHICLE_CMD_SET_NAV_STATE` em tópico dedicado [G 1.1-1.4].
-- O executor só fica in charge quando seu owned mode é selecionado; troca feita
-  pelo usuário (RC/MAVLink) devolve o controle ao autopiloto; trocas feitas pelo
-  executor o mantêm in charge [G 1.6, A.2, A.3].
-- Um modo externo que para de responder ao arming check leva o PX4 a RTL em
-  ~1,2 s; `can_arm_and_run=false` produz o mesmo efeito em ≤ ~300 ms [G 2.1-2.4, A.5, A.6].
-- Com o veículo armado o PX4 não aceita novos registros [G 2.7].
-- `sendCommandSync` aloca e pode bloquear ~3,9 s [G A.1].
+- `ModeExecutorBase::scheduleMode/rtl/land` trigger internal modes via
+  `VEHICLE_CMD_SET_NAV_STATE` on a dedicated topic [G 1.1-1.4].
+- The executor is only in charge when its owned mode is selected; a switch made
+  by the user (RC/MAVLink) returns control to the autopilot; switches made by the
+  executor keep it in charge [G 1.6, A.2, A.3].
+- An external mode that stops answering the arming check drives PX4 to RTL in
+  ~1.2 s; `can_arm_and_run=false` produces the same effect in ≤ ~300 ms [G 2.1-2.4, A.5, A.6].
+- While armed, PX4 does not accept new registrations [G 2.7, A.16].
+- `sendCommandSync` allocates and can block ~3.9 s [G A.1].
 
-## Opções
+## Options
 
-**A. ModeExecutor com owned mode "gateway" da CF (mesmo processo).**
-A CF publica setpoints num tópico do Guará; o owned mode os repassa ao PX4.
+**A. ModeExecutor with a CF "gateway" owned mode (same process).**
+The CF publishes setpoints on a Guará topic; the owned mode forwards them to PX4.
 
-**B. ModeExecutor cujo owned mode é a própria CF em outro processo.**
-Exige que a CF registre o modo e que o executor seja o mesmo registro —
-a interface-lib associa executor e owned mode no mesmo objeto [G 1.5]; não há
-evidência de executor possuir modo de outro processo. [DESCONHECIDO] → descartada sem novo P0.
+**B. ModeExecutor whose owned mode is the CF itself in another process.**
+Requires the CF to register the mode and the executor to be the same registration —
+the interface-lib binds executor and owned mode in the same object [G 1.5]; there is
+no evidence of an executor owning a mode from another process. [UNKNOWN] → discarded without a new P0.
 
-**C. Nó independente enviando `vehicle_command` como GCS.**
-Comandos com fonte `User` retiram qualquer executor do comando [G A.3]; o
-árbitro não teria owned mode, portanto nenhum sinal de vida monitorado pelo
-PX4 (FM-1/FM-4 sem reação). Aceitação de `SET_NAV_STATE` vindo de
-`/fmu/in/vehicle_command` não foi verificada: [DESCONHECIDO].
+**C. Independent node sending `vehicle_command` as a GCS.**
+Commands with source `User` remove any executor from charge [G A.3]; the
+arbiter would have no owned mode, hence no liveness signal monitored by
+PX4 (FM-1/FM-4 without reaction). Acceptance of `SET_NAV_STATE` coming from
+`/fmu/in/vehicle_command` was not verified: [UNKNOWN].
 
-## Decisão
+## Decision
 
-Opção **A**, com as regras:
+Option **A**, with rules:
 
-1. Processo `guara_rta` contém `GuaraExecutor` (ModeExecutorBase) e
+1. Process `guara_rta` contains `GuaraExecutor` (ModeExecutorBase) and
    `GuaraCfGateway` (ModeBase, owned mode). `Settings.activation =
-   ActivateOnlyWhenArmed` (padrão) [G 1.5].
-2. **Separação decisão/atuação:** `DecisionCore` é código puro (sem ROS, sem
-   alocação após init, tempo limitado) executado por timer de período `T_s`.
-   A atuação (`scheduleMode`, `rtl`, `land`) roda em callback group separado,
-   alimentada por uma fila de capacidade fixa. O bloqueio de [G A.1] fica fora
-   do caminho de decisão, conforme CLAUDE.md.
-3. **Heartbeat do núcleo:** `GuaraCfGateway::checkArmingAndRunConditions`
-   reporta falha se a idade do último tick do núcleo > `H_max` (FM-4) [G A.4-A.6].
-4. **Gateway como Input Manager:** no tick que dispara T3, o gateway passa a
-   publicar velocidade zero e descarta a CF até voltar ao estado `CF` (FM-7).
-5. O Guará **nunca** chama `deferFailsafesSync(true)` (AC-20).
-6. `COM_MODE_ARM_CHK` permanece `0`: aceitar registro em voo abriria a porta
-   para componentes não inspecionados antes da decolagem. Consequência aceita: FM-3.
+   ActivateOnlyWhenArmed` (default) [G 1.5].
+2. **Decision/actuation split:** `DecisionCore` is pure code (no ROS, no
+   allocation after init, bounded time) run by a timer with period `T_s`.
+   Actuation (`scheduleMode`, `rtl`, `land`) runs in a separate callback group,
+   fed by a fixed-capacity queue. The blocking of [G A.1] stays outside the decision path, per CLAUDE.md.
+3. **Core heartbeat:** `GuaraCfGateway::checkArmingAndRunConditions`
+   reports failure if the age of the core's last tick > `H_max` (FM-4) [G A.4-A.6].
+4. **Gateway as Input Manager:** in the tick that fires T3, the gateway starts
+   publishing zero velocity and discards the CF until the state returns to `CF` (FM-7).
+5. Guará **never** calls `deferFailsafesSync(true)` (AC-20).
+6. `COM_MODE_ARM_CHK` stays `0`: accepting registration in flight would open the door
+   to components not inspected before takeoff; PX4 itself documents the default as
+   "disabled for safety reasons" [G A.16]. Accepted consequence: FM-3.
 
-## Consequências
+## Consequences
 
-- (+) Morte ou travamento do árbitro com CF ativa cai na cadeia de fallback do
-  PX4 (RTL), sem código extra no FMU.
-- (+) A CF não comanda o PX4 diretamente pelo caminho previsto; o gateway pode
-  bloqueá-la no mesmo tick da decisão.
-- (−) A CF depende do processo do árbitro: crash do árbitro interrompe a CF.
-- (−) Com RF interna ativa, morte do árbitro não é detectada (FM-2).
-- (−) Piloto que troca de modo desliga o Guará até reentrar no owned mode (por projeto).
-- (−) FM-12: o gateway não impede outros publicadores em `/fmu/in/trajectory_setpoint` [G A.13].
-- Riscos a verificar em M3: AC-15, AC-15b, AC-16, AC-16b, AC-21.
+- (+) Death or hang of the arbiter with CF active falls into the PX4 fallback
+  chain (RTL), without extra code in the FMU.
+- (+) The CF does not command PX4 directly through the intended path; the gateway can
+  block it in the same tick as the decision.
+- (−) The CF depends on the arbiter process: an arbiter crash interrupts the CF.
+- (−) With an internal RF active, arbiter death is not detected (FM-2).
+- (−) A pilot who switches modes disables Guará until re-entering the owned mode (by design).
+- (−) FM-12: the gateway does not prevent other publishers on `/fmu/in/trajectory_setpoint` [G A.13].
+- Risks to verify in M3: AC-15, AC-15b, AC-15c, AC-16, AC-16b, AC-21.
