@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
 # Run one headless PX4 SITL (SIH) scenario and write results/{run_id}/ (SPEC §6, AC-2).
 # Usage: ./scripts/sitl_run.sh --scenario <name> --seed <int> --headless
 set -euo pipefail

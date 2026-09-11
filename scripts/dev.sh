@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
 # Run a command inside the Guará dev container with the repository mounted at /work.
 # Usage: ./scripts/dev.sh <cmd> [args...]   (no args: interactive shell)
 set -euo pipefail

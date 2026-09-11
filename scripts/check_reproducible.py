@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """AC-2b: run a scenario N times with the same seed and compare config.yaml.
 
 Only `run_id` and `created_utc` may differ (SPEC §6). Each run must also pass

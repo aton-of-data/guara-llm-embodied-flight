@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """Headless PX4 SIH scenario runner (runs inside the dev container; see scripts/sitl_run.sh).
 
 Writes results/{run_id}/config.yaml before flight, the PX4 working directory

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # Guará development image: ROS 2 Humble + PX4 v1.17.0 SITL (SIH, headless) + Micro XRCE-DDS Agent.
 # Versions must match third_party/VERSIONS.md. Sources: GROUNDING.md A.17-A.21.
 FROM ros:humble-ros-base-jammy

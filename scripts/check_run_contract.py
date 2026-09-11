@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
 """AC-2: verify the run contract of one SITL run directory (SPEC §6).
 
 Checks config.yaml (seed, pinned third_party commits, Guará SHA, PX4 build commit)

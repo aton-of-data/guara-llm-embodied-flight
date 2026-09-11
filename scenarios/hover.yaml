@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 # M1 smoke scenario: take off with PX4 defaults, hover, land.
 # Steps are px4 client commands (GROUNDING A.18) executed in order.
 name: hover
