@@ -27,6 +27,16 @@ from check_run_contract import pinned_commits  # noqa: E402
 PX4_DIR = pathlib.Path(os.environ.get("PX4_DIR", "/opt/PX4-Autopilot"))
 PX4_BUILD = pathlib.Path(os.environ.get("PX4_BUILD", PX4_DIR / "build/px4_sitl_default"))
 ARMING_STATE_ARMED = 2  # px4_msgs/msg/VehicleStatus.msg:12
+
+# PX4 parameters every Guará run must pin, with the reason each one matters.
+#
+# COM_MODE_ARM_CHK: the firmware default is 0 ("Allow external mode registration while armed",
+# commander_params.c:1048), but px4-rc.simulator overrides it to 1 for developer convenience
+# (init.d-posix/px4-rc.simulator:8). ADR 0001 rule 6 and the FM-3 failure mode assume the flight
+# default, so every run forces it back to 0 and records the value it read back. Before the review of
+# 2026-09-11 this was not done, and AC-15c was recorded PASS against a run in which the in-flight
+# re-registration had in fact succeeded (finding C-1).
+REQUIRED_PX4_PARAMS = {"COM_MODE_ARM_CHK": 0}
 POLL_S = 0.5
 _RUN_LOG = None
 
@@ -89,6 +99,23 @@ CONDITIONS = {
     "rtl": is_rtl,
     "posctl": is_posctl,
 }
+
+
+def apply_px4_params(params: dict) -> dict:
+    """Set each parameter and read it back; returns {name: {"set": v, "read_back": v}}."""
+    applied = {}
+    for name, value in params.items():
+        px4_client(f"param set {name} {value}")
+        read_back = px4_client(f"param show -q {name}").stdout.strip()
+        try:
+            read_back_value = int(read_back)
+        except ValueError:
+            read_back_value = read_back
+        applied[name] = {"set": value, "read_back": read_back_value}
+        log(f"param {name} := {value} (read back {read_back_value!r})")
+        if read_back_value != value:
+            raise RuntimeError(f"PX4 parameter {name} is {read_back_value!r}, expected {value!r}")
+    return applied
 
 
 def owned_nav_state(run_dir: pathlib.Path) -> int:
@@ -250,6 +277,8 @@ def build_config(args, scenario: dict, scenario_path: pathlib.Path, run_id: str,
         },
         "steps": scenario["steps"],
         "expect": scenario.get("expect", {}),
+        # Filled in after boot by apply_px4_params; AC-2 checks it (scripts/check_run_contract.py).
+        "px4_params": {},
     }
 
 
@@ -328,6 +357,10 @@ def main() -> int:
         if not wait_for_log(px4_log_path, "Startup script returned successfully",
                             scenario["timeouts_s"]["boot"]):
             raise RuntimeError("PX4 did not finish startup")
+        px4_params = dict(REQUIRED_PX4_PARAMS)
+        px4_params.update(scenario.get("px4_params", {}))
+        config["px4_params"] = apply_px4_params(px4_params)
+        (run_dir / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=True))
         wait_for_log(run_dir / "xrce_agent.log", "session", 15)
         if scenario.get("record_verdicts"):
             verdict_log = (run_dir / "record_verdicts.log").open("w")

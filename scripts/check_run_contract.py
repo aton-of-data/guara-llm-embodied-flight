@@ -19,7 +19,10 @@ STARTUP_ERROR = re.compile(r"ERROR \[param\]|rcS: \d+: .*not found")
 REQUIRED_KEYS = (
     "run_id", "created_utc", "scenario", "scenario_sha256", "seed", "headless",
     "guara_sha", "guara_dirty", "image_id", "px4_build_commit", "third_party", "simulator",
+    "px4_params",
 )
+# Values the run must have pinned and read back; see REQUIRED_PX4_PARAMS in sitl/run_scenario.py.
+REQUIRED_PX4_PARAMS = {"COM_MODE_ARM_CHK": 0}
 
 
 def pinned_commits(versions_md: pathlib.Path) -> dict:
@@ -67,6 +70,15 @@ def check(run_dir: pathlib.Path) -> list:
         errors.append(f"third_party commits differ from VERSIONS.md: {config['third_party']} != {expected}")
     if config["px4_build_commit"] != expected.get("PX4-Autopilot"):
         errors.append(f"px4_build_commit {config['px4_build_commit']} != pinned PX4-Autopilot commit")
+
+    px4_params = config.get("px4_params") or {}
+    for name, want in REQUIRED_PX4_PARAMS.items():
+        entry = px4_params.get(name)
+        if entry is None:
+            errors.append(f"config.yaml px4_params does not record {name}")
+        elif entry.get("read_back") != want:
+            errors.append(
+                f"{name} read back {entry.get('read_back')!r}, the run contract requires {want!r}")
 
     px4_log = run_dir / "px4.log"
     if not px4_log.is_file():
