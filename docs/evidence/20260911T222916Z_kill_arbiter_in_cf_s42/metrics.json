@@ -1,0 +1,17 @@
+{
+  "AC-15": {
+    "t_owned_us": 20448000,
+    "t_rtl_us": 20460000,
+    "dt_last_owned_to_rtl_s": 0.012,
+    "detection": {
+      "available": true,
+      "t_last_setpoint_us": 19192000,
+      "dt_last_setpoint_to_rtl_s": 1.268,
+      "setpoint_sampling_p50_s": 0.19999999999999998,
+      "setpoint_sampling_max_s": 1.284,
+      "note": "upper bound: the arbiter died at or after the last logged setpoint"
+    },
+    "px4_unresponsive": true,
+    "px4_failsafe": true
+  }
+}

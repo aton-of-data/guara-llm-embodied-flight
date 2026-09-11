@@ -1,0 +1,8 @@
+{
+  "AC-15b": {
+    "t_owned_us": 19728000,
+    "t_loiter_us": 19740000,
+    "last_nav_state_after_hold": 4,
+    "rtl_after_hold": false
+  }
+}

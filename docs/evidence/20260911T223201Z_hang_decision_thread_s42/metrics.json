@@ -1,0 +1,9 @@
+{
+  "AC-16": {
+    "t_owned_us": 22980000,
+    "t_after_us": 22992000,
+    "dt_s": 0.012,
+    "path": "arming check (FM-4)",
+    "px4_unresponsive": false
+  }
+}

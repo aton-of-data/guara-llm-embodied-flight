@@ -10,7 +10,10 @@ log/
 .DS_Store
 .claude/settings.local.json
 
-# SITL run artifacts (ULog, logs); summaries are produced by scripts
+# SITL run artifacts (ULog, process logs, PX4 working directory) are large and stay local. The
+# evidence a reviewer needs off this machine is published into docs/evidence/ by
+# scripts/publish_evidence.py (review of 2026-09-11: "results/ is gitignored, so evidence cannot be
+# reviewed off this machine").
 results/
 
 # Ogma generation scratch (committed outputs live in guara_monitors/generated/)

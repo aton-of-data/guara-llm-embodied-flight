@@ -1,0 +1,10 @@
+{
+  "AC-7": {
+    "t_owned_us": 19728000,
+    "t_cmd_us": 19728000,
+    "t_loiter_us": 19740000,
+    "dt_owned_to_hold_s": 0.012,
+    "l6_s": 0.012,
+    "note": "l6_s is the ULog SET_NAV_STATE(AUTO_LOITER) stamp to the AUTO_LOITER sample"
+  }
+}

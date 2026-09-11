@@ -1,0 +1,4 @@
+scenario: gf_straight_concave
+seed: 42
+rta_on: 20260911T222542Z_gf_straight_concave_s42_rta_on
+rta_off: 20260911T222701Z_gf_straight_concave_s42_rta_off

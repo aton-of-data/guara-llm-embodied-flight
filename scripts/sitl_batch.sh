@@ -16,6 +16,9 @@ while [[ $# -gt 0 ]]; do
 done
 
 batch="${root}/results/batch_latency"
+# Each batch is one measurement of one build: mixing members produced by different commits would
+# make the aggregate meaningless, so the batch directory is rebuilt from scratch.
+rm -rf "${batch}"
 mkdir -p "${batch}"
 fail=0
 for ((i = 0; i < runs; i++)); do

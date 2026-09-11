@@ -1,0 +1,47 @@
+created_utc: '2026-09-11T22:32:53+00:00'
+expect:
+  min_altitude_m: 2.0
+  nav_state_after_hang: AUTO_RTL
+guara_dirty: true
+guara_sha: 5082fb44b79b6f4c5b2f38bdc82359894c69738b
+headless: true
+image_id: sha256:6ee9320c4f9a6e8ba705c015e07fc9030ca0728c7c0bbb88e812b778de9e7190
+px4_build_commit: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+px4_params:
+  COM_MODE_ARM_CHK:
+    read_back: 0
+    set: 0
+run_id: 20260911T223253Z_hang_ros_executor_s42
+scenario: hang_ros_executor
+scenario_sha256: 1e995126d6b8fe94dd0fcf454bb868e73b27498cbe71fa65471d93c8494eb59c
+seed: 42
+simulator:
+  PX4_SIMULATOR: sihsim
+  PX4_SIM_MODEL: sihsim_quadx
+  PX4_SIM_SPEED_FACTOR: 1
+  home:
+    alt: 850.0
+    lat: -22.0087
+    lon: -47.8909
+  px4_noise_seed: fixed srand(1234) in SensorBaroSim (GROUNDING A.20)
+steps:
+- cmd: commander takeoff
+  timeout_s: 60
+  wait_until: airborne
+- sleep_s: 8
+- timeout_s: 20
+  user_nav_state: owned
+  wait_until: owned
+- timeout_s: 15
+  wait_rta: 1
+- timeout_s: 20
+  wait_until: rtl
+- sleep_s: 3
+third_party:
+  PX4-Autopilot: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+  copilot: 365fb21429aa0b880f81d72dcaa9f207f5ea2d0a
+  daidalus: 0647596edb218f8e8c7731ff800396297bbace99
+  fret: 58db455be35182a015e607232d9f4e3c86731932
+  ogma: 69485b3442d76c48faaee30b37f9cbee212ceca6
+  px4-ros2-interface-lib: 4a3370f084ac6f1ef001a4afa2b007845ffd0837
+  px4_msgs: 86d8239e962f6939e05c3737784f60c02fa884db
