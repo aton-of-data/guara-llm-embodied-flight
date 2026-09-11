@@ -15,7 +15,7 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-6 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-7 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-8 | M4 | PASS | `docs/milestones/M4.md` |
-| AC-9 | M4 | OPEN | Predictor integrated in the arbiter; pair scenario not yet run |
+| AC-9 | M4 | PASS | `docs/milestones/M4.md` |
 | AC-10 | M5 | OPEN | `nosa/` reserved; DAIDALUS node not started |
 | AC-11 | M5 | PASS (isolation with DAIDALUS absent) | `python3 scripts/check_license_isolation.py` |
 | AC-12 | M6 | PASS | `docs/milestones/M3.md` (hysteresis_dwell, same package) |
