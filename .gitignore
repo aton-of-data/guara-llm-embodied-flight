@@ -12,3 +12,4 @@ log/
 
 # SITL run artifacts (ULog, logs); summaries are produced by scripts
 results/
+__pycache__/
