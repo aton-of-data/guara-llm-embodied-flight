@@ -28,10 +28,16 @@ PX4_DIR = pathlib.Path(os.environ.get("PX4_DIR", "/opt/PX4-Autopilot"))
 PX4_BUILD = pathlib.Path(os.environ.get("PX4_BUILD", PX4_DIR / "build/px4_sitl_default"))
 ARMING_STATE_ARMED = 2  # px4_msgs/msg/VehicleStatus.msg:12
 POLL_S = 0.5
+_RUN_LOG = None
 
 
 def log(msg: str) -> None:
-    print(f"[sitl_run] {msg}", flush=True)
+    stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M:%S")
+    line = f"[sitl_run] {stamp} {msg}"
+    print(line, flush=True)
+    if _RUN_LOG is not None:
+        _RUN_LOG.write(line + "\n")
+        _RUN_LOG.flush()
 
 
 def px4_client(command: str, timeout_s: float = 10.0) -> subprocess.CompletedProcess:
@@ -59,6 +65,8 @@ def is_airborne() -> bool:
 
 
 NAV_LOITER = 4  # VehicleStatus.NAVIGATION_STATE_AUTO_LOITER
+NAV_RTL = 5
+NAV_POSCTL = 2
 REGISTERED_RE = re.compile(r"registered '.*' \(executor id \d+, nav_state (\d+)\)")
 
 
@@ -66,10 +74,20 @@ def is_loiter() -> bool:
     return listener_field("vehicle_status", "nav_state") == str(NAV_LOITER)
 
 
+def is_rtl() -> bool:
+    return listener_field("vehicle_status", "nav_state") == str(NAV_RTL)
+
+
+def is_posctl() -> bool:
+    return listener_field("vehicle_status", "nav_state") == str(NAV_POSCTL)
+
+
 CONDITIONS = {
     "airborne": is_airborne,
     "disarmed": lambda: listener_field("vehicle_status", "arming_state") not in (None, str(ARMING_STATE_ARMED)),
     "loiter": is_loiter,
+    "rtl": is_rtl,
+    "posctl": is_posctl,
 }
 
 
@@ -114,10 +132,17 @@ def run_steps(scenario: dict, run_dir: pathlib.Path) -> None:
             elif cond:
                 if not wait_for(CONDITIONS[cond], timeout_s):
                     raise RuntimeError(f"timeout waiting for '{cond}' after user_nav_state")
+                log(f"condition '{cond}' reached")
             continue
         if "inject_verdict" in step:
             spec = step["inject_verdict"]
             ros_action("inject-verdict", spec["monitor_id"], "--duration", str(spec.get("duration_s", 3)))
+            continue
+        if "kill" in step:
+            sig = int(step.get("signal", 9))
+            name = step["kill"]
+            log(f"kill -{sig} {name}")
+            subprocess.run(["pkill", f"-{sig}", "-f", name], check=False)
             continue
         if "wait_rta" in step:
             if ros_action("wait-rta", str(step["wait_rta"]), "--timeout", str(step.get("timeout_s", 15))):
@@ -215,6 +240,8 @@ def main() -> int:
     px4_work = run_dir / "px4"
     px4_work.mkdir(parents=True)
 
+    global _RUN_LOG
+    _RUN_LOG = (run_dir / "sitl_run.log").open("w")
     config = build_config(args, scenario, scenario_path, run_id, created)
     (run_dir / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=True))
     latest = ROOT / "results" / "latest"
@@ -278,8 +305,11 @@ def main() -> int:
         stop(agent, "MicroXRCEAgent")
         agent_log.close()
         px4_log.close()
-    ulogs = sorted(px4_work.rglob("*.ulg"))
-    log(f"ulog files: {[str(p.relative_to(run_dir)) for p in ulogs]}")
+        ulogs = sorted(px4_work.rglob("*.ulg"))
+        log(f"ulog files: {[str(p.relative_to(run_dir)) for p in ulogs]}")
+        if _RUN_LOG is not None:
+            _RUN_LOG.close()
+            _RUN_LOG = None
     return status
 
 
