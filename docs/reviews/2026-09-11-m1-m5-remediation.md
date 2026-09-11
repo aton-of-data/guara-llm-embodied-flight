@@ -111,7 +111,7 @@ start, copied into the run configuration and published in `RtaState`.
 | AC-16 / AC-16b | The two paths are now distinguished: FM-4 must *not* show `flagging unresponsive` (arming-check path), FM-5 must show it. `metrics.json` records which path the run took. | `PASS AC-16`, `PASS AC-16b` |
 | AC-17 | Upper bound tightened to the SPEC's `A_i + 2 ticks = 0.30 s` (the extra 0.05 s of slack is gone). | re-run in the latency batch below |
 | AC-10 | A small-UAS, low-altitude encounter was added (60 m AMSL, 12 m/s ownship, 15 m/s head-on intruder at 3 km) plus a case proving that an intruder's own observation time changes the evaluation. | wrapper `T_daa = 45.624 s` = standalone `45.624 s` |
-| AC-1 | Clean from-scratch build of every Guará package, `nosa/` included. | see §6 |
+| AC-1 | Clean from-scratch build of every Guará package, `nosa/` included, with the output recorded in `docs/milestones/M1.md`. | 6 workspace packages in 11 min 45 s + `guara_daidalus` in 36 s; 96 + 13 + 20 tests pass |
 
 ## 5. Acceptance criteria re-run after the fixes
 
@@ -131,6 +131,10 @@ contract. Unit tests: `./scripts/dev.sh colcon test` (workspace) and
 | AC-16 | `sitl_run.sh --scenario hang_decision_thread --seed 42` + `check_ac.py AC-16` | PASS |
 | AC-16b | `sitl_run.sh --scenario hang_ros_executor --seed 42` + `check_ac.py AC-16b` | PASS |
 | AC-2 | `check_run_contract.py` on each run above | PASS |
+| AC-1 | `rm -rf build install log && colcon build` (workspace, then `nosa`) | PASS, excerpt in `docs/milestones/M1.md` |
+| unit | `colcon test` (workspace) | 96 tests, 0 failures |
+| unit | `colcon test --base-paths nosa --packages-select guara_daidalus` | 13 tests, 0 failures |
+| tools | `python3 -m pytest scripts/tests -q` | 20 passed |
 
 ## 6. Still open
 
@@ -147,5 +151,9 @@ These are recorded here rather than closed, and none of them is a leftover of a 
 - **Nominal-flight T3 on local-position age.** The reviewed AC-14 run showed one; the re-run does
   not. `inputs.local_position.max_age_s = 0.2` with a 50 Hz stream stays an availability risk to
   measure, not a defect observed at this commit.
+- **AC-5 timing is host-sensitive.** `decision_core_timing` asserts a 1 ms bound on the worst tick.
+  Run on its own it measures ~0.5 ms; in one parallel `colcon test` on this virtualised host it
+  reported 1.033 ms. The bound is a property of the decision core, but the measurement needs a quiet
+  machine to be meaningful, and the milestone evidence should say which it was.
 - **PX4 clamping of external trajectory setpoints** is still ungrounded; the gateway clamps on the
   trusted side rather than relying on it.
