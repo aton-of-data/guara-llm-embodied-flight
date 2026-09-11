@@ -29,6 +29,10 @@ Complex Function bounded by the Guará RTA.
 - Arbiter decision path without dynamic allocation and with bounded time.
 - SITL always headless and reproducible (seed + commit recorded).
 
+## License
+- Apache-2.0 (ADR 0006). Every new source file starts with `SPDX-License-Identifier: Apache-2.0`.
+- Nothing NOSA-licensed outside nosa/ (ADR 0003). No GPL-2.0-only dependencies.
+
 ## Git
 - Granular commits: one logical change per commit.
 - Commit author: aton-of-data.
