@@ -1,0 +1,20 @@
+# M1 smoke scenario: take off with PX4 defaults, hover, land.
+# Steps are px4 client commands (GROUNDING A.18) executed in order.
+name: hover
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 15}
+  - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
+expect:
+  min_altitude_m: 2.0
