@@ -102,7 +102,10 @@ def owned_nav_state(run_dir: pathlib.Path) -> int:
 
 def ros_action(*args: str) -> None:
     cmd = [sys.executable, str(ROOT / "scripts" / "sitl" / "ros_action.py"), *args]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    timeout = 90.0
+    if args and args[0] == "inject-cf":
+        timeout = 120.0
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     log(f"ros_action {' '.join(args)} -> rc={result.returncode} {result.stderr.strip()[-200:]}")
     if result.returncode != 0:
         raise RuntimeError(f"ros_action failed: {' '.join(args)}")
@@ -115,6 +118,9 @@ def start_ros_node(spec: dict, run_dir: pathlib.Path, ros_procs: list, suffix: s
     ros_args: list[str] = []
     if spec.get("params_file"):
         ros_args += ["--params-file", str(ROOT / spec["params_file"])]
+    extra = spec.get("extra_params_file")
+    if extra:
+        ros_args += ["--params-file", str(ROOT / extra)]
     for key, value in (spec.get("params") or {}).items():
         ros_args += ["--param", f"{key}:={value}"]
     if ros_args:
@@ -144,7 +150,10 @@ def run_steps(scenario: dict, run_dir: pathlib.Path, ros_procs: list) -> None:
             timeout_s = float(step.get("timeout_s", 15))
             if cond == "owned":
                 if ros_action_wait_nav(nav, timeout_s) != 0:
-                    raise RuntimeError("timeout waiting for owned nav_state")
+                    log("retry owned-mode SET_NAV_STATE")
+                    ros_action("set-nav-state", str(nav))
+                    if ros_action_wait_nav(nav, timeout_s) != 0:
+                        raise RuntimeError("timeout waiting for owned nav_state")
             elif cond:
                 if not wait_for(CONDITIONS[cond], timeout_s):
                     raise RuntimeError(f"timeout waiting for '{cond}' after user_nav_state")
@@ -153,6 +162,12 @@ def run_steps(scenario: dict, run_dir: pathlib.Path, ros_procs: list) -> None:
         if "inject_verdict" in step:
             spec = step["inject_verdict"]
             ros_action("inject-verdict", spec["monitor_id"], "--duration", str(spec.get("duration_s", 3)))
+            continue
+        if "inject_cf" in step:
+            spec = step["inject_cf"]
+            vel = spec["velocity_ned"]
+            ros_action("inject-cf", str(vel[0]), str(vel[1]), str(vel[2]),
+                       "--duration", str(spec.get("duration_s", 10)))
             continue
         if "kill" in step:
             sig = int(step.get("signal", 9))
@@ -256,15 +271,29 @@ def main() -> int:
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--headless", action="store_true", required=True,
                         help="required: GUI simulation is not supported")
+    parser.add_argument("--run-suffix", default="",
+                        help="appended to the run_id (used by sitl_pair.sh)")
+    parser.add_argument("--param", action="append", default=[], metavar="NAME:=VALUE",
+                        help="extra ros2 parameter for guara_rta_node")
     args = parser.parse_args()
 
     scenario_path = ROOT / "scenarios" / f"{args.scenario}.yaml"
     scenario = yaml.safe_load(scenario_path.read_text())
     random.seed(args.seed)  # scenario-level randomness only; PX4 noise seed is fixed (A.20)
+    extras = {}
+    for item in args.param:
+        if ":=" not in item:
+            raise SystemExit(f"invalid --param {item!r}; expected NAME:=VALUE")
+        key, value = item.split(":=", 1)
+        extras[key] = value
+    if extras:
+        for spec in scenario.get("ros_nodes", []):
+            if spec.get("executable") == "guara_rta_node":
+                spec.setdefault("params", {}).update(extras)
 
     now = datetime.datetime.now(datetime.timezone.utc)
     created = now.isoformat(timespec="seconds")
-    run_id = f"{now:%Y%m%dT%H%M%SZ}_{args.scenario}_s{args.seed}"
+    run_id = f"{now:%Y%m%dT%H%M%SZ}_{args.scenario}_s{args.seed}{args.run_suffix}"
     run_dir = ROOT / "results" / run_id
     px4_work = run_dir / "px4"
     px4_work.mkdir(parents=True)

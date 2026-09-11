@@ -9,7 +9,7 @@ import time
 
 import rclpy
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
-from guara_msgs.msg import MonitorVerdict, RtaState
+from guara_msgs.msg import CfSetpoint, MonitorVerdict, RtaState
 from px4_msgs.msg import VehicleCommand, VehicleStatus
 
 # Topic suffixes follow message MESSAGE_VERSION (GROUNDING 3.5): command v0, status v1.
@@ -70,6 +70,25 @@ def inject_verdict(monitor_id: str, duration_s: float) -> None:
     rclpy.shutdown()
 
 
+def inject_cf(vn: float, ve: float, vd: float, duration_s: float) -> None:
+    node = init()
+    qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT,
+                     history=HistoryPolicy.KEEP_LAST)
+    pub = node.create_publisher(CfSetpoint, "/guara/cf/setpoint", qos)
+    time.sleep(0.3)
+    deadline = time.monotonic() + duration_s
+    while time.monotonic() < deadline:
+        msg = CfSetpoint()
+        msg.stamp = node.get_clock().now().to_msg()
+        msg.velocity_ned_m_s = [float(vn), float(ve), float(vd)]
+        msg.yaw_ned_rad = float("nan")
+        pub.publish(msg)
+        rclpy.spin_once(node, timeout_sec=0.05)
+        time.sleep(0.1)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
 def wait_nav(want: int, timeout_s: float) -> int:
     node = init()
     got = {"v": None}
@@ -117,6 +136,11 @@ def main() -> int:
     i = sub.add_parser("inject-verdict")
     i.add_argument("monitor_id")
     i.add_argument("--duration", type=float, default=3.0)
+    c = sub.add_parser("inject-cf")
+    c.add_argument("vn", type=float)
+    c.add_argument("ve", type=float)
+    c.add_argument("vd", type=float)
+    c.add_argument("--duration", type=float, default=10.0)
     w = sub.add_parser("wait-nav")
     w.add_argument("nav", type=int)
     w.add_argument("--timeout", type=float, default=15.0)
@@ -129,6 +153,9 @@ def main() -> int:
         return 0
     if args.cmd == "inject-verdict":
         inject_verdict(args.monitor_id, args.duration)
+        return 0
+    if args.cmd == "inject-cf":
+        inject_cf(args.vn, args.ve, args.vd, args.duration)
         return 0
     if args.cmd == "wait-nav":
         return wait_nav(args.nav, args.timeout)
