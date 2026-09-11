@@ -10,7 +10,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 
 | AC | Milestone | Status | Evidence |
 |---|---|---|---|
-| AC-1 | M1 | PASS | `docs/milestones/M1.md` |
+| AC-1 | M1 | PASS (re-run 2026-09-11) | `docs/milestones/M1.md` (clean build of every package) |
 | AC-2 | M1 | PASS | `docs/milestones/M1.md` |
 | AC-2b | M1 | PASS | `docs/milestones/M1.md` |
 | AC-3 | M2 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
@@ -31,9 +31,9 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-15c | M3 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
 | AC-16 | M3 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
 | AC-16b | M3 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
-| AC-17 | M3 | PASS | `docs/milestones/M3.md` |
-| AC-18 | M7 | PASS | `docs/milestones/M7.md` |
-| AC-19 | M7 | PASS | `docs/milestones/M7.md` |
+| AC-17 | M3 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
+| AC-18 | M7 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
+| AC-19 | M7 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |
 | AC-20 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-21 | M3 | PASS | `docs/milestones/M3.md` |
-| AC-22 | M4–M6 | PASS | `docs/milestones/M7.md` |
+| AC-22 | M4–M6 | PASS (re-run 2026-09-11) | `docs/reviews/2026-09-11-m1-m5-remediation.md` §5 |

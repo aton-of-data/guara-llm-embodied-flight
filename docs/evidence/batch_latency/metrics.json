@@ -1,0 +1,218 @@
+{
+  "n_runs": 30,
+  "n_complete_delta": 30,
+  "stages": {
+    "L0": {
+      "n": 30,
+      "p50_s": 0.0,
+      "p99_s": 0.0028399634361267125
+    },
+    "L1": {
+      "n": 30,
+      "p50_s": 3.3471611738204956,
+      "p99_s": 4.349084451198578
+    },
+    "L2": {
+      "n": 30,
+      "p50_s": 0.0,
+      "p99_s": 0.0
+    },
+    "L3": {
+      "n": 30,
+      "p50_s": 0.0006879568099975586,
+      "p99_s": 0.0013318514823913575
+    },
+    "L4": {
+      "n": 30,
+      "p50_s": 0.010960791500110645,
+      "p99_s": 0.024949777859842474
+    },
+    "L5": {
+      "n": 30,
+      "p50_s": 0.02046731300015381,
+      "p99_s": 0.031384576070568077
+    },
+    "L6": {
+      "n": 30,
+      "p50_s": 0.012,
+      "p99_s": 0.012
+    }
+  },
+  "delta_lat": {
+    "n": 30,
+    "p50_s": 0.04483105640366557,
+    "p99_s": 0.061028007731876645
+  },
+  "clock_alignment": {
+    "abs_p99_s": 4.894348715019227,
+    "limit_s": 0.01,
+    "cross_process_reported": false
+  },
+  "tau_rec": {
+    "n": 30,
+    "p50_s": 0.44199999999999995,
+    "p99_s": 1.73828,
+    "note": "time after AUTO_LOITER until speed < 0.5 m/s (ULog)"
+  },
+  "o1": {
+    "tau_gf_s": 1.0,
+    "tau_daa_s": 30.0,
+    "delta_lat_p99_s": 0.061028007731876645,
+    "tau_rec_p99_s": 1.73828,
+    "geofence_satisfied": true,
+    "daa_satisfied": true
+  },
+  "runs": [
+    {
+      "run_id": "20260911T230110Z_latency_hold_s301",
+      "delta_lat_s": 0.04492852405502344,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230204Z_latency_hold_s302",
+      "delta_lat_s": 0.04513091182690186,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230259Z_latency_hold_s303",
+      "delta_lat_s": 0.05776409829678596,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230349Z_latency_hold_s304",
+      "delta_lat_s": 0.02575143291443237,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230442Z_latency_hold_s305",
+      "delta_lat_s": 0.03741761464681258,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230538Z_latency_hold_s306",
+      "delta_lat_s": 0.04199610850520184,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230629Z_latency_hold_s307",
+      "delta_lat_s": 0.03935671147229368,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230721Z_latency_hold_s308",
+      "delta_lat_s": 0.04417395815272539,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230812Z_latency_hold_s309",
+      "delta_lat_s": 0.049867073257530134,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230901Z_latency_hold_s310",
+      "delta_lat_s": 0.05275378973402621,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T230954Z_latency_hold_s311",
+      "delta_lat_s": 0.04591361396779757,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231046Z_latency_hold_s312",
+      "delta_lat_s": 0.043640910400710706,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231137Z_latency_hold_s313",
+      "delta_lat_s": 0.036966310989839254,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231228Z_latency_hold_s314",
+      "delta_lat_s": 0.02411958312205752,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231320Z_latency_hold_s315",
+      "delta_lat_s": 0.04473358875230769,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231412Z_latency_hold_s316",
+      "delta_lat_s": 0.04834811475376409,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231504Z_latency_hold_s317",
+      "delta_lat_s": 0.051590235336618204,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231556Z_latency_hold_s318",
+      "delta_lat_s": 0.04756336141946303,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231648Z_latency_hold_s319",
+      "delta_lat_s": 0.036746854285695005,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231742Z_latency_hold_s320",
+      "delta_lat_s": 0.051424773284736144,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231836Z_latency_hold_s321",
+      "delta_lat_s": 0.041411207138764436,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T231928Z_latency_hold_s322",
+      "delta_lat_s": 0.04511284711526241,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232019Z_latency_hold_s323",
+      "delta_lat_s": 0.05104937201696157,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232114Z_latency_hold_s324",
+      "delta_lat_s": 0.034868299163746994,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232207Z_latency_hold_s325",
+      "delta_lat_s": 0.036408034980297085,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232257Z_latency_hold_s326",
+      "delta_lat_s": 0.058935770888921976,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232349Z_latency_hold_s327",
+      "delta_lat_s": 0.03598048366558214,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232440Z_latency_hold_s328",
+      "delta_lat_s": 0.050013492660866174,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232535Z_latency_hold_s329",
+      "delta_lat_s": 0.02691205537422502,
+      "missing_stages": []
+    },
+    {
+      "run_id": "20260911T232630Z_latency_hold_s330",
+      "delta_lat_s": 0.0618825833437877,
+      "missing_stages": []
+    }
+  ],
+  "errors": []
+}

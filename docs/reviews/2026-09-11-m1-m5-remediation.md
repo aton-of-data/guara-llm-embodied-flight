@@ -109,7 +109,7 @@ start, copied into the run configuration and published in `RtaState`.
 | AC-14 | P-6 is asserted against the ULog: no `SET_NAV_STATE` from a `source_component ≥ COMPONENT_MODE_EXECUTOR_START` after the pilot leaves the owned mode. | 0 executor commands after the override — `PASS AC-14` |
 | AC-15 | A detection time is computed on the PX4 clock (last logged `trajectory_setpoint` before the failsafe → AUTO_RTL) and recorded with its sampling period, instead of the logger spacing. | detection ≤ 1.268 s (±0.200 s sampling), consistent with the 1.2 s hypothesis — `PASS AC-15` |
 | AC-16 / AC-16b | The two paths are now distinguished: FM-4 must *not* show `flagging unresponsive` (arming-check path), FM-5 must show it. `metrics.json` records which path the run took. | `PASS AC-16`, `PASS AC-16b` |
-| AC-17 | Upper bound tightened to the SPEC's `A_i + 2 ticks = 0.30 s` (the extra 0.05 s of slack is gone). | re-run in the latency batch below |
+| AC-17 | Upper bound tightened to the SPEC's `A_i + 2 ticks = 0.30 s` (the extra 0.05 s of slack is gone). | re-run: T3 age 0.220 s — `PASS AC-17` |
 | AC-10 | A small-UAS, low-altitude encounter was added (60 m AMSL, 12 m/s ownship, 15 m/s head-on intruder at 3 km) plus a case proving that an intruder's own observation time changes the evaluation. | wrapper `T_daa = 45.624 s` = standalone `45.624 s` |
 | AC-1 | Clean from-scratch build of every Guará package, `nosa/` included, with the output recorded in `docs/milestones/M1.md`. | 6 workspace packages in 11 min 45 s + `guara_daidalus` in 36 s; 96 + 13 + 20 tests pass |
 
@@ -130,6 +130,10 @@ contract. Unit tests: `./scripts/dev.sh colcon test` (workspace) and
 | AC-15c | `sitl_run.sh --scenario restart_arbiter_armed --seed 42` + `check_ac.py AC-15c` | PASS |
 | AC-16 | `sitl_run.sh --scenario hang_decision_thread --seed 42` + `check_ac.py AC-16` | PASS |
 | AC-16b | `sitl_run.sh --scenario hang_ros_executor --seed 42` + `check_ac.py AC-16b` | PASS |
+| AC-17 | `sitl_run.sh --scenario stale_local_position --seed 42` + `check_ac.py AC-17` | PASS: T3 at age 0.220 s, inside the tightened `A_i + 2 ticks = 0.30 s` |
+| AC-18 | `sitl_batch.sh --runs 30 --seed-start 301` + `aggregate.py` + `check_ac.py AC-18` | PASS, `fail=0 of 30`, δ_lat p50 = 0.0448 s, p99 = 0.0610 s |
+| AC-19 | `check_ac.py AC-19 results/batch_latency` | PASS, clock alignment p99 = 4.894 s (L1 stays out of δ_lat) |
+| AC-22 | `check_ac.py AC-22 results/batch_latency` | PASS, O-1 holds: τ_gf 1.0 s > δ_lat p99 0.061 s; τ_daa 30 s > τ_rec p99 1.738 s + δ_lat p99 |
 | AC-2 | `check_run_contract.py` on each run above | PASS |
 | AC-1 | `rm -rf build install log && colcon build` (workspace, then `nosa`) | PASS, excerpt in `docs/milestones/M1.md` |
 | unit | `colcon test` (workspace) | 96 tests, 0 failures |
