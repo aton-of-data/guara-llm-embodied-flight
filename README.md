@@ -11,8 +11,7 @@ This is not certification. What the system does and does not guarantee is in
 
 ## Status
 
-Milestone M1 (headless PX4 SITL) is complete: [`docs/milestones/M1.md`](docs/milestones/M1.md).
-Acceptance-criterion tracker: [`docs/milestones/STATUS.md`](docs/milestones/STATUS.md).
+Milestone reports: [`docs/milestones/STATUS.md`](docs/milestones/STATUS.md) (M1–M7 ACs).
 
 | Piece | Location |
 |---|---|
@@ -38,6 +37,10 @@ Acceptance-criterion tracker: [`docs/milestones/STATUS.md`](docs/milestones/STAT
 # NOSA-isolated DAIDALUS node (ADR 0003); omitted from the default colcon path
 ./scripts/daa.sh build
 ./scripts/daa.sh test
+
+# Latency batch (M7): 30 headless latency_hold runs, then aggregate
+./scripts/sitl_batch.sh --runs 30 --seed-start 1
+./scripts/dev.sh python3 scripts/aggregate.py results/batch_latency
 
 # Formal-methods image: FRET sources + Ogma + Copilot (generation only)
 ./scripts/fm.sh ros2_ws/src/guara_monitors/scripts/generate.sh

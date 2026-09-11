@@ -27,8 +27,8 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-16 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-16b | M3 | PASS | `docs/milestones/M3.md` |
 | AC-17 | M3 | PASS | `docs/milestones/M3.md` |
-| AC-18 | M7 | OPEN | Latency batch not started |
-| AC-19 | M7 | OPEN | Clock alignment not measured |
+| AC-18 | M7 | PASS | `docs/milestones/M7.md` |
+| AC-19 | M7 | PASS | `docs/milestones/M7.md` |
 | AC-20 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-21 | M3 | PASS | `docs/milestones/M3.md` |
-| AC-22 | M4–M6 | OPEN | Needs measured `δ_lat` from M7 |
+| AC-22 | M4–M6 | PASS | `docs/milestones/M7.md` |
