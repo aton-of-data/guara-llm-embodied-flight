@@ -108,7 +108,18 @@ def ros_action(*args: str) -> None:
         raise RuntimeError(f"ros_action failed: {' '.join(args)}")
 
 
-def run_steps(scenario: dict, run_dir: pathlib.Path) -> None:
+def start_ros_node(spec: dict, run_dir: pathlib.Path, ros_procs: list, suffix: str = "") -> None:
+    exe = spec["executable"]
+    handle = (run_dir / f"{exe}{suffix}.log").open("w")
+    cmd = ["ros2", "run", spec["package"], exe]
+    if spec.get("params_file"):
+        cmd += ["--ros-args", "--params-file", str(ROOT / spec["params_file"])]
+    proc = subprocess.Popen(cmd, stdout=handle, stderr=subprocess.STDOUT)
+    ros_procs.append((exe + suffix, proc, handle))
+    log(f"started ros2 run {spec['package']} {exe}{suffix}")
+
+
+def run_steps(scenario: dict, run_dir: pathlib.Path, ros_procs: list) -> None:
     ready_timeout = scenario["timeouts_s"]["ready"]
     for step in scenario["steps"]:
         if "sleep_s" in step:
@@ -143,6 +154,19 @@ def run_steps(scenario: dict, run_dir: pathlib.Path) -> None:
             name = step["kill"]
             log(f"kill -{sig} {name}")
             subprocess.run(["pkill", f"-{sig}", "-f", name], check=False)
+            continue
+        if "start" in step:
+            name = step["start"]
+            spec = next(s for s in scenario.get("ros_nodes", []) if s["executable"] == name)
+            start_ros_node(spec, run_dir, ros_procs, suffix=step.get("log_suffix", "_restart"))
+            continue
+        if "wait_log" in step:
+            path = run_dir / step["wait_log"]
+            pattern = step["pattern"]
+            timeout_s = float(step.get("timeout_s", 20))
+            if not wait_for_log(path, pattern, timeout_s):
+                raise RuntimeError(f"timeout waiting for {pattern!r} in {path.name}")
+            log(f"log matched {pattern!r} in {path.name}")
             continue
         if "wait_rta" in step:
             if ros_action("wait-rta", str(step["wait_rta"]), "--timeout", str(step.get("timeout_s", 15))):
@@ -279,20 +303,14 @@ def main() -> int:
                 stdout=verdict_log, stderr=subprocess.STDOUT)
             ros_procs.append(("record_verdicts", rec, verdict_log))
         for spec in scenario.get("ros_nodes", []):
-            node_log = (run_dir / f"{spec['executable']}.log").open("w")
-            cmd = ["ros2", "run", spec["package"], spec["executable"]]
-            if spec.get("params_file"):
-                cmd += ["--ros-args", "--params-file", str(ROOT / spec["params_file"])]
-            proc = subprocess.Popen(cmd, stdout=node_log, stderr=subprocess.STDOUT)
-            ros_procs.append((spec["executable"], proc, node_log))
-            log(f"started ros2 run {spec['package']} {spec['executable']}")
+            start_ros_node(spec, run_dir, ros_procs)
         if any(s.get("executable") == "guara_rta_node" for s in scenario.get("ros_nodes", [])):
             if not wait_for_log(run_dir / "guara_rta_node.log", "registered '", 30):
                 raise RuntimeError("arbiter did not register with PX4")
             log(f"arbiter registered nav_state={owned_nav_state(run_dir)}")
         if ros_procs:
             time.sleep(2.0)
-        run_steps(scenario, run_dir)
+        run_steps(scenario, run_dir, ros_procs)
         log("scenario complete")
     except Exception as exc:  # report and still shut down cleanly
         log(f"FAIL {exc}")
