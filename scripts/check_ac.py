@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 import argparse
+import json
 import pathlib
-import re
 import subprocess
 import sys
 
@@ -26,7 +26,36 @@ def check_ac20(_path: pathlib.Path) -> list[str]:
     return errors
 
 
+def check_ac3(run_dir: pathlib.Path) -> list[str]:
+    """Ogma/Copilot monitor publishes a violation in the altitude scenario."""
+    errors: list[str] = []
+    verdicts = run_dir / "verdicts.jsonl"
+    if not verdicts.is_file():
+        return ["missing verdicts.jsonl"]
+    lines = [ln for ln in verdicts.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if not lines:
+        return ["verdicts.jsonl is empty (monitor published nothing)"]
+    records = [json.loads(ln) for ln in lines]
+    fired = [v for v in records if v.get("violated")]
+    if not fired:
+        errors.append("no MonitorVerdict with violated=true")
+    elif not any(v.get("monitor_id") == "REQ-ALT-01" for v in fired):
+        errors.append("violation present but monitor_id is not REQ-ALT-01")
+    return errors
+
+
+def check_ac11(_path: pathlib.Path) -> list[str]:
+    """ADR 0003: no DAIDALUS dependency outside nosa/."""
+    script = ROOT / "scripts" / "check_license_isolation.py"
+    result = subprocess.run([sys.executable, str(script)], capture_output=True, text=True)
+    if result.returncode != 0:
+        return [result.stdout + result.stderr]
+    return []
+
+
 CHECKERS = {
+    "AC-3": check_ac3,
+    "AC-11": check_ac11,
     "AC-20": check_ac20,
 }
 
