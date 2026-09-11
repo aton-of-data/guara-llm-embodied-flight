@@ -26,6 +26,37 @@ install(DIRECTORY include/ DESTINATION include)
 install(TARGETS guara_rta_core EXPORT export_guara_rta
   ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 
+# Arbiter process: ModeExecutor + owned CF gateway (SPEC §2, ADR 0001).
+option(GUARA_SIM_FAULT_INJECTION "Enable SITL-only fault injection parameters (FM-4/FM-5)" OFF)
+find_package(eigen3_cmake_module REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(px4_msgs REQUIRED)
+find_package(px4_ros2_cpp REQUIRED)
+find_package(guara_msgs REQUIRED)
+find_package(guara_geofence REQUIRED)
+
+add_executable(guara_rta_node src/arbiter_node.cpp)
+target_include_directories(guara_rta_node PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+# Plain (non-keyword) target_link_libraries so ament_target_dependencies can
+# append Humble rosidl import libraries without mixing signature styles.
+target_link_libraries(guara_rta_node
+  guara_rta_core
+  guara_geofence::guara_geofence
+  Eigen3::Eigen
+  px4_ros2_cpp::px4_ros2_cpp
+  rclcpp::rclcpp
+)
+# Humble rosidl packages expose includes/libs via ament_target_dependencies.
+ament_target_dependencies(guara_rta_node guara_msgs px4_msgs)
+if(GUARA_SIM_FAULT_INJECTION)
+  target_compile_definitions(guara_rta_node PRIVATE GUARA_SIM_FAULT_INJECTION)
+endif()
+
+install(TARGETS guara_rta_node DESTINATION lib/${PROJECT_NAME})
+install(DIRECTORY config DESTINATION share/${PROJECT_NAME})
+
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   # Test names are the ctest selectors used by the acceptance criteria of SPEC §6.
