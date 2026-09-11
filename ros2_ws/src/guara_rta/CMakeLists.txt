@@ -85,6 +85,10 @@ if(BUILD_TESTING)
   target_link_libraries(actuator_confirmation guara_rta_core)
   ament_add_gtest(return_policy test/test_return_policy.cpp)
   target_link_libraries(return_policy guara_rta_core)
+  # RQ5: property test of the gateway against an adversarial CF (ADR 0010).
+  ament_add_gtest(gateway_fuzz test/test_gateway_fuzz.cpp TIMEOUT 300)
+  target_link_libraries(gateway_fuzz guara_rta_core)
+  target_compile_options(gateway_fuzz PRIVATE -O2)
 endif()
 
 ament_export_include_directories(include)

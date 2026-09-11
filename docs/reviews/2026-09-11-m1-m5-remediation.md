@@ -143,9 +143,16 @@ These are recorded here rather than closed, and none of them is a leftover of a 
 - **SROS2 on `/guara/cf/*` and `fmu/in/*` (FM-12).** The gateway now bounds *what* an untrusted CF
   can ask for; nothing yet bounds *who* may ask. This is a precondition for any networked or
   LLM-driven CF (ADR 0010, consequence 3).
-- **RQ5 / RQ6b corpora.** Fuzzing the gateway (future stamps, NaN, extreme values, mode-tool abuse)
-  and jailbreaking the mission compiler are research questions with no implementation yet; the unit
-  tests cover the specific cases the review named, not a corpus.
+- **RQ6b corpus.** Jailbreaking the mission compiler has no implementation yet; the compiler itself
+  is future work (`LLM-EMBODIMENT.md` §5.3).
+
+  RQ5 has a first implementation: `test_gateway_fuzz.cpp` drives 200 000 ticks of a deterministic
+  adversarial CF (NaN, infinities, ±1000 m/s, stamps up to 100 s in the future or the past, replays,
+  silences) against a guard that refuses at random, and asserts four invariants — envelope, state,
+  freshness/ordering, guard. Against the pre-review gateway the same test fails immediately
+  (`speed 893.452 vs 5.0001`, `vz -215.176 vs -3.0001`); against the current one it forwards 52 855
+  setpoints while rejecting 27 029 implausible stamps, 41 085 non-finite values and 13 483 guard
+  refusals, with no invariant violated. It is not yet a *corpus* of realistic LLM misbehaviour.
 - **Gateway envelope values are [HYPOTHESIS].** They must be filled in per airframe from the PX4
   limits and the ADR 0004 braking measurement before any flight.
 - **Nominal-flight T3 on local-position age.** The reviewed AC-14 run showed one; the re-run does
