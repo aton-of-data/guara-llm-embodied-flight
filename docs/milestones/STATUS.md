@@ -13,7 +13,7 @@ in the milestone report. This table is a tracker, not a substitute for those rep
 | AC-4 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-5 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-6 | M3 | PASS | `docs/milestones/M3.md` |
-| AC-7 | M3 | OPEN | Arbiter node built; SITL `monitor_trigger_hold` not yet run |
+| AC-7 | M3 | PASS | `docs/milestones/M3.md` |
 | AC-8 | M4 | PASS | `docs/milestones/M4.md` |
 | AC-9 | M4 | OPEN | Predictor integrated in the arbiter; pair scenario not yet run |
 | AC-10 | M5 | OPEN | `nosa/` reserved; DAIDALUS node not started |
