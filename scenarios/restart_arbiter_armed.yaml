@@ -1,5 +1,9 @@
 # SPDX-License-Identifier: Apache-2.0
-# M3 AC-15c / FM-3: restart the arbiter while armed; PX4 must reject registration.
+# M3 AC-15c / FM-3: restart the arbiter while armed; PX4 must reject the registration.
+#
+# The run pins COM_MODE_ARM_CHK = 0 (the firmware default; px4-rc.simulator overrides it to 1), so
+# the rejection path of ModeManagement::update is the one exercised. Waiting for the accept-path
+# warning "Mode '...' already registered" was finding C-1 of the review of 2026-09-11.
 name: restart_arbiter_armed
 vehicle:
   simulator: sihsim
@@ -21,7 +25,7 @@ steps:
   - {wait_rta: 1, timeout_s: 15}
   - {kill: guara_rta_node, signal: 9}
   - {start: guara_rta_node, log_suffix: _restart}
-  - {wait_log: px4.log, pattern: "already registered", timeout_s: 20}
+  - {wait_log: px4.log, pattern: "Not accepting registration requests while armed", timeout_s: 30}
   - {sleep_s: 2}
 expect:
   min_altitude_m: 2.0

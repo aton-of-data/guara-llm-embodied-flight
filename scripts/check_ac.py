@@ -7,12 +7,16 @@ import argparse
 import json
 import math
 import pathlib
+import re
 import subprocess
 import sys
 
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+
+# The line the arbiter logs once registration with PX4 succeeded (arbiter_node.cpp).
+REGISTERED_RE = re.compile(r"registered '.*' \(executor id \d+, nav_state \d+\)")
 
 
 def check_ac20(_path: pathlib.Path) -> list[str]:
@@ -30,7 +34,14 @@ def check_ac20(_path: pathlib.Path) -> list[str]:
 
 
 def check_ac3(run_dir: pathlib.Path) -> list[str]:
-    """Ogma/Copilot monitor publishes a violation in the altitude scenario."""
+    """Ogma/Copilot monitor publishes a violation in the altitude scenario, and only then.
+
+    A monitor stuck at violated=true would have satisfied the original checker: in the run reviewed
+    on 2026-09-11 every one of the 1728 verdicts, including those on the ground, reported a
+    violation. The criterion now needs the negative control as well: the monitor must report at
+    least one non-violation with complete inputs before the first violation, i.e. an actual
+    false -> true transition.
+    """
     errors: list[str] = []
     verdicts = run_dir / "verdicts.jsonl"
     if not verdicts.is_file():
@@ -39,11 +50,23 @@ def check_ac3(run_dir: pathlib.Path) -> list[str]:
     if not lines:
         return ["verdicts.jsonl is empty (monitor published nothing)"]
     records = [json.loads(ln) for ln in lines]
-    fired = [v for v in records if v.get("violated")]
+    alt = [v for v in records if v.get("monitor_id") == "REQ-ALT-01"]
+    if not alt:
+        return ["no MonitorVerdict from REQ-ALT-01"]
+    fired = [v for v in alt if v.get("violated")]
     if not fired:
-        errors.append("no MonitorVerdict with violated=true")
-    elif not any(v.get("monitor_id") == "REQ-ALT-01" for v in fired):
-        errors.append("violation present but monitor_id is not REQ-ALT-01")
+        return ["no REQ-ALT-01 verdict with violated=true"]
+    first_violation = next(i for i, v in enumerate(alt) if v.get("violated"))
+    clear_before = [v for v in alt[:first_violation]
+                    if not v.get("violated") and v.get("inputs_complete", True)]
+    if not clear_before:
+        errors.append(
+            f"no violated=false verdict before the first violation ({first_violation} samples): "
+            "the criterion is vacuous, a monitor stuck at true would pass")
+    n_clear = sum(1 for v in alt if not v.get("violated"))
+    print(json.dumps({"AC-3": {"n_verdicts": len(alt), "n_violated": len(fired),
+                               "n_clear": n_clear,
+                               "first_violation_index": first_violation}}, indent=2))
     return errors
 
 
@@ -56,7 +79,8 @@ def check_ac7(run_dir: pathlib.Path) -> list[str]:
     ulogs = sorted(run_dir.rglob("*.ulg"))
     if not ulogs:
         return ["no .ulg in run directory"]
-    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    ulog = ULog(str(ulogs[0]),
+                message_name_filter_list=["vehicle_status", "vehicle_command"])
     datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
     if not datasets:
         return ["ULog has no vehicle_status"]
@@ -73,18 +97,50 @@ def check_ac7(run_dir: pathlib.Path) -> list[str]:
         return ["ULog never shows owned/external nav_state (23-30)"]
     if t_loiter is None:
         return ["ULog shows owned mode but no AUTO_LOITER afterwards"]
+    # L6 of the latency budget (SPEC §4.1): the arbiter's SET_NAV_STATE command in the ULog to the
+    # nav_state change. Recording it here was the AC-7 gap of the review of 2026-09-11.
+    t_cmd_us = _ulog_set_nav_state_us(ulog, NAV_LOITER, before_us=t_loiter)
+    if t_cmd_us is None:
+        return ["ULog has no VEHICLE_CMD_SET_NAV_STATE(AUTO_LOITER) before the Hold: L6 unmeasurable"]
     dt_s = (t_loiter - t_owned) * 1e-6
+    l6_s = (t_loiter - t_cmd_us) * 1e-6
     metrics = {
         "AC-7": {
             "t_owned_us": t_owned,
+            "t_cmd_us": t_cmd_us,
             "t_loiter_us": t_loiter,
             "dt_owned_to_hold_s": dt_s,
-            "note": "dt is owned-mode sample to AUTO_LOITER; L6 needs the matching vehicle_command stamp (M7)",
+            "l6_s": l6_s,
+            "note": "l6_s is the ULog SET_NAV_STATE(AUTO_LOITER) stamp to the AUTO_LOITER sample",
         }
     }
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    print(f"owned→AUTO_LOITER dt={dt_s:.3f} s (written to metrics.json)")
+    print(f"owned→AUTO_LOITER dt={dt_s:.3f} s, L6={l6_s:.3f} s (written to metrics.json)")
     return []
+
+
+CMD_SET_NAV_STATE = 100001  # px4_msgs/msg/VehicleCommand.msg:114
+NAV_LOITER = 4
+NAV_RTL = 5
+
+
+def _ulog_set_nav_state_us(ulog, nav_state: int, before_us: int | None = None) -> int | None:
+    """Timestamp of the last SET_NAV_STATE(nav_state) command logged before `before_us`."""
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_command"]
+    if not datasets:
+        return None
+    data = datasets[0].data
+    found = None
+    for i, command in enumerate(data["command"]):
+        if int(command) != CMD_SET_NAV_STATE:
+            continue
+        if abs(float(data["param1"][i]) - float(nav_state)) > 0.5:
+            continue
+        t = int(data["timestamp"][i])
+        if before_us is not None and t > before_us:
+            continue
+        found = t
+    return found
 
 
 def _transitions(log_text: str) -> list[str]:
@@ -115,7 +171,59 @@ def check_ac14(run_dir: pathlib.Path) -> list[str]:
         return ["no T2 (enter CF) in arbiter log"]
     if not seen_t1_after_t2:
         return ["no T1 (INACTIVE) after CF (pilot override)"]
+
+    # P-6 is a property of what reached PX4, not of what the arbiter logged. The ULog carries every
+    # vehicle_command with its source_component, so the absence of executor commands after the
+    # override is asserted against the flight log (review of 2026-09-11, AC-14 gap).
+    errors, meta = _no_executor_command_after_override(run_dir)
+    if errors:
+        return errors
+    (run_dir / "metrics.json").write_text(json.dumps({"AC-14": meta}, indent=2) + "\n")
+    print(f"pilot override at {meta['t_override_us']} us; "
+          f"{meta['n_executor_commands_after']} executor commands afterwards")
     return []
+
+
+COMPONENT_MODE_EXECUTOR_START = 1000  # px4_msgs/msg/VehicleCommand.msg:198
+
+
+def _no_executor_command_after_override(run_dir: pathlib.Path) -> tuple[list[str], dict]:
+    """No SET_NAV_STATE from a mode executor after the pilot leaves the owned mode."""
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"], {}
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"], {}
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status", "vehicle_command"])
+    by_name = {d.name: d for d in ulog.data_list}
+    status = by_name.get("vehicle_status")
+    if status is None:
+        return ["ULog has no vehicle_status"], {}
+    t_override = None
+    in_owned = False
+    for t, ns in zip(status.data["timestamp"], status.data["nav_state"]):
+        if 23 <= int(ns) <= 30:
+            in_owned = True
+        elif in_owned and t_override is None:
+            t_override = int(t)
+    if t_override is None:
+        return ["ULog never leaves the owned mode: the override did not happen"], {}
+    after = []
+    cmd = by_name.get("vehicle_command")
+    if cmd is not None:
+        for i, command in enumerate(cmd.data["command"]):
+            t = int(cmd.data["timestamp"][i])
+            source = int(cmd.data["source_component"][i])
+            if t <= t_override or source < COMPONENT_MODE_EXECUTOR_START:
+                continue
+            if int(command) != CMD_SET_NAV_STATE:
+                continue
+            after.append({"t_us": t, "param1": float(cmd.data["param1"][i]), "source": source})
+    if after:
+        return [f"executor commands after the override: {after}"], {}
+    return [], {"t_override_us": t_override, "n_executor_commands_after": 0}
 
 
 def check_ac15(run_dir: pathlib.Path) -> list[str]:
@@ -127,7 +235,8 @@ def check_ac15(run_dir: pathlib.Path) -> list[str]:
     ulogs = sorted(run_dir.rglob("*.ulg"))
     if not ulogs:
         return ["no .ulg in run directory"]
-    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    ulog = ULog(str(ulogs[0]),
+                message_name_filter_list=["vehicle_status", "trajectory_setpoint"])
     datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
     if not datasets:
         return ["ULog has no vehicle_status"]
@@ -152,18 +261,40 @@ def check_ac15(run_dir: pathlib.Path) -> list[str]:
     if "RTL: start return" not in px4_log:
         return ["px4.log has no 'RTL: start return'"]
     dt_s = (t_rtl - t_owned) * 1e-6
+    # Detection time of FM-1, measured entirely on the PX4 clock: the arbiter's last trajectory
+    # setpoint before the failsafe, to the AUTO_RTL sample. The logger decimates the setpoint topic,
+    # so the sampling period is reported with the value instead of being hidden (review of
+    # 2026-09-11, AC-15 gap: "detection time recorded in metrics.json" was not met).
+    sp = [d for d in ulog.data_list if d.name == "trajectory_setpoint"]
+    detection = {"available": False}
+    if sp:
+        sp_ts = [int(t) for t in sp[0].data["timestamp"]]
+        before = [t for t in sp_ts if t <= t_rtl]
+        gaps = sorted((b - a) * 1e-6 for a, b in zip(sp_ts, sp_ts[1:]))
+        if before and gaps:
+            detection = {
+                "available": True,
+                "t_last_setpoint_us": before[-1],
+                "dt_last_setpoint_to_rtl_s": (t_rtl - before[-1]) * 1e-6,
+                "setpoint_sampling_p50_s": gaps[len(gaps) // 2],
+                "setpoint_sampling_max_s": gaps[-1],
+                "note": "upper bound: the arbiter died at or after the last logged setpoint",
+            }
+    if not detection["available"]:
+        return ["ULog has no trajectory_setpoint before AUTO_RTL: detection time unmeasurable"]
     metrics = {
         "AC-15": {
             "t_owned_us": t_owned,
             "t_rtl_us": t_rtl,
             "dt_last_owned_to_rtl_s": dt_s,
+            "detection": detection,
             "px4_unresponsive": True,
             "px4_failsafe": True,
-            "note": "ULog dt is last owned-mode sample to first AUTO_RTL (logger period). FM-1 detection is kill→rtl in sitl_run.log.",
         }
     }
     (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    print(f"owned→AUTO_RTL dt={dt_s:.3f} s (written to metrics.json)")
+    print(f"owned→AUTO_RTL dt={dt_s:.3f} s, detection<={detection['dt_last_setpoint_to_rtl_s']:.3f} s "
+          f"(+/-{detection['setpoint_sampling_p50_s']:.3f} s sampling)")
     return []
 
 
@@ -216,19 +347,45 @@ def check_ac15b(run_dir: pathlib.Path) -> list[str]:
 
 
 def check_ac15c(run_dir: pathlib.Path) -> list[str]:
-    """FM-3: armed restart is rejected by PX4."""
+    """FM-3: an armed restart is rejected by PX4.
+
+    PX4 prints "Not accepting registration requests while armed" on the rejection path
+    (ModeManagement.cpp:378). "Mode '...' already registered" is printed on the *accept* path
+    (ModeManagement.cpp:137) when PX4 re-registers the mode under a new index, which is what happens
+    when COM_MODE_ARM_CHK is 1. Accepting that warning as evidence of FM-3 was finding C-1 of the
+    review of 2026-09-11, so the checker now requires the rejection string, requires the run contract
+    to have pinned COM_MODE_ARM_CHK = 0, and requires the restarted arbiter to have failed to
+    register.
+    """
+    errors = []
+    config_path = run_dir / "config.yaml"
+    if config_path.is_file():
+        config = yaml.safe_load(config_path.read_text()) or {}
+        entry = (config.get("px4_params") or {}).get("COM_MODE_ARM_CHK")
+        if entry is None or entry.get("read_back") != 0:
+            errors.append(
+                "run did not pin COM_MODE_ARM_CHK = 0; registration while armed was permitted")
+    else:
+        errors.append("missing config.yaml")
+
     px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
-    armed_hit = px4_log.find("already registered")
-    if armed_hit < 0:
-        armed_hit = px4_log.find("Not accepting registration requests while armed")
-    if armed_hit < 0:
-        return ["px4.log has no armed-registration rejection"]
-    if not (run_dir / "guara_rta_node_restart.log").is_file():
-        return ["missing guara_rta_node_restart.log"]
+    rejected = px4_log.find("Not accepting registration requests while armed")
+    if rejected < 0:
+        errors.append("px4.log has no 'Not accepting registration requests while armed'")
+    if "already registered" in px4_log:
+        errors.append("px4.log shows 'already registered': PX4 accepted the armed re-registration")
     disarmed = px4_log.find("Disarmed")
-    if disarmed != -1 and armed_hit > disarmed:
-        return ["registration rejection was logged after disarm"]
-    print("PX4 rejected armed registration (event in px4.log)")
+    if rejected >= 0 and disarmed != -1 and rejected > disarmed:
+        errors.append("registration rejection was logged after disarm")
+
+    restart_log = run_dir / "guara_rta_node_restart.log"
+    if not restart_log.is_file():
+        errors.append("missing guara_rta_node_restart.log")
+    elif REGISTERED_RE.search(restart_log.read_text(errors="replace")):
+        errors.append("restarted arbiter registered while armed")
+    if errors:
+        return errors
+    print("PX4 rejected the armed registration and the restarted arbiter did not register")
     return []
 
 
@@ -273,6 +430,13 @@ def check_ac16(run_dir: pathlib.Path) -> list[str]:
     px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
     if "Failsafe activated" not in px4_log and "RTL: start return" not in px4_log:
         return ["px4.log has no Failsafe/RTL after decision hang"]
+    # FM-4 and FM-5 reach AUTO_RTL by different PX4 paths and must not be confused (review of
+    # 2026-09-11, AC-16 gap). FM-4 is the arming-check path: the ROS executor still answers PX4, so
+    # the mode is never flagged unresponsive; the owned mode fails its own check and PX4 falls back.
+    if "flagging unresponsive" in px4_log:
+        return ["px4.log shows 'flagging unresponsive': this is the FM-5 path, not FM-4"]
+    meta["path"] = "arming check (FM-4)"
+    meta["px4_unresponsive"] = False
     (run_dir / "metrics.json").write_text(json.dumps({"AC-16": meta}, indent=2) + "\n")
     print(f"owned→AUTO_RTL dt={meta['dt_s']:.3f} s after decision hang")
     return []
@@ -291,6 +455,8 @@ def check_ac16b(run_dir: pathlib.Path) -> list[str]:
         return ["px4.log has no mode-executor unresponsive warning"]
     if "RTL: start return" not in px4_log:
         return ["px4.log has no 'RTL: start return'"]
+    meta["path"] = "mode executor unresponsive (FM-5)"
+    meta["px4_unresponsive"] = True
     (run_dir / "metrics.json").write_text(json.dumps({"AC-16b": meta}, indent=2) + "\n")
     print(f"owned→AUTO_RTL dt={meta['dt_s']:.3f} s after ROS hang")
     return []
@@ -320,7 +486,9 @@ def check_ac17(run_dir: pathlib.Path) -> list[str]:
     slack = 0.05
     if age < a_i - slack:
         return [f"T3 age {age:.3f} s < A_i {a_i} s"]
-    if age > a_i + two_ticks + slack:
+    # The criterion is "within two ticks of A_i"; the earlier upper bound added a further 0.05 s of
+    # slack and was looser than the SPEC (review of 2026-09-11, AC-17 gap).
+    if age > a_i + two_ticks:
         return [f"T3 age {age:.3f} s > A_i + 2 ticks ({a_i + two_ticks} s)"]
     errors, meta = _ulog_owned_then(run_dir, 4, "AUTO_LOITER")
     if errors:
@@ -427,12 +595,21 @@ def check_ac9(pair_dir: pathlib.Path) -> list[str]:
     err_off, depth_off = _max_violation_depth(off_dir, flat)
     if err_off:
         return [f"rta_off: {e}" for e in err_off]
-    metrics = {"AC-9": {"depth_rta_on_m": depth_on, "depth_rta_off_m": depth_off}}
+    log_on = on_dir / "guara_rta_node.log"
+    transitions = _transitions(log_on.read_text(errors="replace")) if log_on.is_file() else []
+    metrics = {"AC-9": {
+        "depth_rta_on_m": depth_on,
+        "depth_rta_off_m": depth_off,
+        "transitions_rta_on": transitions,
+    }}
     (pair_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    print(f"max violation depth on={depth_on:.3f} m  off={depth_off:.3f} m")
+    print(f"max violation depth on={depth_on:.3f} m  off={depth_off:.3f} m  "
+          f"transitions={transitions}")
     errors = []
-    if depth_on > 0.05:
-        errors.append(f"with RTA max violation depth {depth_on:.3f} m > 0")
+    # The SPEC criterion is "0 m outside the fence"; the previous 0.05 m tolerance was an
+    # unrecorded relaxation (review of 2026-09-11, AC-9 gap). Only projection round-off is allowed.
+    if depth_on > 1e-6:
+        errors.append(f"with RTA max violation depth {depth_on:.6f} m > 0")
     if depth_off <= 0.0:
         errors.append(f"without RTA max violation depth {depth_off:.3f} m; scenario did not exit the fence")
     return errors
