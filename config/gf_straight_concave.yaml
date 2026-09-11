@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: Apache-2.0
+# Concave keep-in fence for AC-9 (U-notch east of home). Vertices are (lat, lon) pairs
+# corresponding to NED offsets from home (-22.0087, -47.8909): the analytic notch of
+# test_predictor_analytic shifted so the takeoff point is (N,E)=(0,0).
+guara_rta:
+  ros__parameters:
+    geofence.enabled: true
+    core.tau_gf_s: 6.0
+    geofence.polygon_lat_lon_deg:
+      - -22.00887986
+      - -47.89138500
+      - -22.00798054
+      - -47.89138500
+      - -22.00798054
+      - -47.89041500
+      - -22.00834027
+      - -47.89041500
+      - -22.00834027
+      - -47.89099700
+      - -22.00852014
+      - -47.89099700
+      - -22.00852014
+      - -47.89041500
+      - -22.00887986
+      - -47.89041500

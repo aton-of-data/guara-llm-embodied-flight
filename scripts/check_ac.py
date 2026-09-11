@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import pathlib
 import subprocess
 import sys
+
+import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -328,6 +331,113 @@ def check_ac17(run_dir: pathlib.Path) -> list[str]:
     return []
 
 
+_EARTH_R_M = 6371000.0
+
+
+def _project_to_local(lat_deg: float, lon_deg: float, ref_lat_deg: float, ref_lon_deg: float) -> tuple[float, float]:
+    """Azimuthal equidistant, same formula as guara_geofence::projectToLocal."""
+    lat, lon = math.radians(lat_deg), math.radians(lon_deg)
+    ref_lat, ref_lon = math.radians(ref_lat_deg), math.radians(ref_lon_deg)
+    sin_lat, cos_lat = math.sin(lat), math.cos(lat)
+    cos_d_lon = math.cos(lon - ref_lon)
+    arg = min(1.0, max(-1.0, math.sin(ref_lat) * sin_lat + math.cos(ref_lat) * cos_lat * cos_d_lon))
+    c = math.acos(arg)
+    k = c / math.sin(c) if abs(c) > 0.0 else 1.0
+    north = k * (math.cos(ref_lat) * sin_lat - math.sin(ref_lat) * cos_lat * cos_d_lon) * _EARTH_R_M
+    east = k * cos_lat * math.sin(lon - ref_lon) * _EARTH_R_M
+    return north, east
+
+
+def _pip(q: tuple[float, float], poly: list[tuple[float, float]]) -> bool:
+    inside = False
+    n = len(poly)
+    for i in range(n):
+        a, b = poly[i], poly[(i + 1) % n]
+        intersects = ((a[1] > q[1]) != (b[1] > q[1])) and (
+            q[0] < (b[0] - a[0]) * (q[1] - a[1]) / (b[1] - a[1] + 0.0) + a[0])
+        if b[1] != a[1] and intersects:
+            inside = not inside
+    return inside
+
+
+def _boundary_distance(q: tuple[float, float], poly: list[tuple[float, float]]) -> float:
+    best = float("inf")
+    n = len(poly)
+    for i in range(n):
+        ax, ay = poly[i]
+        bx, by = poly[(i + 1) % n]
+        abx, aby = bx - ax, by - ay
+        len2 = abx * abx + aby * aby
+        t = 0.0 if len2 == 0.0 else max(0.0, min(1.0, ((q[0] - ax) * abx + (q[1] - ay) * aby) / len2))
+        dx, dy = q[0] - (ax + t * abx), q[1] - (ay + t * aby)
+        best = min(best, math.hypot(dx, dy))
+    return best
+
+
+def _max_violation_depth(run_dir: pathlib.Path, flat_lat_lon: list[float]) -> tuple[list[str], float]:
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"], 0.0
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"], 0.0
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_local_position"])
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_local_position"]
+    if not datasets:
+        return ["ULog has no vehicle_local_position"], 0.0
+    data = datasets[0].data
+    xs, ys = data["x"], data["y"]
+    ref_lat = data["ref_lat"] if "ref_lat" in data else None
+    ref_lon = data["ref_lon"] if "ref_lon" in data else None
+    home = yaml.safe_load((run_dir / "config.yaml").read_text())["simulator"]["home"]
+    pairs = list(zip(flat_lat_lon[0::2], flat_lat_lon[1::2]))
+    max_depth = 0.0
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        q = (float(x), float(y))
+        if not math.isfinite(q[0]) or not math.isfinite(q[1]):
+            continue
+        rlat, rlon = float(home["lat"]), float(home["lon"])
+        if ref_lat is not None:
+            cand_lat, cand_lon = float(ref_lat[i]), float(ref_lon[i])
+            if math.isfinite(cand_lat) and math.isfinite(cand_lon):
+                rlat, rlon = cand_lat, cand_lon
+        poly = [_project_to_local(la, lo, rlat, rlon) for la, lo in pairs]
+        if any(not math.isfinite(p[0]) or not math.isfinite(p[1]) for p in poly):
+            continue
+        if _pip(q, poly) or _boundary_distance(q, poly) <= 1e-6:
+            continue
+        max_depth = max(max_depth, _boundary_distance(q, poly))
+    return [], max_depth
+
+
+def check_ac9(pair_dir: pathlib.Path) -> list[str]:
+    """With RTA, fence is not violated; without RTA the same CF exits the polygon."""
+    on_dir = pair_dir / "rta_on"
+    off_dir = pair_dir / "rta_off"
+    if not on_dir.exists() or not off_dir.exists():
+        return [f"pair directory {pair_dir} needs rta_on/ and rta_off/"]
+    cfg = yaml.safe_load((on_dir / "config.yaml").read_text())
+    flat = cfg.get("expect", {}).get("geofence", {}).get("polygon_lat_lon_deg")
+    if not flat or len(flat) < 6:
+        return ["rta_on config.yaml missing expect.geofence.polygon_lat_lon_deg"]
+    err_on, depth_on = _max_violation_depth(on_dir, flat)
+    if err_on:
+        return [f"rta_on: {e}" for e in err_on]
+    err_off, depth_off = _max_violation_depth(off_dir, flat)
+    if err_off:
+        return [f"rta_off: {e}" for e in err_off]
+    metrics = {"AC-9": {"depth_rta_on_m": depth_on, "depth_rta_off_m": depth_off}}
+    (pair_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"max violation depth on={depth_on:.3f} m  off={depth_off:.3f} m")
+    errors = []
+    if depth_on > 0.05:
+        errors.append(f"with RTA max violation depth {depth_on:.3f} m > 0")
+    if depth_off <= 0.0:
+        errors.append(f"without RTA max violation depth {depth_off:.3f} m; scenario did not exit the fence")
+    return errors
+
+
 def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
@@ -340,6 +450,7 @@ def check_ac11(_path: pathlib.Path) -> list[str]:
 CHECKERS = {
     "AC-3": check_ac3,
     "AC-7": check_ac7,
+    "AC-9": check_ac9,
     "AC-11": check_ac11,
     "AC-14": check_ac14,
     "AC-15": check_ac15,

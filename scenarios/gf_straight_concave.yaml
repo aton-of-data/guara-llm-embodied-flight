@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+# M4 AC-9: CF flies +North into a concave keep-in notch. With the geofence channel on,
+# HOLD must keep max outside depth at 0; with it off, the same CF must exit the fence.
+name: gf_straight_concave
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+ros_nodes:
+  - package: guara_rta
+    executable: guara_rta_node
+    params_file: config/rta_params.yaml
+    extra_params_file: config/gf_straight_concave.yaml
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 8}
+  - {user_nav_state: owned, wait_until: owned, timeout_s: 20}
+  - {inject_cf: {velocity_ned: [3.0, 0.0, 0.0], duration_s: 20}}
+  - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
+expect:
+  min_altitude_m: 2.0
+  geofence:
+    polygon_lat_lon_deg:
+      - -22.00887986
+      - -47.89138500
+      - -22.00798054
+      - -47.89138500
+      - -22.00798054
+      - -47.89041500
+      - -22.00834027
+      - -47.89041500
+      - -22.00834027
+      - -47.89099700
+      - -22.00852014
+      - -47.89099700
+      - -22.00852014
+      - -47.89041500
+      - -22.00887986
+      - -47.89041500
