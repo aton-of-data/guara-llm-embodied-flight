@@ -52,6 +52,10 @@ struct Inputs
   bool monitor_violation{false};    // M(k)
   Recovery monitor_action{Recovery::kHold};  // highest-rank action among violating monitors
   bool input_invalid{false};        // V(k)
+  // Shadow check of the setpoint the CF is currently proposing (review 2026-09-11 §4). It withholds
+  // the return T5 while the CF still intends to re-enter the unsafe set; it is never by itself a
+  // reason to leave CF, because in CF the gateway already filters the setpoint.
+  bool cf_intent_unsafe{false};
 };
 
 struct Transition

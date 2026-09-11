@@ -138,16 +138,16 @@ Output DecisionCore::step(const Inputs & in) noexcept
   std::uint32_t transition_cause = 0U;
 
   if (!in.in_charge) {
-    // T1: human or PX4 authority; the arbiter stops commanding (P-6). A new activation starts a new
-    // switch history.
+    // T1: human or PX4 authority; the arbiter stops commanding (P-6). The switch history is *not*
+    // cleared: it is the anti-chattering budget of P-4, and clearing it would let any agent able to
+    // select modes (a pilot, or an LLM with a mode tool) reset N_max by leaving and re-entering the
+    // owned mode (review 2026-09-11 §4 "Latch bypass"). Entries decay with the window W.
     if (state_ != State::kInactive) {
       id = transition::kT1;
       transition_cause = cause::kNotInCharge;
     }
     state_ = State::kInactive;
     recovery_ = Recovery::kNone;
-    switch_count_ = 0U;
-    switch_head_ = 0U;
   } else {
     switch (state_) {
       case State::kInactive:
@@ -184,7 +184,7 @@ Output DecisionCore::step(const Inputs & in) noexcept
           id = transition::kT4;
           state_ = State::kLatched;
           transition_cause = cause::kLatch;
-        } else if (recovery_ == Recovery::kHold && clear &&
+        } else if (recovery_ == Recovery::kHold && clear && !in.cf_intent_unsafe &&
           clear_duration >= p_.dwell_s - kTimeEpsilonS &&
           in.t_s - t_switch_s_ >= p_.dwell_s - kTimeEpsilonS && p_.return_enabled)
         {
