@@ -1,0 +1,11 @@
+# Upstream clones are recreated by scripts/fetch_third_party.sh
+third_party/*
+!third_party/VERSIONS.md
+
+# colcon
+build/
+install/
+log/
+
+.DS_Store
+.claude/settings.local.json
