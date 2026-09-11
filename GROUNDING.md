@@ -154,6 +154,27 @@ Exemplo real (`vars-db-turtlesim.json`, íntegra):
 
 ---
 
+## Adendo A — fatos adicionais verificados durante o P1 (2026-09-11)
+
+Mesma regra do P0: somente código clonado. Estes itens sustentam decisões da SPEC e dos ADRs.
+
+| # | resposta | evidência | confiança |
+|---|---|---|---|
+| A.1 | `sendCommandSync` (usado por `scheduleMode`/`rtl`/`land`) **cria uma subscription a cada chamada** (alocação dinâmica), faz espera ativa de até 3000 ms pela descoberta do publisher de `vehicle_command_ack`, depois publica o comando até 3 vezes esperando 300 ms por ACK. Pior caso de bloqueio da thread chamadora ≈ 3,9 s. O comando é publicado **antes** da espera pelo ACK. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141-222` | ALTA |
+| A.2 | `source_component = COMPONENT_MODE_EXECUTOR_START + id()`; o commander classifica comandos com `source_component >= COMPONENT_MODE_EXECUTOR_START` como `ModeChangeSource::ModeExecutor`. | `lib@4a3370f:lib/src/components/mode_executor.cpp:141`; `PX4@d6f12ad:cmd/Commander.cpp:1561,1567-1574` | ALTA |
+| A.3 | Ao trocar para um nav_state sem executor associado, o executor in charge **só muda** se a fonte for `User` (RC/MAVLink); com fonte `ModeExecutor` permanece. | `PX4@d6f12ad:cmd/ModeManagement.cpp:415-434`; `PX4@d6f12ad:cmd/UserModeIntention.hpp:39-42` | ALTA |
+| A.4 | `ModeBase` expõe `checkArmingAndRunConditions(reporter)` (chamado periodicamente, inclusive com o modo ativo), `onActivate/onDeactivate`, `setSetpointUpdateRate(hz)` e `updateSetpoint(dt_s)`. | `lib@4a3370f:lib/include/px4_ros2/components/mode.hpp:132-161` | ALTA |
+| A.5 | A resposta ao `ArmingCheckRequest` é produzida no callback da subscription do próprio nó (QoS best-effort, depth 1), chamando o callback de checagem do modo; `reporter.armingCheckFailureExt(...)` põe `can_arm_and_run=false`. | `lib@4a3370f:lib/src/components/health_and_arming_checks.cpp:29-56`; `lib@4a3370f:lib/include/px4_ros2/components/health_and_arming_checks.hpp:30-37` | ALTA |
+| A.6 | No PX4, `can_arm_and_run=false` de um modo externo seta `mode_req_other` para esse modo → mesma cadeia de fallback de 2.4 (modo não pode rodar → RTL). Latência de detecção ≤ 1 período de requisição (300 ms) + processamento. | `PX4@d6f12ad:cmd/HealthAndArmingChecks/checks/externalChecks.cpp:157-159`; itens 2.1 e 2.4 | MÉDIA (tempo não medido) |
+| A.7 | Setpoints de trajetória: `px4_ros2::TrajectorySetpointType::update(velocity_ned, accel?, yaw?, yaw_rate?)`, `update(TrajectorySetpoint)`, `updatePosition(position_ned)`; `MulticopterGotoSetpointType` existe. | `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/experimental/trajectory.hpp:26-66`; `lib@4a3370f:lib/include/px4_ros2/control/setpoint_types/multicopter/goto.hpp:24,44` | ALTA |
+| A.8 | `VehicleLocalPosition` (tópico `_v1`): `timestamp`, `timestamp_sample` (µs), `x,y,z` NED (m), `vx,vy,vz` (m/s), `ax,ay,az`, flags `xy_valid`, `v_xy_valid`, `z_valid`, `v_z_valid`, contadores de reset, `ref_lat/ref_lon/ref_alt`, `eph/epv/evh/evv`, `dead_reckoning`. | `msgs@86d8239:msg/VehicleLocalPosition.msg:6-77` | ALTA |
+| A.9 | Na serialização DDS, os campos `timestamp` e `timestamp_sample` recebem `+ time_offset` da sessão uXRCE (sincronização com o agente); os demais campos de tempo não. | `PX4@d6f12ad:Tools/msg/templates/ucdr/msg.h.em:127-144`; `PX4@d6f12ad:dds/dds_topics.h.em:126,176` | ALTA (código); relógio de referência resultante no ROS 2: MÉDIA |
+| A.10 | ULog registra por padrão `vehicle_status`, `vehicle_command`, `vehicle_local_position` e `transponder_report`. | `PX4@d6f12ad:src/modules/logger/logged_topics.cpp:132,138,145,150` | ALTA |
+| A.11 | Geofence interno do PX4: `GF_ACTION` (padrão 2 = Hold; 3 RTL; 4 Terminate; 5 Land), `GF_SOURCE`, `GF_MAX_HOR_DIST`/`GF_MAX_VER_DIST` (0 = desabilitado), `GF_PREDICT` (padrão 0, marcado **[EXPERIMENTAL]** "may cause flyaways"). | `PX4@d6f12ad:src/modules/navigator/geofence_params.c:46-119` | ALTA |
+| A.12 | Licença do DAIDALUS = **NASA Open Source Agreement v1.3**. Obrigações lidas: distribuição sob o próprio acordo com cópia do texto (3.A.1); distribuição não-fonte exige disponibilizar o fonte (3.A.2); aviso de copyright NASA proeminente (3.B); modificações descritas em arquivo de changelog identificando o autor (3.C); vedação de sugerir endosso da NASA (3.E); "Larger Work" combinando com software sob outra licença é permitido, mantendo a parte NOSA sob a NOSA (3.I); incluir o software em Larger Work não é, por si, Modification (1.F); aviso de controle de exportação dos EUA (3.J). Interpretação jurídica de compatibilidade com Apache-2.0/BSD **não** consta do texto. | `daa@0647596:LICENSES/DAIDALUS2-NOSA.pdf` (p. 1-5, cláusulas 1.E, 1.F, 3.A-3.J) | ALTA (texto); DESCONHECIDO (interpretação jurídica) |
+
+---
+
 ## Perguntas DESCONHECIDO / MÉDIA que bloqueiam o P1
 
 Nenhuma das 6 perguntas ficou DESCONHECIDO. Os itens abaixo são MÉDIA ou
@@ -167,7 +188,7 @@ lacunas que o P1 deve tratar como **hipóteses** ou que exigem novo P0/SITL:
    entre aceitar essa limitação ou exigir `COM_MODE_ARM_CHK=1` (e avaliar risco).
 4. **Semântica de "perda de well-clear" no DAIDALUS** (5.5): escolher a função
    e o alerter na SPEC; parâmetros DO-365B para drones pequenos são hipótese (5.8).
-5. **Termos da NOSA** (5.10): ler `DAIDALUS2-NOSA.pdf` antes do ADR 0003.
+5. **Termos da NOSA** (5.10): RESOLVIDO no texto (A.12); interpretação jurídica segue [REVISAR].
 6. **Fluxo FRET → Ogma** (4.7): não verificado; necessário para P3/M2.
 7. **Divergência de distro** (R0.2 vs R0.4): RESOLVIDO em 2026-09-11 — usuário confirmou Humble; template Ogma
    (Jazzy) será substituído por template próprio em M2.
