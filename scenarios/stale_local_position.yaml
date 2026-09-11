@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: Apache-2.0
+# M3 AC-17 / FM-6: drop vehicle_local_position after CF; HOLD within two ticks of A_i expiry.
+name: stale_local_position
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+record_events: true
+ros_nodes:
+  - package: guara_rta
+    executable: guara_rta_node
+    params_file: config/rta_params.yaml
+    params:
+      fault_injection.drop_local_position_after_s: 8.0
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 8}
+  - {user_nav_state: owned, wait_until: owned, timeout_s: 20}
+  - {wait_log: guara_rta_node.log, pattern: "drop local position", timeout_s: 20}
+  - {wait_until: loiter, timeout_s: 15}
+  - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
+expect:
+  min_altitude_m: 2.0
+  nav_state_hold: AUTO_LOITER

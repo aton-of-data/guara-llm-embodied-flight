@@ -229,6 +229,105 @@ def check_ac15c(run_dir: pathlib.Path) -> list[str]:
     return []
 
 
+def _ulog_owned_then(run_dir: pathlib.Path, nav_want: int, label: str) -> tuple[list[str], dict]:
+    try:
+        from pyulog import ULog
+    except ImportError:
+        return ["pyulog missing; run via ./scripts/dev.sh"], {}
+    ulogs = sorted(run_dir.rglob("*.ulg"))
+    if not ulogs:
+        return ["no .ulg in run directory"], {}
+    ulog = ULog(str(ulogs[0]), message_name_filter_list=["vehicle_status"])
+    datasets = [d for d in ulog.data_list if d.name == "vehicle_status"]
+    if not datasets:
+        return ["ULog has no vehicle_status"], {}
+    ts = datasets[0].data["timestamp"]
+    nav = datasets[0].data["nav_state"]
+    t_owned = None
+    t_want = None
+    for t, ns in zip(ts, nav):
+        nsi = int(ns)
+        if 23 <= nsi <= 30:
+            if t_want is None:
+                t_owned = int(t)
+        elif t_owned is not None and nsi == nav_want and t_want is None:
+            t_want = int(t)
+    if t_owned is None:
+        return ["ULog never shows owned/external nav_state"], {}
+    if t_want is None:
+        return [f"ULog shows owned mode but no {label} afterwards"], {}
+    return [], {"t_owned_us": t_owned, "t_after_us": t_want, "dt_s": (t_want - t_owned) * 1e-6}
+
+
+def check_ac16(run_dir: pathlib.Path) -> list[str]:
+    """FM-4: decision-thread hang → AUTO_RTL."""
+    text = (run_dir / "guara_rta_node.log").read_text(errors="replace") if (run_dir / "guara_rta_node.log").is_file() else ""
+    if "decision thread hang" not in text:
+        return ["arbiter log has no decision-thread hang injection"]
+    errors, meta = _ulog_owned_then(run_dir, 5, "AUTO_RTL")
+    if errors:
+        return errors
+    px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
+    if "Failsafe activated" not in px4_log and "RTL: start return" not in px4_log:
+        return ["px4.log has no Failsafe/RTL after decision hang"]
+    (run_dir / "metrics.json").write_text(json.dumps({"AC-16": meta}, indent=2) + "\n")
+    print(f"owned→AUTO_RTL dt={meta['dt_s']:.3f} s after decision hang")
+    return []
+
+
+def check_ac16b(run_dir: pathlib.Path) -> list[str]:
+    """FM-5: ROS executor hang → AUTO_RTL."""
+    text = (run_dir / "guara_rta_node.log").read_text(errors="replace") if (run_dir / "guara_rta_node.log").is_file() else ""
+    if "ROS executor hang" not in text:
+        return ["arbiter log has no ROS-executor hang injection"]
+    errors, meta = _ulog_owned_then(run_dir, 5, "AUTO_RTL")
+    if errors:
+        return errors
+    px4_log = (run_dir / "px4.log").read_text(errors="replace") if (run_dir / "px4.log").is_file() else ""
+    if "flagging unresponsive" not in px4_log:
+        return ["px4.log has no mode-executor unresponsive warning"]
+    if "RTL: start return" not in px4_log:
+        return ["px4.log has no 'RTL: start return'"]
+    (run_dir / "metrics.json").write_text(json.dumps({"AC-16b": meta}, indent=2) + "\n")
+    print(f"owned→AUTO_RTL dt={meta['dt_s']:.3f} s after ROS hang")
+    return []
+
+
+def check_ac17(run_dir: pathlib.Path) -> list[str]:
+    """FM-6: stale local position → HOLD within two ticks of A_i."""
+    text = (run_dir / "guara_rta_node.log").read_text(errors="replace") if (run_dir / "guara_rta_node.log").is_file() else ""
+    if "drop local position" not in text:
+        return ["arbiter log has no local-position drop injection"]
+    events_path = run_dir / "events.jsonl"
+    if not events_path.is_file():
+        return ["missing events.jsonl"]
+    records = [json.loads(ln) for ln in events_path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    t2 = None
+    t3 = None
+    for rec in records:
+        if rec.get("transition") == 2:
+            t2 = rec
+        if t2 is not None and rec.get("transition") == 3 and (int(rec.get("cause_mask", 0)) & 8):
+            t3 = rec
+    if t3 is None:
+        return ["no T3 with CAUSE_INPUT after T2 in events.jsonl"]
+    age = float(t3["t_decide_s"]) - float(t3["t_input_recv_s"])
+    a_i = 0.2
+    two_ticks = 0.10
+    slack = 0.05
+    if age < a_i - slack:
+        return [f"T3 age {age:.3f} s < A_i {a_i} s"]
+    if age > a_i + two_ticks + slack:
+        return [f"T3 age {age:.3f} s > A_i + 2 ticks ({a_i + two_ticks} s)"]
+    errors, meta = _ulog_owned_then(run_dir, 4, "AUTO_LOITER")
+    if errors:
+        return errors
+    metrics = {"AC-17": {"age_s": age, "a_i_s": a_i, "t3_tick": t3.get("tick"), **meta}}
+    (run_dir / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
+    print(f"stale local position T3 age={age:.3f} s (A_i=0.2 s); owned→AUTO_LOITER dt={meta['dt_s']:.3f} s")
+    return []
+
+
 def check_ac11(_path: pathlib.Path) -> list[str]:
     """ADR 0003: no DAIDALUS dependency outside nosa/."""
     script = ROOT / "scripts" / "check_license_isolation.py"
@@ -246,6 +345,9 @@ CHECKERS = {
     "AC-15": check_ac15,
     "AC-15b": check_ac15b,
     "AC-15c": check_ac15c,
+    "AC-16": check_ac16,
+    "AC-16b": check_ac16b,
+    "AC-17": check_ac17,
     "AC-20": check_ac20,
 }
 
