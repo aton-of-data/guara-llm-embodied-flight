@@ -1,0 +1,9 @@
+{ "target_extra_dependencies":
+    [ "px4_msgs"
+    ]
+, "package_extra_depend":
+    [ "px4_msgs"
+    ]
+, "impl_extra_header":
+    [ "#include \"px4_msgs/msg/vehicle_local_position.hpp\"" ]
+}

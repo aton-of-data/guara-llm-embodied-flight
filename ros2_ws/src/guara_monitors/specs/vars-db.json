@@ -1,0 +1,27 @@
+{ "inputs":
+     [ { "name": "input_signal"
+       , "type": "float"
+       , "active": true
+       , "connections":
+           [ { "scope": "ros/message"
+             , "topic": "/fmu/out/vehicle_local_position_v1"
+             , "field": "z"
+             }
+           ]
+       }
+     ]
+, "topics":
+     [ { "scope": "ros/message"
+       , "topic": "/fmu/out/vehicle_local_position_v1"
+       , "type":  "px4_msgs::msg::VehicleLocalPosition"
+       }
+     ]
+, "types": [
+       { "fromScope": "ros/message"
+       , "fromType":  "px4_msgs::msg::VehicleLocalPosition"
+       , "fromField": "z"
+       , "toScope":   "C"
+       , "toType":    "float"
+       }
+     ]
+}

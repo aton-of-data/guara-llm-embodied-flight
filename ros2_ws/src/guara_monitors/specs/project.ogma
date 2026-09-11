@@ -1,0 +1,17 @@
+{
+  "projectName": "Guara REQ-ALT-01",
+  "projectInputFiles": [
+    [
+      "ros2_ws/src/guara_monitors/specs/req_alt_01.json",
+      "ros2_ws/src/guara_monitors/specs/json-format.cfg",
+      "literal"
+    ]
+  ],
+  "projectVariableFiles": "ros2_ws/src/guara_monitors/specs/variables",
+  "projectVariableDBFile": "ros2_ws/src/guara_monitors/specs/vars-db.json",
+  "projectHandlerFile": null,
+  "projectCommandPropVia": null,
+  "projectTemplateDir": "ros2_ws/src/guara_monitors/template",
+  "projectTargetDir": "ros2_ws/src/guara_monitors/.ogma_out",
+  "projectExtraJSONFile": "ros2_ws/src/guara_monitors/specs/extra-vars.json"
+}

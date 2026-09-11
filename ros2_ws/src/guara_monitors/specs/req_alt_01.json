@@ -1,0 +1,15 @@
+{
+  "REQ-ALT-01": {
+    "internal_variables": [],
+    "external_variables": [
+      { "name": "input_signal", "type": "Float", "meaning": "InputF32" }
+    ],
+    "properties": [
+      {
+        "id": "AltitudeBelowCeiling",
+        "formula": "input_signal >= 0",
+        "text": "Local NED z stays non-negative (the vehicle does not climb). z is down-positive; a normal PX4 takeoff drives z negative and violates the property so AC-3 can observe a Copilot trigger. Numeric ceiling in metres is [PARAMETER TBD] pending a sourced limit; this smoke requirement only needs a climb to fire."
+      }
+    ]
+  }
+}
