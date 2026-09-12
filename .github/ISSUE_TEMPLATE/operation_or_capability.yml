@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 name: New flight operation or capability pack
 description: Propose an operation Guará should be able to bound, in the air or in orbit.
 labels: ["operation"]

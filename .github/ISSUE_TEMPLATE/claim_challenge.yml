@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
 name: Challenge a claim or a number
 description: A stated result, limit or grounding fact does not hold.
 labels: ["claim"]
