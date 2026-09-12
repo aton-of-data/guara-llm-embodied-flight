@@ -38,6 +38,7 @@ for _p in (ROOT, ROOT / "scripts", ROOT / "scripts" / "llm"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
+import envfile as envfile_mod  # noqa: E402
 import prompt as prompt_mod  # noqa: E402
 import provider as provider_mod  # noqa: E402
 from check_run_contract import pinned_commits  # noqa: E402
@@ -393,7 +394,18 @@ def main() -> int:
     p.add_argument("--api-key-env", default="CURSOR_API_KEY")
     p.add_argument("--out", type=pathlib.Path, default=None, help="run directory override")
     p.add_argument("--tag", default="llm", help="run id suffix")
+    p.add_argument("--list-models", action="store_true",
+                   help="print model ids for this CURSOR_API_KEY and exit")
     args = p.parse_args()
+
+    envfile_mod.load_env_file()
+    if args.list_models:
+        # A placeholder model id is enough to construct the provider; listing does not run it.
+        prov = provider_mod.build("cursor-agent", args.model or "composer-2.5",
+                                  api_key_env=args.api_key_env)
+        models = prov.available_models()
+        print("\n".join(models) if models else "(no models returned)")
+        return 0
 
     cases, corpus_hashes = load_corpus(args.corpus)
     if args.only_class:

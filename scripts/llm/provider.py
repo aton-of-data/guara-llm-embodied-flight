@@ -24,8 +24,11 @@ import urllib.request
 from dataclasses import dataclass, field
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+for _p in (ROOT, ROOT / "scripts" / "llm"):
+    if str(_p) not in sys.path:
+        sys.path.insert(0, str(_p))
+
+import envfile as envfile_mod  # noqa: E402
 
 
 class ProviderError(RuntimeError):
@@ -170,15 +173,18 @@ class MockProvider(Provider):
 # ---------------------------------------------------------------------------------------
 
 class CursorAgentProvider(Provider):
-    """Cursor Cloud Agents API, used as a text channel.
+    """Cursor Cloud Agents API, used as a text channel (ADR 0013 instrument role).
 
-    A *no-repo* agent is created (`repos: []`), so the agent has no repository, no branch and
-    nothing to push: it answers and terminates. The run's `result` field is the final
-    assistant reply, which is the only thing the harness reads.
+    A no-repo agent is created by omitting both `repos` and `env`, so the agent has no
+    repository, no branch and nothing to push: it answers and terminates. The run's
+    `result` field is the final assistant reply, which is the only thing the harness
+    reads. This is not a chat-completions API; it is the documented surface for Cursor
+    models reached with `CURSOR_API_KEY`.
 
-    Endpoints (https://cursor.com/docs-static/cloud-agents-openapi.yaml):
+    Endpoints (https://cursor.com/docs/cloud-agent/api/endpoints):
       POST /v1/agents                       create an agent and enqueue its first run
       GET  /v1/agents/{id}/runs/{runId}     read run status and `result`
+      GET  /v1/models                       list model ids for this key
     """
 
     name = "cursor-agent"
@@ -190,10 +196,11 @@ class CursorAgentProvider(Provider):
         self.api_key_env = api_key_env
         self.timeout_s = timeout_s
         self.poll_s = poll_s
-        self._key = os.environ.get(api_key_env, "")
+        envfile_mod.load_env_file()
+        self._key = os.environ.get(api_key_env, "").strip()
         if not self._key:
             raise ProviderError(
-                f"{api_key_env} is not set. Put it in .env (git-ignored) and export it; "
+                f"{api_key_env} is not set. Put it in .env (git-ignored); "
                 f"the harness records only the variable name, never the value.")
 
     def _request(self, method: str, path: str, payload: dict | None = None,
@@ -214,31 +221,49 @@ class CursorAgentProvider(Provider):
             raise ProviderError(f"{method} {path} -> {e}") from None
         return json.loads(body) if body else {}
 
+    @staticmethod
+    def _run_payload(payload: dict) -> dict:
+        run = payload.get("run") if isinstance(payload.get("run"), dict) else payload
+        return run if isinstance(run, dict) else {}
+
     def complete(self, prompt: str) -> Completion:
         started = time.monotonic()
+        # Omit repos and env: a no-repo agent, text in, text out, nothing to push.
         created = self._request("POST", "/v1/agents", {
             "prompt": {"text": prompt},
             "model": {"id": self.model},
-            "repos": [],
             "name": "guara-llm-eval",
         })
         agent_id = created.get("agent", {}).get("id", "")
-        run = created.get("run", {}) or {}
+        run = self._run_payload(created)
         run_id = run.get("id", "")
         if not agent_id or not run_id:
             raise ProviderError(f"unexpected create response: {json.dumps(created)[:300]}")
 
         deadline = time.monotonic() + self.timeout_s
-        while run.get("status") not in ("FINISHED", "ERROR", "CANCELLED", "EXPIRED"):
-            if time.monotonic() > deadline:
-                raise ProviderError(f"run {run_id} did not terminate within {self.timeout_s}s")
+        text = None
+        while time.monotonic() <= deadline:
+            status = str(run.get("status", "")).upper()
+            candidate = run.get("result")
+            if isinstance(candidate, str) and candidate.strip():
+                text = candidate
+            elif isinstance(candidate, dict):
+                for key in ("text", "result", "message", "content"):
+                    val = candidate.get(key)
+                    if isinstance(val, str) and val.strip():
+                        text = val
+                        break
+            if status in {"ERROR", "CANCELLED", "EXPIRED"}:
+                raise ProviderError(f"run {run_id} ended as {run.get('status')}")
+            if status == "FINISHED" and text is not None:
+                break
             time.sleep(self.poll_s)
-            run = self._request("GET", f"/v1/agents/{agent_id}/runs/{run_id}")
-        if run.get("status") != "FINISHED":
-            raise ProviderError(f"run {run_id} ended as {run.get('status')}")
-        text = run.get("result")
-        if not isinstance(text, str):
-            raise ProviderError(f"run {run_id} finished without a result field")
+            run = self._run_payload(
+                self._request("GET", f"/v1/agents/{agent_id}/runs/{run_id}"))
+        else:
+            raise ProviderError(
+                f"run {run_id} did not yield a text result within {self.timeout_s}s "
+                f"(status={run.get('status')!r}, keys={sorted(run.keys())})")
         return Completion(
             text=text,
             duration_ms=int((time.monotonic() - started) * 1000),
@@ -249,7 +274,16 @@ class CursorAgentProvider(Provider):
         )
 
     def available_models(self) -> list[str]:
-        return list(self._request("GET", "/v1/models", timeout_s=30.0).get("models", []))
+        payload = self._request("GET", "/v1/models", timeout_s=30.0)
+        models = payload.get("items", payload.get("models", []))
+        ids: list[str] = []
+        seen: set[str] = set()
+        for item in models:
+            ident = item if isinstance(item, str) else (item.get("id") if isinstance(item, dict) else None)
+            if ident and ident not in seen:
+                seen.add(ident)
+                ids.append(str(ident))
+        return ids
 
 
 PROVIDERS = {"mock": MockProvider, "cursor-agent": CursorAgentProvider}

@@ -27,6 +27,7 @@ from mission.compiler import intent as mi  # noqa: E402
 from mission.compiler import stop_grammar  # noqa: E402
 from mission.compiler import verify as mv  # noqa: E402
 
+import envfile as envfile_mod  # noqa: E402
 import provider as provider_mod  # noqa: E402
 
 
@@ -163,6 +164,18 @@ def test_cursor_provider_fails_closed_without_a_key(monkeypatch):
     with pytest.raises(provider_mod.ProviderError) as e:
         provider_mod.build("cursor-agent", "composer-2.5", api_key_env="GUARA_TEST_KEY")
     assert "GUARA_TEST_KEY" in str(e.value)
+
+
+def test_envfile_sets_missing_names_and_never_returns_values(tmp_path):
+    path = tmp_path / ".env"
+    path.write_text("GUARA_TEST_ENVFILE=secret-value\n# comment\nNOT A LINE\n")
+    names = envfile_mod.load_env_file(path)
+    assert names == ["GUARA_TEST_ENVFILE"]
+    assert os.environ["GUARA_TEST_ENVFILE"] == "secret-value"
+    # A second load must not override a value the caller already exported.
+    path.write_text("GUARA_TEST_ENVFILE=other\n")
+    assert envfile_mod.load_env_file(path) == []
+    assert os.environ["GUARA_TEST_ENVFILE"] == "secret-value"
 
 
 def test_unknown_provider_is_refused():
