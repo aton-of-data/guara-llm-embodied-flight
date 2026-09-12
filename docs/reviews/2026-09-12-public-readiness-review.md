@@ -10,6 +10,58 @@ and what decides whether it is found at all (P2).
 
 ---
 
+## 0 · Status, 2026-09-12
+
+Worked on branch `feature/2026-09-12-public-readiness-review`. Every P0 and P1 item is done,
+and the implementable part of P2 is done; what remains needs a decision or an account that
+this review cannot make on its own.
+
+| Item | State | Note |
+|---|---|---|
+| P0-1 repository is private | **maintainer** | A settings change. Everything below is ready for it |
+| P0-2 `CITATION.cff` | done | Repository name fixed; invalid `year` key dropped; `commit` and `contact` added |
+| P0-3 Python dependencies | done | `requirements.txt`, `requirements-dev.txt`, and the same pins in the dev image |
+| P0-4 CI | done | `checks.yml`: python, boundaries, cpp. The `cpp` job has never run — see below |
+| P0-5 contribution surface | done | `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, three issue forms, PR template |
+| P1-1 60-second path | done | `python3 -m mission.compiler`, two example intents, README block |
+| P1-2 README split | done | 630 → 428 lines; four documents under `docs/` |
+| P1-3 hero image | done | 2.3 MB → 227 KB across both mascots |
+| P1-4 LLM providers | done | `ollama` and `openai-compat` added; unit-tested, never run against a live endpoint |
+| P1-5 empty `results/` | done | `results/README.md`, and the ignore rule corrected to admit it |
+| P1-6 prompt pack | done | Moved to `docs/guara-prompt-pack.md` |
+| P1-7 published image | done | Manual workflow with a NOSA guard. Never run |
+| P2-1 announcements | **maintainer** | §7 has the venues and the framing for each |
+| P2-2 preprint | **maintainer** | An authorship decision |
+| P2-3 figures | done | Generated from the evidence by `scripts/plot_evidence.py` |
+| P2-4 release, Discussions | partly | `CHANGELOG.md` and the release procedure are in; cutting the tag and enabling Discussions are settings actions |
+
+**Two workflows have never executed**, because this environment has no Docker daemon and no
+ROS: the `cpp` job in `checks.yml` and `publish-dev-image.yml`. Their commands are derived from
+the manifests and the existing Dockerfile, but the first real run is what will confirm them,
+and either may need a correction.
+
+**Defects found while doing the work**, none of which this review predicted:
+
+- The evaluation harness failed on a clean clone: it created `results/latest_llm`
+  unconditionally, and `results/` does not exist until a run has produced it. That was AC-30's
+  own no-key, no-network test.
+- `--api-key-env` defaulted to `CURSOR_API_KEY` for every provider, so the run evidence
+  recorded a credential variable name even for runs that used none — which matters because
+  ADR 0013 decision 7 makes that name part of the evidence contract.
+- `scripts/plot_evidence.py` raised `ValueError` from `relative_to` instead of its named error
+  when pointed at an evidence path outside the repository.
+- The README claimed twelve scenarios; fourteen ship.
+- The SPDX rule in `CLAUDE.md` and ADR 0006 had nothing enforcing it, and two relative links
+  broke silently during the README split.
+
+**Three checks passed only because they could not fail**, each caught and fixed: a link-checker
+probe that was untracked and therefore invisible to `git ls-files`; a figure-freshness test that
+regenerated the file it was about to compare; and a missing-evidence test that passed because
+the *script path* did not resolve, never reaching the loader. Any new check on this branch now
+gets a negative test before it is trusted.
+
+---
+
 ## 1 · Verdict
 
 **The content is ready. The distribution is not.**
