@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aton-of-data/guara/space/schema/space_intent.schema.json",
+  "title": "Guara Space Mission Intent v0",
+  "description": "The only artifact a language model is allowed to produce in the space thread (ADR 0010 rule 6, ADR 0012, risk RS-6). Closed vocabulary: no F´ command name, no Fpy directive, no actuator, no quaternion. The compiler, not the model, turns an intent into a validated sequence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intent", "utterance_hash"],
+  "properties": {
+    "intent": {
+      "enum": ["slew", "point_hold", "safe_mode", "status", "abort"]
+    },
+    "boresight_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Protected aperture from the vehicle model; the model may not invent one."
+    },
+    "target_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Named pointing target from the vehicle model (nadir, ground-station, ...)."
+    },
+    "hold_s": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0,
+      "maximum": 86400,
+      "description": "Requested hold duration for point_hold. null lets the compiler use the site default. A request, not a command."
+    },
+    "utterance_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "intent": { "const": "slew" } }, "required": ["intent"] },
+      "then": { "required": ["boresight_id", "target_id"] }
+    },
+    {
+      "if": { "properties": { "intent": { "const": "point_hold" } }, "required": ["intent"] },
+      "then": { "required": ["boresight_id", "target_id"] }
+    }
+  ]
+}

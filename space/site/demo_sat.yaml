@@ -1,0 +1,36 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Synthetic reference spacecraft for the space-domain intent schema and keep-out
+# predictor (ADR 0012). Every angle is [PARAMETER TBD]; none is a measurement.
+# The LLM may name boresight_id and target_id from this file and nothing else.
+
+vehicle_id: demo-sat
+description: Earth-pointing smallsat used by the M13c/M16 analytic tests.
+
+boresights:
+  instrument-a:
+    description: Primary payload aperture.
+    body_axis: [1.0, 0.0, 0.0]
+    keepout_theta_min_rad: 0.35   # ~20 deg; [PARAMETER TBD]
+  star-tracker-1:
+    description: Star tracker, blinded by the sun or moon.
+    body_axis: [0.0, 1.0, 0.0]
+    keepout_theta_min_rad: 0.52   # ~30 deg; [PARAMETER TBD]
+
+targets:
+  nadir:
+    description: Earth-pointing, the nominal science attitude.
+  ground-station-1:
+    description: Named ground station for a downlink pass.
+  sun:
+    description: Sun vector in inertial; never a legal slew target for instrument-a.
+
+forbidden:
+  sun:
+    description: Bright-body keep-out used by attitude_keepout.
+  moon:
+    description: Secondary bright body.
+
+limits:
+  horizon_s: 30.0                 # predictor horizon; [PARAMETER TBD]
+  max_slew_rate_rad_s: 0.05       # [PARAMETER TBD]
