@@ -1,0 +1,79 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# The checks that do not need PX4. The SITL scenarios, the latency batch and the monitor
+# generation stay out of CI deliberately: they build PX4 from source and their results
+# belong in results/ with a recorded seed and commit, not in a job log. Nothing here
+# produces a number that may be cited (CLAUDE.md).
+name: checks
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: mission and space layers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - name: Install declared dependencies
+        run: pip install -r requirements-dev.txt
+      - name: Mission compiler, corpus, plan executor, space keep-out
+        run: python3 -m pytest scripts/tests -q
+      - name: The no-container path the README promises
+        run: |
+          python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+          ! python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+          test "$(python3 -m mission.compiler --stop 'land now')" = land_now
+          test "$(python3 -m mission.compiler --stop 'pouse agora')" = land_now
+
+  boundaries:
+    name: licence, headers and links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: No NOSA-licensed code outside nosa/ (AC-11)
+        run: python3 scripts/check_license_isolation.py
+      - name: Every tracked source file carries an SPDX identifier
+        run: python3 scripts/check_spdx.py
+      - name: Every relative markdown link resolves
+        run: python3 scripts/check_links.py
+
+  cpp:
+    name: geofence predictor and messages
+    runs-on: ubuntu-latest
+    container: ros:humble-ros-base-jammy
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the test dependency the ROS base image does not carry
+        run: |
+          apt-get update -y --quiet
+          apt-get install -y --quiet --no-install-recommends ros-humble-ament-cmake-gtest
+          rm -rf /var/lib/apt/lists/*
+      - name: Build and test the packages that need no PX4 sources
+        shell: bash
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon build --symlink-install \
+            --packages-select guara_msgs guara_geofence \
+            --event-handlers console_direct+
+          colcon test --packages-select guara_msgs guara_geofence \
+            --event-handlers console_direct+
+          colcon test-result --verbose
+        working-directory: ros2_ws
