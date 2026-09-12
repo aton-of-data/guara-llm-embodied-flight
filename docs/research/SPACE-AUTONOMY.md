@@ -167,9 +167,9 @@ the same format, in the same repository.
 
 ### 4.2 The generated F´ monitor cannot trigger anything
 
-`ogma-core/templates/fprime/Copilot.fpp` generates a `queued component Copilot`
-inside `module Ref`, with one `async input port <var>In` per monitored variable
-and one **event** per monitor violation **[SRC]**.
+`ogma@69485b3:ogma-core/templates/fprime/Copilot.fpp` generates a `queued component Copilot`
+inside `module Ref` (line 1), with one `async input port <var>In` per monitored variable
+and one **event** per monitor violation (lines 59–64) **[SRC]**.
 
 Two limitations follow directly from the template text:
 

@@ -1,9 +1,11 @@
 # Guará — plan M8–M16: LLM embodiment, F´, and the space domain
 
-Version: 0.1 (2026-09-11) · Status: draft for human review
+Version: 0.2 (2026-09-11) · Status: executable; M8 ACs PASS; M9 in progress
 
 This plan extends `docs/SPEC.md` past the 12-week RTA core (M1–M7, P0–P7) into the three
-threads the project has committed to but not yet specified in executable form:
+threads the project has committed to. M8 is implemented; M9 is in progress; Threads B and C
+are specified and have analytic keep-out / space-intent tests, but the F´ host itself waits
+on Rule O.
 
 | Thread | What it is | Milestones | Founding documents |
 |---|---|---|---|

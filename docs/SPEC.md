@@ -312,12 +312,14 @@ Scripts and scenarios cited are deliverables of the indicated milestones; they d
 
 | Section | ADR | ACs |
 |---|---|---|
-| §2 architecture | 0001, 0002 | AC-1, AC-2 |
+| §2 architecture | 0001, 0002, 0010 | AC-1, AC-2 |
 | §3 switching | 0005 | AC-4..AC-6, AC-12, AC-13, AC-22 |
 | §3.1 `T_gf` | 0004 | AC-8, AC-9 |
 | §3.1 `T_daa` | 0003 | AC-10, AC-11 |
 | §4 latency | 0001 | AC-7, AC-18, AC-19 |
 | §5 failures | 0001 | AC-14..AC-17, AC-20, AC-21 |
+| LLM embodiment (M8–M12) | 0008, 0009, 0010, 0013 | AC-23..AC-38 · [`docs/PLAN-M8-M16.md`](PLAN-M8-M16.md) |
+| F´ host / space domain (M13–M16) | 0011, 0012 | AC-39..AC-50 · [`docs/research/SPACE-AUTONOMY.md`](research/SPACE-AUTONOMY.md) |
 
 ---
 

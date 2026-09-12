@@ -254,10 +254,11 @@ All values only from `results/` via script (CLAUDE.md).
 | M11 | Imaging + ODM reports + talk-back summaries | M10 |
 | M12 | Field-trial readiness: VLOS ops manual, risk assessment, LGPD policy | M11, human regulatory review |
 
-Written ADRs: 0006 license (Apache-2.0), 0007 reference airframe, 0008 language packs, 0009 capability packs.
-Candidate ADRs (not yet written): 0010 LLM emits intents only; 0011 stop path bypasses LLM;
-0012 ASR on ground device with confirmation; 0013 offline-first model selection and model-license check;
-0014 mission compiler as pre-flight monitor; 0015 SROS2 for CF topics.
+Written ADRs: 0006 license (Apache-2.0), 0007 reference airframe, 0008 language packs,
+0009 capability packs, 0010 untrusted CF contract, 0013 LLM evaluation protocol.
+Space-thread ADRs (do not change this air thread): 0011 F´ as second host, 0012 space-domain
+signals. Remaining candidates: SROS2 on `/guara/cf/*` (M9b / AC-32), ASR on the ground device
+with confirmation (M10), offline-first candidate-model selection and licence check (M9+).
 
 ## 9. Author decisions (2026-09-11)
 

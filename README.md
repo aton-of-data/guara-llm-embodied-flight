@@ -114,10 +114,14 @@ cannot talk its way past.
 ### 2.3 Adjacent domains
 
 The requirements half of the chain — FRET → Ogma → Copilot — targets cFS and F´, the flight
-software of spacecraft and small satellites, as first-class backends. A Guará-shaped
-arbiter on those runtimes is therefore architecturally plausible and is the natural second
-platform, but **no satellite or cFS work exists in this repository** and none is claimed:
-everything implemented and measured here is PX4 multicopter in SITL.
+software of spacecraft and small satellites, as first-class backends. The same decision core
+is specified for F´ as a second host ([ADR 0011](docs/adr/0011-fprime-as-second-rta-host.md)),
+with orbital constraint monitors that are a rewrite, not a port, of `T_gf` / `T_daa`
+([ADR 0012](docs/adr/0012-space-domain-rta-mapping.md),
+[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md)). Analytic keep-out
+tests live in `space/keepout.py`. No F´ deployment has flown yet: Rule O in
+[`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) sequences the F´ host after the PX4 latency
+batch. Everything *measured* here is still PX4 multicopter in SITL.
 
 ---
 
@@ -358,11 +362,15 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 | [`docs/SPEC.md`](docs/SPEC.md) | The engineering truth: scope, F3269 mapping, switching logic, latency budget, failure modes, acceptance criteria, limits, open risks |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
-| [`docs/adr/`](docs/adr) | Ten decisions: arbiter as ModeExecutor · monitors on the companion · NOSA isolation · geofence prediction · return policy · Apache-2.0 · reference airframe · language packs · capability packs · untrusted-CF contract |
-| [`docs/milestones/`](docs/milestones) | M1–M7 reports with executed commands, plus the AC tracker |
+| [`docs/adr/`](docs/adr) | Thirteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
+| [`docs/milestones/`](docs/milestones) | M1–M8 reports with executed commands, plus the AC tracker |
 | [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 and its remediation record |
 | [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md) | Limitations and design for the voice/LLM layer, with the civil use-case catalogue |
+| [`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) | F´, Ogma's F´ backend, and where a Guará-class RTA fits in orbit |
+| [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) | Executable plan for LLM embodiment, the F´ port, and the space domain |
 | [`docs/evidence/`](docs/evidence) | Run contracts and metrics published verbatim from `results/` |
+| `mission/` | Mission Intent schema, site model, deterministic compiler, labelled corpus, trusted plan executor |
+| `space/` | Space intent schema, attitude keep-out predictor, demo-sat vehicle model |
 | `ros2_ws/src/guara_rta` | `DecisionCore`, input manager, gateway logic, actuator, safety profile, ModeExecutor node, 12 test suites |
 | `ros2_ws/src/guara_geofence` | Predictor with braking distance and position-uncertainty handling |
 | `ros2_ws/src/guara_monitors` | FRETish specs, `px4_msgs` variable DB, Ogma template, generated Copilot C99, monitor node |
@@ -381,12 +389,15 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 |---|---|---|
 | M1–M2 | Headless SITL in container, API grounding, first Ogma monitor over `/fmu/out/*` | done |
 | M3–M5 | Arbiter, geofence predictor, DAIDALUS node | done |
-| M6–M7 | Scenario generator, batch execution, latency budget | latency measured; batch benchmark in progress |
-| P4–P5 | BR-UAS-Bench scenario suite with Wilson intervals; adversarial LLM complex function (RQ5) | next |
-| P6–P7 | Preprint and NFM submission; `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | next |
-| M8–M9 | Mission Intent schema and deterministic compiler; LLM agent in SITL (RQ6a/b) | planned |
+| M6–M7 | Scenario generator, batch execution, latency budget | done (AC-18/19/22 re-run 2026-09-11) |
+| P4–P5 | BR-UAS-Bench scenario suite with Wilson intervals; adversarial LLM complex function (RQ5) | P4 latency batch done; P5 next |
+| P6–P7 | Preprint and NFM submission; `px4_msgs` variable DB upstream to `nasa/ogma` (C2); Ogma F´ verdict port (P7b) | next |
+| M8 | Mission Intent schema and deterministic compiler (no model) | done (AC-23..AC-26, [`docs/milestones/M8.md`](docs/milestones/M8.md)) |
+| M9 | LLM instruments (mock + Cursor) against the corpus; plan flown as CF in SITL | in progress |
 | M10–M11 | Voice pipeline on the ground device; imaging, ODM reports, talk-back | planned |
 | M12 | Field-trial readiness: VLOS operations manual, risk assessment, LGPD policy | planned |
+| M13–M15 | Shared core on F´; safe-mode recovery function; Ogma F´ backend upstream | planned (after Rule O) |
+| M16 | Orbital batch + space intent schema against the sequencer gate | keep-out predictor and space intent schema started |
 
 Blocking risks, tracked in [`docs/SPEC.md` §9](docs/SPEC.md): CopilotVerifier toolchain
 availability (R-11, blocks RQ4), DO-365B thresholds unsuited to small UAS (R-5), Hold as a DAA
