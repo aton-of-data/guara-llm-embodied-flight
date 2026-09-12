@@ -21,7 +21,7 @@ credited in the fix commit unless you ask otherwise.
 ## What is already known, and is not a vulnerability report
 
 The threat model for this phase is stated in [`docs/SPEC.md` §5 and §7](docs/SPEC.md) and
-summarised in [README §8](README.md#8--limits-what-guará-does-not-guarantee). The following are
+summarised in [README §7](README.md#7--limits-what-guará-does-not-guarantee). The following are
 **documented, accepted limitations of the current phase**. Reports that restate them are
 welcome as issues but are not vulnerabilities:
 

@@ -2,7 +2,7 @@
 
 Guará is a research prototype for civil flight safety, in the air and in orbit. Its claims are
 limited to what an executed command supports, and the contribution rules exist to keep that
-true. Read [§8 · Limits](README.md#8--limits-what-guará-does-not-guarantee) first — it says what
+true. Read [§7 · Limits](README.md#7--limits-what-guará-does-not-guarantee) first — it says what
 this project does *not* guarantee, and a contribution that quietly widens a claim is the one
 kind of change that damages it.
 
@@ -60,7 +60,7 @@ python3 -m mission.compiler --intent mission/intents/survey_north_3.json
 ```
 
 The C++ arbiter, the monitors and the SITL scenarios need the containers — see
-[§10 · Reproduce it](README.md#10--reproduce-it). C++17, colcon/ament, gtest and launch_testing.
+[§9 · Reproduce it](README.md#9--reproduce-it). C++17, colcon/ament, gtest and launch_testing.
 
 ## Commits and pull requests
 
@@ -86,7 +86,7 @@ is tracked.
 | Detect and avoid | Sourced well-clear thresholds suited to small UAS, rather than DO-365B's large-aircraft values | R-5 |
 | SITL | A traffic-injection path in PX4 SITL, never exercised | R-7 |
 | Security | An SROS2 profile for the CF and bridge topics | FM-12 |
-| Standards | A review of [§5.1](README.md#51--astm-f3269-roles--guará-components) against the licensed ASTM F3269 text | R-8 |
+| Standards | A review of [§5.1](docs/ARCHITECTURE.md#51-astm-f3269-roles--guará-components) against the licensed ASTM F3269 text | R-8 |
 | Space | A Basilisk ↔ ROS 2 setup that lets the existing arbiter face orbital dynamics | AC-48 |
 | Space | A review of the safe-mode specification by someone who has flown one | RS-1 |
 | LLM layer | Providers beyond `mock` and `cursor-agent` — Ollama first, so the corpus can be reproduced offline | [`scripts/llm/provider.py`](scripts/llm/provider.py) |

@@ -31,7 +31,7 @@ One switching core, two hosts:
 
 **Built on** — upstream projects, at the commits pinned in
 [`third_party/VERSIONS.md`](third_party/VERSIONS.md). Wordmarks are used nominatively to say
-what Guará integrates; see [§13 · Trademarks](#trademarks).
+what Guará integrates; see [§12 · Trademarks](docs/LICENSING.md#trademarks).
 
 [![FRET](https://img.shields.io/badge/FRET-v3.1.0-2b3a55.svg)](https://github.com/NASA-SW-VnV/fret)
 [![Ogma](https://img.shields.io/badge/Ogma-v1.15.0-2b3a55.svg)](https://github.com/nasa/ogma)
@@ -41,29 +41,14 @@ what Guará integrates; see [§13 · Trademarks](#trademarks).
 
 > This is not certification, and it is not a product. It is a research prototype whose claims
 > are limited to what an executed command in `results/` supports. Read
-> [§8 · Limits](#8--limits-what-guará-does-not-guarantee) before citing anything here.
+> [§7 · Limits](#7--limits-what-guará-does-not-guarantee) before citing anything here.
 
 ---
 
 ## Table of contents
 
 | § | Section | For |
-|---|---|---|
-| [1](#1--the-gap) | The gap | Reviewers, funders |
-| [2](#2--related-work-and-the-open-threads-guará-answers) | Related work and the open threads Guará answers | Researchers |
-| [3](#3--principles) | Principles | Everyone |
-| [4](#4--scope-two-domains-one-core) | Scope: two domains, one core | Everyone |
-| [5](#5--architecture) | Architecture | Engineers |
-| [6](#6--switching-logic) | Switching logic | Engineers, reviewers |
-| [7](#7--measured-results) | Measured results | Reviewers |
-| [8](#8--limits-what-guará-does-not-guarantee) | Limits | Everyone |
-| [9](#9--llm-embodiment-the-long-term-goal) | LLM embodiment: the long-term goal | Everyone |
-| [10](#10--reproduce-it) | Reproduce it | Users |
-| [11](#11--repository-index) | Repository index | Contributors |
-| [12](#12--roadmap) | Roadmap | Everyone |
-| [13](#13--licensing-copyright-and-the-nosa-boundary) | Licensing, copyright and the NOSA boundary | Integrators, lawyers |
-| [14](#14--contributing-citing-contact) | Contributing, citing, contact | Everyone |
-
+|---
 ---
 
 ## 1 · The gap
@@ -91,74 +76,25 @@ memory of an API.
 
 ## 2 · Related work and the open threads Guará answers
 
-Guará is deliberately *downstream* of existing projects. Each row is a thread left open in
-another repository or paper, and what Guará contributes to it.
+Guará is deliberately *downstream* of existing projects. The full treatment — the upstream
+tools it extends, the natural-language drone-control literature, and the same chain in orbit —
+is [**`docs/RELATED-WORK.md`**](docs/RELATED-WORK.md).
 
-### 2.1 Upstream tools Guará extends
-
-| Repository | What it gives | Open thread | Guará's answer |
-|---|---|---|---|
-| [nasa/ogma](https://github.com/nasa/ogma) `v1.15.0` | FRETish → Copilot → C99 monitor generation, ROS 2 backend | No PX4 variable database or example | `guara_monitors` carries a `px4_msgs` variable DB, a customised ROS template and a generated monitor over `/fmu/out/*`; upstreaming is contribution **C2** |
-| [Copilot-Language/copilot](https://github.com/Copilot-Language/copilot) `v4.8.1` | Constant-time, allocation-free monitor C99; CopilotVerifier proofs | Verifier toolchain unavailable on this host (risk R-11) | Monitors are generated and unit-tested today; proof generation is the RQ4 deliverable |
-| [NASA-SW-VnV/fret](https://github.com/NASA-SW-VnV/fret) `v3.1.0` | FRETish → pmLTL, export to Ogma | Export path never exercised for PX4 properties | `REQ-ALT-01` runs the flow end to end into a flying monitor (M2) |
-| [nasa/daidalus](https://github.com/nasa/daidalus) `v2.0.3a` | DO-365 well-clear, time to violation, maneuver bands | NOSA licence blocks mixing with permissive stacks; DO-365B thresholds are sized for large aircraft | `nosa/guara_daidalus` is a licence-isolated ROS 2 node ([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md)); small-UAS thresholds remain open risk R-5 |
-| [nasa/icarous](https://github.com/nasa/icarous) | The architectural precedent: DAIDALUS + PolyCARP as cFS apps | Dormant since 2022, cFS-bound, external autopilot | Same roles, rebuilt on PX4 + ROS 2 with the autopilot itself as the recovery function |
-| [PX4/PX4-Autopilot](https://github.com/PX4/PX4-Autopilot) `v1.17.0` | Internal modes as a recovery function; external-mode interface | [PR #20707](https://github.com/PX4/PX4-Autopilot/pull/20707) suggests extending fallback beyond arming-check timeouts | Guará is a semantic fallback layered on the existing interface, leaving PX4 failsafes untouched and authoritative |
-| [Auterion/px4-ros2-interface-lib](https://github.com/Auterion/px4-ros2-interface-lib) `release/1.17` | `ModeExecutorBase`, owned modes, `scheduleMode` | Executor-death timing in flight documented only partially | Failure modes FM-1…FM-5 are measured in SITL and recorded in [`docs/SPEC.md` §5](docs/SPEC.md) |
-
-### 2.2 Natural-language drone control: what everyone leaves to the prompt
-
-Prior art for talking to a drone is real and growing. What is missing is uniform.
-
-| Work | Approach | Stated safety basis |
-|---|---|---|
-| ChatGPT for Robotics / PromptCraft ([arXiv 2306.17582](https://ar5iv.labs.arxiv.org/html/2306.17582)) | LLM writes code over an AirSim function library | Human reviews the code |
-| TypeFly ([arXiv 2312.14950](https://arxiv.org/abs/2312.14950)) | LLM emits MiniSpec, a token-efficient DSL | The DSL restricts the action set |
-| Taking Flight with Dialogue ([arXiv 2506.07509](https://arxiv.org/abs/2506.07509)) | PX4 + ROS 2 + local Ollama, sim and real quadcopter | Not specified |
-| EchoPilot ([PX4 forum](https://discuss.px4.io/t/echopilot-langgraph-mcp-server-for-natural-language-px4-control/46998)) | Voice → LangGraph → MCP → MAVSDK → PX4 | Telemetry verification; author asks the community for safety ideas |
-| [MAVLinkMCP](https://github.com/ion-g-ion/MAVLinkMCP), [ardupilot-mcp](https://github.com/rmeadomavic/ardupilot-mcp) | MCP servers exposing MAVLink to agents | SITL-first, human in the loop |
-| Universal LLM–Drone C2 ([arXiv 2601.15486](https://arxiv.org/html/2601.15486v2)) | MCP + MAVSDK, many models, caged sub-250 g drone | Human override; non-determinism acknowledged |
-| AerialClaw ([arXiv 2606.12142](https://arxiv.org/abs/2606.12142)) | Brain–skill–runtime agent framework on PX4 SITL | "Safety-oriented runtime validation", unspecified |
-
-The shared pattern is **safety = prompt engineering + tool restriction + human override**.
-None of the surveyed work places a formally specified, latency-measured runtime-assurance
-boundary between the model and the autopilot. That boundary is what this repository is.
+The short version. Prior art for talking to a drone is real and growing: ChatGPT for Robotics,
+TypeFly, EchoPilot, MAVLinkMCP, AerialClaw and others. What is missing is uniform — the shared
+pattern is **safety = prompt engineering + tool restriction + human override**. None of the
+surveyed work places a formally specified, latency-measured runtime-assurance boundary between
+the model and the autopilot. That boundary is what this repository is.
 
 The adversarial side of the same literature is why the boundary must be independent of the
 model: [RoboPAIR](https://arxiv.org/abs/2410.13691) reports a 100% jailbreak rate against three
-LLM-controlled robots, and [DolphinAttack](https://arxiv.org/pdf/1708.09537) shows voice itself
-is an attack surface. Guardrail-style answers ([RoboGuard](https://arxiv.org/abs/2503.07885),
-[SafePlan](https://arxiv.org/abs/2503.06892), [Safety Chip](https://arxiv.org/pdf/2309.09919))
-constrain the *planner*; Guará constrains the *aircraft*, which is the only layer a jailbreak
-cannot talk its way past.
+LLM-controlled robots. Guardrail-style answers constrain the *planner*; Guará constrains the
+*aircraft*, which is the only layer a jailbreak cannot talk its way past.
 
-### 2.3 The same chain, in orbit
-
-The requirements half of the chain — FRET → Ogma → Copilot — already targets cFS and F´, the
-flight software of spacecraft and small satellites, as first-class backends. Three facts,
-re-derived from the pinned clones and recorded in [`GROUNDING.md`](GROUNDING.md) Addendum D,
-decide the shape of the space thread:
-
-- **F´ detects, but does not recover.** `Svc::Health` pings components, tracks timeouts, raises
-  FATAL and strokes a watchdog (D.2) — and a grep for `safe.?mode` over `Svc/` and `Fw/` returns
-  nothing (D.5). On PX4 the recovery function was free; on F´ it is the most safety-critical
-  code the project would have to write.
-- **The trusted disposer already exists.** `Svc::FpySequencer` validates a compiled sequence
-  before running it (D.3) — exactly the artifact [ADR 0010](docs/adr/0010-untrusted-complex-function-contract.md)
-  rule 6 demands between a model and an actuator. It is pre-release upstream (D.4), so nothing
-  here depends on it irreversibly.
-- **Ogma's F´ monitors cannot trigger anything.** The generated component emits events only,
-  into a hardcoded `module Ref`, with no verdict output port (D.8). That is the same gap G3
-  identifies for PX4, restated in the space domain — and two small upstream contributions.
-
-So the space thread is a *rewrite* of the signals, not a port: `T_gf`'s braking model assumes a
-vehicle that can stop, and `T_daa` is an air-traffic construct
-([ADR 0012](docs/adr/0012-space-domain-rta-mapping.md),
-[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md)). What transfers is the
-architecture: predicted time to violation, threshold with hysteresis, asymmetric switch, gate on
-the untrusted function. Analytic keep-out tests live in `space/keepout.py` and pass AC-47
-([`docs/milestones/M13c.md`](docs/milestones/M13c.md)). **No F´ deployment has run.** Everything
-*measured* in this repository is PX4 multicopter in SITL.
+In orbit the same chain applies with different signals: F´ detects but does not recover, its
+trusted sequence disposer already exists, and Ogma's F´ monitors cannot trigger anything. So
+the space thread is a *rewrite* of the signals, not a port
+([`docs/RELATED-WORK.md` §2.3](docs/RELATED-WORK.md#23-the-same-chain-in-orbit)).
 
 ---
 
@@ -231,95 +167,24 @@ decision 1).
 
 ---
 
-## 5 · Architecture
+## 5 · Architecture and switching logic
 
-### 5.1 ASTM F3269 roles → Guará components
+The ASTM F3269 role mapping, the runtime view, what the gateway enforces against an untrusted
+planner, and the switching core itself are in
+[**`docs/ARCHITECTURE.md`**](docs/ARCHITECTURE.md). The engineering truth in full — failure
+modes, latency budget, acceptance criteria and open risks — is
+[`docs/SPEC.md`](docs/SPEC.md).
 
-The ASTM F3269 text is not available in this repository; the mapping uses the component names
-and is marked [REVIEW] until checked against the licensed standard ([`docs/SPEC.md` §2](docs/SPEC.md)).
-
-| F3269 role | Guará realisation | Package |
-|---|---|---|
-| Complex Function | External node publishing `guara_msgs/CfSetpoint`; reaches PX4 only through the owned mode `GuaraCfGateway` | out of tree (`guara_cf_*`) |
-| Recovery Function | PX4 internal modes Hold / RTL / Land, triggered by `scheduleMode` | PX4 |
-| Safety Monitor | Copilot monitors, geofence predictor, DAIDALUS node — each publishing a timestamped verdict | `guara_monitors`, `guara_geofence`, `guara_daidalus` |
-| Switching Logic | `DecisionCore` — pure, allocation-free, fixed period `T_s` | `guara_rta` |
-| Input Manager | Age and validity checks on every input; gateway that blocks the CF outside state `CF` | `guara_rta` |
-| Final layer | PX4 internal failsafes and geofence, deliberately left enabled | PX4 |
-
-### 5.2 Runtime view
-
-```mermaid
-flowchart LR
-  subgraph PX4[PX4 v1.17 SITL or FMU]
-    FMU[commander + navigator<br/>Hold / RTL / Land<br/>failsafes]
-  end
-  subgraph RTA[guara_rta process]
-    IM[Input Manager]
-    DC[DecisionCore<br/>switching logic]
-    GW[GuaraCfGateway<br/>owned mode + envelope]
-    EX[GuaraExecutor<br/>ModeExecutor]
-    GF[GeofencePredictor]
-    ACT[Actuator<br/>scheduleMode]
-  end
-  MON[guara_monitors<br/>Copilot / Ogma]
-  DAA[guara_daidalus<br/>NOSA-isolated]
-  CF[Untrusted complex function<br/>planner, policy or LLM]
-  FMU -- /fmu/out/* --> IM
-  FMU -- transponder_report --> DAA
-  FMU -- /fmu/out/* --> MON
-  MON -- MonitorVerdict --> IM
-  DAA -- DaaStatus --> IM
-  IM --> GF --> DC
-  IM --> DC
-  DC --> ACT --> EX -- vehicle_command_mode_executor --> FMU
-  CF -- CfSetpoint --> GW -- trajectory_setpoint --> FMU
-  DC -. state .-> GW
-```
-
-### 5.3 What the gateway enforces against an untrusted planner
-
-| Threat | Enforcement | Test |
-|---|---|---|
-| The planner stalls and a stale setpoint keeps flying | Freshness measured from reception on the gateway clock; implausible stamps rejected | `test_gateway_envelope.cpp` |
-| Confident but out-of-envelope command (speed, climb, yaw step) | Clamp to `gateway.max_*`; non-finite rejected | `test_gateway_envelope.cpp` |
-| Plausible command that flies at the fence | Shadow check of the proposed velocity against the predictor before forwarding | `test_gateway_envelope.cpp`, AC-9 |
-| Unsafe motion re-proposed right after a recovery | Return requires the CF's own intent to be clear | `test_return_policy.cpp` |
-| Anti-chattering budget reset by toggling modes | Switch history survives deactivation | `test_return_policy.cpp` |
-| Silent death of a monitor or the DAA node | Enabled channels fail closed; undeclared omissions refused | `test_channel_gating.cpp` |
-| Structurally malformed or extreme input | Property test against an adversarial CF | `test_gateway_fuzz.cpp` |
-
-Still open before any language model drives a CF, in order: transport authentication on
-`/guara/cf/*` and `/fmu/in/*` (SROS2, failure mode FM-12); a jailbreak corpus against the mission
-compiler (RQ6b); the RQ5 fuzz corpus extended with future stamps and mode-tool abuse.
+In one paragraph: an untrusted complex function publishes `guara_msgs/CfSetpoint` and reaches
+PX4 only through an owned mode that clamps it. Copilot monitors, a geofence predictor and a
+DAIDALUS node each publish a timestamped verdict. A pure, allocation-free `DecisionCore` at a
+fixed period decides whether the next seconds are unsafe, and an actuator calls `scheduleMode`
+to hand the vehicle to a PX4 internal mode. Hysteresis and dwell time delay only the *return*
+to the complex function; nothing delays the switch away from it.
 
 ---
 
-## 6 · Switching logic
-
-At each tick `k` of period `T_s` the core evaluates the time to loss of well-clear `T_daa`, the
-time to geofence violation `T_gf`, the monitor flag `M`, and the input-validity flag `V`:
-
-```
-U(k) = [T_daa ≤ τ_daa] ∨ [T_gf ≤ τ_gf] ∨ M(k) ∨ V(k)                          unsafe
-C(k) = [T_daa > τ_daa + h_daa] ∧ [T_gf > τ_gf + h_gf] ∧ ¬M(k) ∧ ¬V(k)          clear
-```
-
-`U` switches to the recovery function in the same tick. `C` alone does not switch back: the
-return demands `C` held continuously for the dwell time `T_d`, a minimum dwell in recovery, and
-a switch budget that latches after `N_max` switches in a window `W`. States are `INACTIVE`,
-`CF`, `RF(r)` and `LATCHED(r)` with `r ∈ {HOLD, RTL, LAND}`, ranked so escalation is always
-permitted and de-escalation never is. The full transition table, the six required properties
-P-1…P-6, and the design obligations are in [`docs/SPEC.md` §3](docs/SPEC.md); the rationale for
-returning only from Hold is [ADR 0005](docs/adr/0005-return-to-complex-function.md).
-
-The obligation that makes the rule meaningful is **O-1**: `τ_gf ≥ δ_lat` and
-`τ_daa ≥ τ_rec,daa + δ_lat`, where `δ_lat` is the *measured* p99 latency from the sample that
-makes `U` true to the recovery mode being effective. That is the subject of §7.
-
----
-
-## 7 · Measured results
+## 6 · Measured results
 
 From a 30-run headless batch on the current build, aggregated by `scripts/aggregate.py`;
 contract and metrics published in [`docs/evidence/batch_latency/`](docs/evidence/batch_latency),
@@ -348,7 +213,7 @@ discarded and re-measured from scratch on the corrected build.
 
 ---
 
-## 8 · Limits: what Guará does not guarantee
+## 7 · Limits: what Guará does not guarantee
 
 The full list is [`docs/SPEC.md` §7](docs/SPEC.md). The ones that most often get overclaimed:
 
@@ -372,7 +237,7 @@ The full list is [`docs/SPEC.md` §7](docs/SPEC.md). The ones that most often ge
 
 ---
 
-## 9 · LLM embodiment: the long-term goal
+## 8 · LLM embodiment: the long-term goal
 
 The direction is an open-source, open-weight, voice-driven agent for civil drones — agriculture
 first — whose physical authority is bounded by everything above. The design, the full
@@ -397,7 +262,7 @@ Three decisions shape it:
 
 ---
 
-## 10 · Reproduce it
+## 9 · Reproduce it
 
 ### In 60 seconds, with no container
 
@@ -465,11 +330,12 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 
 ---
 
-## 11 · Repository index
+## 10 · Repository index
 
 | Path | Contents |
 |---|---|
 | [`docs/operations/`](docs/operations/README.md) | **The scope map: one document per flight operation, air and space, with its checks, channels, recovery function and evidence** |
+| [`docs/RELATED-WORK.md`](docs/RELATED-WORK.md) · [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/ROADMAP.md`](docs/ROADMAP.md) · [`docs/LICENSING.md`](docs/LICENSING.md) | The long sections split out of this README: prior art, the runtime view and switching core, the milestone plan, and the licence and trademark position |
 | [`docs/SPEC.md`](docs/SPEC.md) | The engineering truth: scope, F3269 mapping, switching logic, latency budget, failure modes, acceptance criteria, limits, open risks |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
@@ -496,42 +362,11 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 
 ---
 
-## 12 · Roadmap
+## 11 · Roadmap
 
-Ordered by the rule that protects the core: the PX4 results come first, thread A runs beside
-them because it touches no arbiter code, and threads B and C start only after the latency and
-batch milestones are complete ([`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) §1).
-
-### Done
-
-| Milestone | Content | Evidence |
-|---|---|---|
-| M1–M2 | Headless SITL in a container, API grounding, first Ogma monitor over `/fmu/out/*` | [M1](docs/milestones/M1.md), [M2](docs/milestones/M2.md) |
-| M3–M5 | Arbiter, geofence predictor, DAIDALUS node | [M3](docs/milestones/M3.md)–[M5](docs/milestones/M5.md) |
-| M6–M7, P4 | Scenario generator, 30-run batch, latency budget (AC-18/19/22 re-run 2026-09-11) | [M7](docs/milestones/M7.md), [`docs/evidence/batch_latency/`](docs/evidence/batch_latency) |
-| M8 | Mission Intent schema and deterministic compiler, no model involved | [M8](docs/milestones/M8.md), AC-23..AC-26 |
-
-### In progress
-
-| Milestone | Thread | Content | State |
-|---|---|---|---|
-| M9 | A | LLM instruments against the labelled corpus; a compiled plan flown as the CF | AC-29, AC-30, AC-31 PASS; AC-27/AC-28 open ([M9](docs/milestones/M9.md)) |
-| M13c | C | Attitude keep-out predictor and the closed space-intent vocabulary | AC-47 PASS; AC-48 needs a simulator ([M13c](docs/milestones/M13c.md)) |
-| P5–P7 | core | Adversarial CF (RQ5), preprint and NFM submission, `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | next |
-
-### Planned
-
-| Milestone | Thread | Content | Gate |
-|---|---|---|---|
-| M9b | A | SROS2 on the CF and bridge topics | closes FM-12; until then, closed local DDS domain only |
-| M10–M11 | A | Voice pipeline, imaging, ODM products, talk-back | AC-34..AC-37 |
-| M12 | A | Field-trial readiness: VLOS operations manual, risk assessment, LGPD policy | human regulatory review |
-| M13 | B | Shared `guara_core` extraction, F´ deployment, `Svc::Health` registration | AC-39 must pass with **no edits to the PX4 test files** |
-| M14 | B | The safe mode F´ does not have — the project's most safety-critical new code | AC-42..AC-44, risk RS-1 |
-| M15 | B | Ogma F´ backend upstream: verdict output port, configurable module name | AC-45, AC-46 |
-| M16 | C | Orbital batch, intent → validated sequence, RQ6b against the space schema | AC-49, AC-50 |
-
-Full acceptance-criteria inventory, executed and planned:
+M1–M8 are done, M9 and M13c are in progress, and the F´ host and the orbital batch are planned.
+The milestone-by-milestone version with the gate on each is
+[**`docs/ROADMAP.md`**](docs/ROADMAP.md); the acceptance-criteria inventory is
 [`docs/milestones/STATUS.md`](docs/milestones/STATUS.md).
 
 Blocking risks, tracked in [`docs/SPEC.md` §9](docs/SPEC.md) and
@@ -543,60 +378,24 @@ RS-1, the safe mode with no heritage, is the one a reviewer should attack first.
 
 ---
 
-## 13 · Licensing, copyright and the NOSA boundary
+## 12 · Licensing, copyright and the NOSA boundary
 
 Guará is **Apache-2.0** ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE),
 [ADR 0006](docs/adr/0006-license-apache-2.md)) — the same licence as Ogma, cFS, F´ and ROS 2.
-Every source file carries `SPDX-License-Identifier: Apache-2.0`; the documentation and the
-figures under [`docs/`](docs) are released under the same licence.
+Every source file carries `SPDX-License-Identifier: Apache-2.0`, checked by
+`scripts/check_spdx.py`.
 
 > Copyright 2026 Aton Bertini Dornfeld &lt;dornfeld.in@gmail.com&gt; and the Guará contributors.
 
-DAIDALUS and FRET are under the NASA Open Source Agreement. NOSA code lives only in
-[`nosa/`](nosa), is kept off the default colcon path, and is built by its own wrapper; FRET is
-generation-time tooling in the formal-methods image and never ships in a runtime artefact. The
-boundary is enforced by `scripts/check_license_isolation.py`, not by convention. F´, the second
-host, is Apache-2.0 and raises no isolation requirement of its own
-([`GROUNDING.md`](GROUNDING.md) D.1). The legal interpretation of NOSA alongside Apache-2.0 and
-BSD is marked [REVIEW] and needs a human lawyer before any container that embeds DAIDALUS is
-distributed ([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md), risk R-9).
-
-<a id="trademarks"></a>
-
-### Trademarks
-
-No part of this project implies endorsement by NASA, JPL, the Dronecode Foundation, Open
-Robotics, PX4, Auterion or any other upstream project. Guará is an independent research
-prototype and is not affiliated with, sponsored by, or reviewed by any of them.
-
-NASA, FRET, Ogma, Copilot, DAIDALUS, F´, PX4, ROS and ROS 2 are the marks of their respective
-owners. This repository refers to them **nominatively** — by name, in plain text, only as far as
-is needed to say which software Guará integrates and at which pinned commit. It deliberately
-carries **no** third-party logo, insignia or logotype:
-
-- The **NASA Insignia, Logotype and Seal** are protected by law, are not in the public domain,
-  and may not be used in a way that implies NASA endorsement of software. They do not appear
-  here, and neither do the project identifiers of the NASA-maintained tools Guará builds on
-  ([NASA Brand Center, images and media](https://www.nasa.gov/nasa-brand-center/images-and-media/)).
-- The **PX4 and Dronecode** marks are governed by the Dronecode Foundation trademark policy,
-  which requires official unmodified artwork, no suggestion of affiliation, and a disclaimer —
-  this section is that disclaimer
-  ([Dronecode trademarks](https://dronecode.org/trademarks/)).
-- The **ROS** marks are governed by the Open Robotics trademark rules; ROS is written in
-  capitals and never pluralised or possessive
-  ([ROS Trademark Rules and Guidelines](https://www.ros.org/imgs/TrademarkRulesAndGuidelines2022.pdf)).
-
-The Apache-2.0 licence of Ogma and F´, and the BSD-3-Clause licence of PX4 and Copilot, grant
-rights to the **code** only; Apache-2.0 §6 expressly grants no trademark rights. Nothing in
-`third_party/` is redistributed by this repository — the clones are recreated locally by
-[`scripts/fetch_third_party.sh`](scripts/fetch_third_party.sh).
-
-The Guará name and the guará-fox mascot are the project's own, commissioned for it and released
-with the repository under Apache-2.0 ([`docs/assets/README.md`](docs/assets/README.md)).
+DAIDALUS and FRET are under the NASA Open Source Agreement; NOSA code lives only in
+[`nosa/`](nosa) and the boundary is enforced by `scripts/check_license_isolation.py`, not by
+convention. The full position — the NOSA boundary, the `[REVIEW]` legal question, and the
+trademark statement covering NASA, PX4, Dronecode and ROS marks — is
+[**`docs/LICENSING.md`**](docs/LICENSING.md).
 
 ---
 
-## 14 · Contributing, citing, contact
+## 13 · Contributing, citing, contact
 
 **Contributing.** [`CONTRIBUTING.md`](CONTRIBUTING.md) is the guide;
 [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) applies. In short: every safety function needs a test
