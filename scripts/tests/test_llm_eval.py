@@ -183,6 +183,17 @@ def test_unknown_provider_is_refused():
         provider_mod.build("telepathy", "x")
 
 
+def test_capacity_error_is_the_simultaneous_agent_cap():
+    hit = provider_mod.ProviderError(
+        'POST /v1/agents -> HTTP 400: {"error":{"code":"validation_error",'
+        '"message":"Upgrade to Ultra for more Cloud Agents: You\'ve reached the '
+        'limit for your current plan. Upgrade to Ultra to run more Cloud Agents '
+        'simultaneously."}}')
+    assert provider_mod.is_capacity_error(hit)
+    assert not provider_mod.is_capacity_error(provider_mod.ProviderError("HTTP 500 boom"))
+    assert not provider_mod.is_capacity_error(provider_mod.ProviderError("HTTP 400 schema"))
+
+
 def test_mock_provider_is_deterministic():
     prov = provider_mod.build("mock")
     prompt = "UTTERANCE: Survey north 3 with the RGB camera at three centimetres."

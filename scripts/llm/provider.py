@@ -35,6 +35,14 @@ class ProviderError(RuntimeError):
     """The provider could not produce a completion. Never a scoring outcome."""
 
 
+def is_capacity_error(exc: BaseException) -> bool:
+    """True when Cursor refused a create because too many Cloud Agents are live."""
+    msg = str(exc).lower()
+    return "http 400" in msg and (
+        "simultaneous" in msg or "limit for your current plan" in msg
+        or "upgrade to ultra" in msg)
+
+
 @dataclass
 class Completion:
     text: str
@@ -221,57 +229,110 @@ class CursorAgentProvider(Provider):
             raise ProviderError(f"{method} {path} -> {e}") from None
         return json.loads(body) if body else {}
 
+    def _delete_agent(self, agent_id: str) -> None:
+        """Free a Cloud Agent slot. DELETE is documented as permanent; archive is the fallback."""
+        if not agent_id:
+            return
+        try:
+            self._request("DELETE", f"/v1/agents/{agent_id}", timeout_s=30.0)
+            return
+        except ProviderError:
+            pass
+        try:
+            self._request("POST", f"/v1/agents/{agent_id}/archive", timeout_s=30.0)
+        except ProviderError:
+            pass
+
     @staticmethod
     def _run_payload(payload: dict) -> dict:
         run = payload.get("run") if isinstance(payload.get("run"), dict) else payload
         return run if isinstance(run, dict) else {}
 
+    def reclaim(self) -> int:
+        """Delete leftover `guara-llm-eval` agents so a new run is not blocked by the plan cap."""
+        deleted = 0
+        cursor = None
+        for _ in range(20):
+            path = "/v1/agents?limit=100&includeArchived=false"
+            if cursor:
+                path += f"&cursor={cursor}"
+            payload = self._request("GET", path, timeout_s=30.0)
+            items = payload.get("items") or []
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                if item.get("name") != "guara-llm-eval":
+                    continue
+                ident = item.get("id")
+                if ident:
+                    self._delete_agent(str(ident))
+                    deleted += 1
+            cursor = payload.get("nextCursor")
+            if not cursor:
+                break
+        return deleted
+
     def complete(self, prompt: str) -> Completion:
         started = time.monotonic()
-        # Omit repos and env: a no-repo agent, text in, text out, nothing to push.
-        created = self._request("POST", "/v1/agents", {
-            "prompt": {"text": prompt},
-            "model": {"id": self.model},
-            "name": "guara-llm-eval",
-        })
+        created = None
+        last_err: ProviderError | None = None
+        for attempt in range(8):
+            try:
+                created = self._request("POST", "/v1/agents", {
+                    "prompt": {"text": prompt},
+                    "model": {"id": self.model},
+                    "name": "guara-llm-eval",
+                })
+                break
+            except ProviderError as e:
+                last_err = e
+                if not is_capacity_error(e):
+                    raise
+                time.sleep(min(60.0, 8.0 * (attempt + 1)))
+        else:
+            raise last_err or ProviderError("Cloud Agent create retries exhausted")
+
         agent_id = created.get("agent", {}).get("id", "")
         run = self._run_payload(created)
         run_id = run.get("id", "")
         if not agent_id or not run_id:
             raise ProviderError(f"unexpected create response: {json.dumps(created)[:300]}")
 
-        deadline = time.monotonic() + self.timeout_s
-        text = None
-        while time.monotonic() <= deadline:
-            status = str(run.get("status", "")).upper()
-            candidate = run.get("result")
-            if isinstance(candidate, str) and candidate.strip():
-                text = candidate
-            elif isinstance(candidate, dict):
-                for key in ("text", "result", "message", "content"):
-                    val = candidate.get(key)
-                    if isinstance(val, str) and val.strip():
-                        text = val
-                        break
-            if status in {"ERROR", "CANCELLED", "EXPIRED"}:
-                raise ProviderError(f"run {run_id} ended as {run.get('status')}")
-            if status == "FINISHED" and text is not None:
-                break
-            time.sleep(self.poll_s)
-            run = self._run_payload(
-                self._request("GET", f"/v1/agents/{agent_id}/runs/{run_id}"))
-        else:
-            raise ProviderError(
-                f"run {run_id} did not yield a text result within {self.timeout_s}s "
-                f"(status={run.get('status')!r}, keys={sorted(run.keys())})")
-        return Completion(
-            text=text,
-            duration_ms=int((time.monotonic() - started) * 1000),
-            provider=self.name,
-            model=self.model,
-            request_id=f"{agent_id}/{run_id}",
-            meta={"api_duration_ms": run.get("durationMs"), "status": run.get("status")},
-        )
+        try:
+            deadline = time.monotonic() + self.timeout_s
+            text = None
+            while time.monotonic() <= deadline:
+                status = str(run.get("status", "")).upper()
+                candidate = run.get("result")
+                if isinstance(candidate, str) and candidate.strip():
+                    text = candidate
+                elif isinstance(candidate, dict):
+                    for key in ("text", "result", "message", "content"):
+                        val = candidate.get(key)
+                        if isinstance(val, str) and val.strip():
+                            text = val
+                            break
+                if status in {"ERROR", "CANCELLED", "EXPIRED"}:
+                    raise ProviderError(f"run {run_id} ended as {run.get('status')}")
+                if status == "FINISHED" and text is not None:
+                    break
+                time.sleep(self.poll_s)
+                run = self._run_payload(
+                    self._request("GET", f"/v1/agents/{agent_id}/runs/{run_id}"))
+            else:
+                raise ProviderError(
+                    f"run {run_id} did not yield a text result within {self.timeout_s}s "
+                    f"(status={run.get('status')!r}, keys={sorted(run.keys())})")
+            return Completion(
+                text=text,
+                duration_ms=int((time.monotonic() - started) * 1000),
+                provider=self.name,
+                model=self.model,
+                request_id=f"{agent_id}/{run_id}",
+                meta={"api_duration_ms": run.get("durationMs"), "status": run.get("status")},
+            )
+        finally:
+            self._delete_agent(agent_id)
 
     def available_models(self) -> list[str]:
         payload = self._request("GET", "/v1/models", timeout_s=30.0)

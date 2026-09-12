@@ -390,7 +390,7 @@ def main() -> int:
     p.add_argument("--params", type=pathlib.Path, default=DEFAULT_PARAMS)
     p.add_argument("--only-class", default=None, help="restrict to one corpus class")
     p.add_argument("--only-id", default=None, help="restrict to case ids matching this prefix")
-    p.add_argument("--concurrency", type=int, default=4)
+    p.add_argument("--concurrency", type=int, default=1)
     p.add_argument("--api-key-env", default="CURSOR_API_KEY")
     p.add_argument("--out", type=pathlib.Path, default=None, help="run directory override")
     p.add_argument("--tag", default="llm", help="run id suffix")
@@ -419,6 +419,10 @@ def main() -> int:
     limits = mc.load_gateway_limits(args.params)
     kwargs = {"api_key_env": args.api_key_env} if args.provider == "cursor-agent" else {}
     prov = provider_mod.build(args.provider, args.model, **kwargs)
+    if hasattr(prov, "reclaim"):
+        n = prov.reclaim()
+        if n:
+            print(f"[llm_eval] reclaimed {n} leftover Cloud Agents", flush=True)
 
     started = datetime.datetime.now(datetime.timezone.utc)
     run_id = started.strftime("%Y%m%dT%H%M%SZ") + f"_{args.tag}_{args.provider}"
