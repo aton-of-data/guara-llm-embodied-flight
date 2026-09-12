@@ -201,6 +201,29 @@ Same rule as P0: cloned code only. These items support SPEC and ADR decisions.
 
 ---
 
+## Addendum D — F´ and Ogma's F´ backend (space thread, 2026-09-12)
+
+Facts behind ADR 0011, ADR 0012 and `docs/research/SPACE-AUTONOMY.md`. Re-derived from the
+pinned clones `fprime@7d8f579` (v4.3.0) and `ogma@69485b3` (v1.15.0); no fact here is written
+from memory of an API (CLAUDE.md).
+
+| # | answer | evidence | confidence |
+|---|---|---|---|
+| D.1 | F´ v4.3.0 is Apache-2.0, so it raises no isolation requirement of the kind ADR 0003 imposes on DAIDALUS. | `fprime@7d8f579:LICENSE.txt:1-3` | HIGH |
+| D.2 | `Svc::Health` pings each output port in a table (HTH-001), tracks timeout cycles per component (HTH-002), issues a **FATAL** event when a component fails to reply inside its timeout (HTH-003), and strokes a watchdog port only while all replies are inside their limit and the health checks pass (HTH-007). Monitoring can be enabled/disabled globally or per port and timeouts are commandable (HTH-004..006). ⇒ a hung arbiter is detectable by the platform, which PX4 achieves only indirectly (FM-4/FM-5). | `fprime@7d8f579:Svc/Health/docs/sdd.md:13-19,96-124` | HIGH |
+| D.3 | `Svc::FpySequencer` loads and **validates** a compiled sequence before running it; the state machine is IDLE → VALIDATING → RUNNING, entered by `cmd_VALIDATE` / `cmd_RUN`. It is the trusted deterministic disposer ADR 0010 rule 6 requires, already written upstream. | `fprime@7d8f579:Svc/FpySequencer/docs/sdd.md:51-63,74-75,111-112` | HIGH |
+| D.4 | `Svc::FpySequencer` is explicitly pre-release ("currently in development. Use at own risk") and depends on IEEE-754 `float`/`double` on the target (`SKIP_FLOAT_IEEE_754_COMPLIANCE=0`). ⇒ risk RS-2; the intent→sequence compiler is kept independent of it. | `fprime@7d8f579:Svc/FpySequencer/docs/sdd.md:3,12` | HIGH |
+| D.5 | **F´ ships no safe mode.** `grep -ril "safe.\?mode" Svc Fw` over the pinned clone returns no file. ⇒ the space recovery function is new safety-critical code the project has to write (risk RS-1, ADR 0012 decision 2). | `fprime@7d8f579:Svc/`, `fprime@7d8f579:Fw/` (grep, empty result, 2026-09-12) | HIGH (absence of evidence over the pinned tree) |
+| D.6 | Ogma has an F´ backend alongside cFS, ROS 2 and standalone, and **no PX4 backend** — the opening contribution C2 fills. | `ogma@69485b3:ogma-core/src/Command/FPrimeApp.hs:26`; `ogma@69485b3:ogma-core/src/Command/{CFSApp,ROSApp,Standalone}.hs` | HIGH |
+| D.7 | Ogma's variable database ships `"inputs": []` and `"topics": []`; its only framework-scoped rows map `fprime/port` primitive types (`U8`…`I64`, floats) to C types. ⇒ Ogma can type an F´ port but knows no telemetry channel, for F´ or PX4. | `ogma@69485b3:ogma-core/data/variable-db.json:1-12` | HIGH |
+| D.8 | The generated F´ monitor is a `queued component Copilot` emitted into `module Ref` (line 1), with one `async input port <var>In` per monitored variable and one **event** per violation. Its only outputs are `event port eventOut` and `text event port textEventOut`: there is **no output port carrying a verdict** another component could act on, and the module name is hardcoded. ⇒ the two upstream openings of P7b (AC-45, AC-46). | `ogma@69485b3:ogma-core/templates/fprime/Copilot.fpp:1,8,15,32,44,58-64` | HIGH |
+
+F´ flight heritage (ISS-RapidScat, ASTERIA, Ingenuity) is a **[WEB]** claim sourced in
+`docs/research/SPACE-AUTONOMY.md` §9, not a source-code fact, and is never used to support a
+statement about Guará's own assurance.
+
+---
+
 ## UNKNOWN / MEDIUM questions blocking P1 — status
 
 None of the 6 questions ended UNKNOWN. Items below are MEDIUM or gaps that P1
