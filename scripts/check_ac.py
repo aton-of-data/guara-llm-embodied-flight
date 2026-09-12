@@ -820,6 +820,18 @@ def check_ac31(path: pathlib.Path) -> list[str]:
     return []
 
 
+def check_ac47(_path: pathlib.Path) -> list[str]:
+    """M13c analytic keep-out predictor. No SITL; the same ±0.05 s as AC-8."""
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest",
+         str(ROOT / "scripts" / "tests" / "test_keepout_analytic.py"), "-q"],
+        capture_output=True, text=True, cwd=str(ROOT))
+    print(result.stdout, end="")
+    if result.returncode != 0:
+        return [result.stdout + result.stderr]
+    return []
+
+
 CHECKERS = {
     "AC-3": check_ac3,
     "AC-7": check_ac7,
@@ -840,6 +852,7 @@ CHECKERS = {
     "AC-28": check_ac28,
     "AC-29": check_ac29,
     "AC-31": check_ac31,
+    "AC-47": check_ac47,
 }
 
 

@@ -52,8 +52,8 @@ def test_checker_fails_cleanly_on_an_empty_directory(ac_id, tmp_path):
     """A checker must report errors, not raise: a crash is indistinguishable from a missing check."""
     errors = check_ac.CHECKERS[ac_id](tmp_path)
     assert isinstance(errors, list)
-    # AC-11 and AC-20 are static checks of the source tree and legitimately pass with no run data.
-    if ac_id not in ("AC-11", "AC-20"):
+    # AC-11, AC-20 and AC-47 are static checks of the source tree and pass with no run data.
+    if ac_id not in ("AC-11", "AC-20", "AC-47"):
         assert errors, f"{ac_id} passed on an empty directory"
 
 
