@@ -299,7 +299,19 @@ runs the mission compiler, the corpus, the plan executor and the space keep-out 
 
 ### Everything else
 
-Everything runs in Docker with the repository mounted at `/work`. Images: `guara-dev:m1`
+Everything else runs in Docker with the repository mounted at `/work`. `scripts/dev.sh` builds
+the image on first use; when a published one exists it can be pulled instead:
+
+```bash
+docker pull ghcr.io/aton-of-data/guara-dev:m1 && export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
+```
+
+The formal-methods image is deliberately **not** published: it embeds FRET, which is under the
+NASA Open Source Agreement, and distributing a container that embeds NOSA code needs the legal
+review tracked as risk R-9 ([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md)). Build it
+locally with `./scripts/fm.sh`.
+
+Images: `guara-dev:m1`
 ([`docker/Dockerfile`](docker/Dockerfile), ROS 2 Humble + PX4 v1.17.0 SIH SITL + Micro XRCE-DDS
 Agent) and `guara-fm:m2` ([`docker/Dockerfile.fm`](docker/Dockerfile.fm), FRET + Ogma + Copilot,
 generation only).

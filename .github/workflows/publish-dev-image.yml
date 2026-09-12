@@ -1,0 +1,74 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Publish the development image to GHCR, so reproducing a SITL scenario does not start with a
+# PX4 build from source.
+#
+# Manual trigger only, on purpose. Publishing a package is outward-facing and awkward to undo,
+# and this image takes a long time to build; it should happen when the maintainer decides it
+# should, not on every push.
+#
+# LICENCE BOUNDARY — read before adding anything here.
+# This publishes `docker/Dockerfile` (guara-dev) and nothing else. That image contains PX4
+# (BSD-3-Clause), the Micro XRCE-DDS Agent (Apache-2.0) and ROS 2 Humble; no NOSA-licensed
+# code is in it.
+#
+# `docker/Dockerfile.fm` (guara-fm) MUST NOT be published here. It embeds FRET, which is under
+# the NASA Open Source Agreement, and ADR 0003 with risk R-9 marks the interpretation of NOSA
+# alongside Apache-2.0 as [REVIEW] pending a human lawyer before any container embedding NOSA
+# code is distributed. The same applies to any image built from nosa/, which embeds DAIDALUS.
+name: publish dev image
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to publish (e.g. m1, or a release tag)"
+        required: true
+        default: m1
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    name: build and push guara-dev
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Refuse to publish anything that embeds NOSA-licensed code
+        run: |
+          if grep -qiE 'fret|daidalus' docker/Dockerfile; then
+            echo "docker/Dockerfile now references NOSA-licensed software." >&2
+            echo "See ADR 0003 and risk R-9: that image may not be distributed." >&2
+            exit 1
+          fi
+          echo "guara-dev embeds no NOSA-licensed code."
+
+      - name: Free disk space for the PX4 build
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          df -h /
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: docker
+          file: docker/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/guara-dev:${{ inputs.tag }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.description=Guara development image: ROS 2 Humble, PX4 v1.17.0 SITL (SIH, headless), Micro XRCE-DDS Agent
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
