@@ -8,12 +8,12 @@ README, which links here from §13.
 Guará is **Apache-2.0** ([`LICENSE`](../LICENSE), [`NOTICE`](../NOTICE),
 [ADR 0006](adr/0006-license-apache-2.md)) — the same licence as Ogma, cFS, F´ and ROS 2.
 Every source file carries `SPDX-License-Identifier: Apache-2.0`; the documentation and the
-figures under [`docs/`](docs) are released under the same licence.
+figures under [`docs/`](.) are released under the same licence.
 
 > Copyright 2026 Aton Bertini Dornfeld &lt;dornfeld.in@gmail.com&gt; and the Guará contributors.
 
 DAIDALUS and FRET are under the NASA Open Source Agreement. NOSA code lives only in
-[`nosa/`](nosa), is kept off the default colcon path, and is built by its own wrapper; FRET is
+[`nosa/`](../nosa), is kept off the default colcon path, and is built by its own wrapper; FRET is
 generation-time tooling in the formal-methods image and never ships in a runtime artefact. The
 boundary is enforced by `scripts/check_license_isolation.py`, not by convention. F´, the second
 host, is Apache-2.0 and raises no isolation requirement of its own
