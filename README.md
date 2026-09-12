@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/guara-mascot.png" alt="Guará mascot: a guará fox in a flight harness piloting a quadrotor" width="320">
+</p>
+
 # Guará
 
 **An open, measured safety boundary for autonomous and LLM-embodied flight.**
