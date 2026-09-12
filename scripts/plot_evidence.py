@@ -47,11 +47,23 @@ def text(x, y, s, size=12, fill=INK, anchor="start", weight="normal"):
             f'text-anchor="{anchor}" font-weight="{weight}">{esc(s)}</text>')
 
 
+def _shown(path: pathlib.Path) -> str:
+    """Repository-relative when it is inside the tree, absolute otherwise."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def load(path: pathlib.Path) -> dict:
     if not path.exists():
-        print(f"missing evidence: {path.relative_to(ROOT)}", file=sys.stderr)
+        print(f"missing evidence: {_shown(path)}", file=sys.stderr)
         raise SystemExit(1)
-    return json.loads(path.read_text())
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as e:
+        print(f"unreadable evidence: {_shown(path)}: {e}", file=sys.stderr)
+        raise SystemExit(1) from None
 
 
 def latency_figure() -> str:
