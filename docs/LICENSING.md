@@ -1,7 +1,7 @@
 # Licensing, copyright and the NOSA boundary
 
 The licence, the NOSA isolation boundary and the trademark position. Split out of the
-README, which links here from §13.
+README, which links here from §12.
 
 ---
 

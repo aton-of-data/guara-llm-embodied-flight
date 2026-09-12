@@ -1,7 +1,7 @@
 # Roadmap
 
 What is done, what is in progress and what is planned, with the gate on each. Split out of
-the README, which links here from §12. The acceptance-criteria inventory is
+the README, which links here from §11. The acceptance-criteria inventory is
 [`milestones/STATUS.md`](milestones/STATUS.md).
 
 ---

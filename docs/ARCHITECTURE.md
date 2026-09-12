@@ -68,7 +68,7 @@ compiler (RQ6b); the RQ5 fuzz corpus extended with future stamps and mode-tool a
 
 ---
 
-## 6 · Switching logic
+## 5.4 Switching logic
 
 At each tick `k` of period `T_s` the core evaluates the time to loss of well-clear `T_daa`, the
 time to geofence violation `T_gf`, the monitor flag `M`, and the input-validity flag `V`:
@@ -88,4 +88,5 @@ returning only from Hold is [ADR 0005](adr/0005-return-to-complex-function.md).
 
 The obligation that makes the rule meaningful is **O-1**: `τ_gf ≥ δ_lat` and
 `τ_daa ≥ τ_rec,daa + δ_lat`, where `δ_lat` is the *measured* p99 latency from the sample that
-makes `U` true to the recovery mode being effective. That is the subject of §7.
+makes `U` true to the recovery mode being effective. That is the subject of
+[README §6 · Measured results](../README.md#6--measured-results).
