@@ -36,6 +36,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - `CITATION.cff` pointed at a repository name that does not exist, and carried an invalid
   top-level `year` key.
 - The README scenario count (twelve; fourteen ship).
+- The README's table of contents, deleted by the split that renumbered the sections, and the
+  section references the split left behind in the README, `docs/ARCHITECTURE.md`,
+  `docs/ROADMAP.md` and `docs/LICENSING.md`.
 - The `cpp` CI job reported success while building and testing nothing, because `colcon`
   only warns when `--packages-select` names an undiscovered package and `colcon test-result`
   exits 0 on zero tests. It now asserts that both packages built and that tests ran.
