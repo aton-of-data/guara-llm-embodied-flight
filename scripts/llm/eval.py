@@ -420,9 +420,9 @@ def main() -> int:
     kwargs = {"api_key_env": args.api_key_env} if args.provider == "cursor-agent" else {}
     prov = provider_mod.build(args.provider, args.model, **kwargs)
     if hasattr(prov, "reclaim"):
+        print("[llm_eval] reclaiming leftover Cloud Agents", flush=True)
         n = prov.reclaim()
-        if n:
-            print(f"[llm_eval] reclaimed {n} leftover Cloud Agents", flush=True)
+        print(f"[llm_eval] reclaimed {n} leftover Cloud Agents", flush=True)
 
     started = datetime.datetime.now(datetime.timezone.utc)
     run_id = started.strftime("%Y%m%dT%H%M%SZ") + f"_{args.tag}_{args.provider}"

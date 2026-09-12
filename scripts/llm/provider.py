@@ -214,11 +214,12 @@ class CursorAgentProvider(Provider):
     def _request(self, method: str, path: str, payload: dict | None = None,
                  timeout_s: float | None = None) -> dict:
         data = json.dumps(payload).encode() if payload is not None else None
+        headers = {"Authorization": f"Bearer {self._key}",
+                   "User-Agent": "guara-llm-eval/0.1"}
+        if data is not None:
+            headers["Content-Type"] = "application/json"
         req = urllib.request.Request(
-            f"{self.base_url}{path}", data=data, method=method,
-            headers={"Authorization": f"Bearer {self._key}",
-                     "Content-Type": "application/json",
-                     "User-Agent": "guara-llm-eval/0.1"})
+            f"{self.base_url}{path}", data=data, method=method, headers=headers)
         try:
             with urllib.request.urlopen(req, timeout=timeout_s or self.timeout_s) as resp:
                 body = resp.read().decode()
@@ -230,16 +231,11 @@ class CursorAgentProvider(Provider):
         return json.loads(body) if body else {}
 
     def _delete_agent(self, agent_id: str) -> None:
-        """Free a Cloud Agent slot. DELETE is documented as permanent; archive is the fallback."""
+        """Free a Cloud Agent slot. Archive is the documented reversible release; DELETE can hang."""
         if not agent_id:
             return
         try:
-            self._request("DELETE", f"/v1/agents/{agent_id}", timeout_s=30.0)
-            return
-        except ProviderError:
-            pass
-        try:
-            self._request("POST", f"/v1/agents/{agent_id}/archive", timeout_s=30.0)
+            self._request("POST", f"/v1/agents/{agent_id}/archive", payload={}, timeout_s=10.0)
         except ProviderError:
             pass
 
