@@ -90,3 +90,13 @@ def test_the_script_runs_from_any_working_directory(tmp_path):
     assert r.returncode == 0, r.stderr
     for name in FIGURES:
         assert (out / name).read_text() == (ASSETS / name).read_text()
+
+
+def test_the_readme_scenario_count_matches_the_directory():
+    """A count written in prose drifts the moment a scenario is added."""
+    words = {12: "Twelve", 13: "Thirteen", 14: "Fourteen", 15: "Fifteen", 16: "Sixteen",
+             17: "Seventeen", 18: "Eighteen", 19: "Nineteen", 20: "Twenty"}
+    n = len(list((ROOT / "scenarios").glob("*.yaml")))
+    readme = (ROOT / "README.md").read_text()
+    assert f"{words[n]} scenarios ship in" in readme, (
+        f"{n} scenario files exist; the README says something else")

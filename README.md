@@ -364,7 +364,7 @@ anything.
 
 Every run writes `results/{run_id}/` with the scenario hash, the seed, the Guará SHA, the PX4
 build commit, the pinned third-party commits and the PX4 parameters read back from the vehicle —
-which is what makes a number re-derivable rather than merely reported. Twelve scenarios ship in
+which is what makes a number re-derivable rather than merely reported. Fourteen scenarios ship in
 [`scenarios/`](scenarios), including the deliberately nasty ones: `kill_arbiter_in_cf`,
 `kill_arbiter_in_hold`, `hang_decision_thread`, `hang_ros_executor`, `stale_local_position`,
 `pilot_override`, `restart_arbiter_armed`.
