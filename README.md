@@ -274,13 +274,6 @@ limitation inventory (model, voice, compute, perception, regulatory, human facto
 mitigation map are in [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md).
 Three decisions shape it:
 
-Four providers ship: `mock` (rule-based, no key and no network, which is what makes the
-harness itself testable), `ollama` (a local open-weight model, no key and no account),
-`openai-compat` (OpenAI and any server on the same route — vLLM, llama.cpp, LM Studio,
-OpenRouter — selected by base URL), and `cursor-agent`. A provider is a text channel: prompt
-in, text out. It never sees the site model, never sees a plan and never learns what the
-expected answer was, so adding one cannot change a result.
-
 - **The model never emits setpoints, MAVLink or code.** It emits a typed, bounded *Mission
   Intent* over a closed vocabulary. A deterministic, unit-tested mission compiler turns that
   into a plan and rejects anything outside the envelope; the plan, not the model, feeds the CF.
@@ -295,6 +288,13 @@ expected answer was, so adding one cannot change a result.
   monitor it requires exists and passes its acceptance criteria, and its regulatory
   preconditions are configured; D, T and C are disabled until the monitors and the airframe
   tier exist.
+
+Four providers ship: `mock` (rule-based, no key and no network, which is what makes the
+harness itself testable), `ollama` (a local open-weight model, no key and no account),
+`openai-compat` (OpenAI and any server on the same route — vLLM, llama.cpp, LM Studio,
+OpenRouter — selected by base URL), and `cursor-agent`. A provider is a text channel: prompt
+in, text out. It never sees the site model, never sees a plan and never learns what the
+expected answer was, so adding one cannot change a result.
 
 ---
 
