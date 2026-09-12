@@ -190,6 +190,10 @@ From a 30-run headless batch on the current build, aggregated by `scripts/aggreg
 contract and metrics published in [`docs/evidence/batch_latency/`](docs/evidence/batch_latency),
 narrative in [`docs/milestones/M7.md`](docs/milestones/M7.md).
 
+<p align="center">
+  <img src="docs/assets/latency-distribution.svg" alt="Every one of the 30 runs plotted on a millisecond axis: p50 44.8 ms, p99 61.0 ms, against a 1000 ms geofence budget" width="720">
+</p>
+
 | Quantity | p50 | p99 | Note |
 |---|---|---|---|
 | `δ_lat` — unsafe sample → recovery mode effective | 0.0448 s | **0.0610 s** | sum of stages L0, L2–L6 on validated clocks |
@@ -204,6 +208,17 @@ Consequences, stated plainly:
   `δ_lat`; AC-19 gates any cross-process number until alignment is under 10 ms.
 - **`δ_lat` is optimistic by construction.** The `latency_hold` scenario injects the monitor
   verdict, so Copilot processing time (stage L2) is zero on this path.
+
+The same plan, the same seed, with the arbiter enabled and disabled — the paired run behind
+AC-31:
+
+<p align="center">
+  <img src="docs/assets/geofence-rta-pair.svg" alt="Geofence breach depth: 0.000 m with the RTA on, 47.178 m with it off" width="720">
+</p>
+
+Both figures are generated from the published evidence by
+[`scripts/plot_evidence.py`](scripts/plot_evidence.py), which prints every number it draws;
+regenerate them with `python3 scripts/plot_evidence.py`.
 
 Acceptance-criteria tracker: [`docs/milestones/STATUS.md`](docs/milestones/STATUS.md). That
 table is honest about its own history — an internal review on 2026-09-11 invalidated one false
