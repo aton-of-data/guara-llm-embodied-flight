@@ -489,6 +489,7 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 | [`scripts/`](scripts) | Container wrappers, run contract, AC checkers, aggregation, evidence publishing |
 | [`third_party/VERSIONS.md`](third_party/VERSIONS.md) | Pinned commits and the PX4 ↔ `px4_msgs` byte-equality check |
 | [`NOTICE`](NOTICE) · [`CITATION.cff`](CITATION.cff) | Copyright, third-party licences, and how to cite the repository |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | How to contribute, how to report a vulnerability, and the conduct standard |
 | [`CLAUDE.md`](CLAUDE.md) · [`guara-prompt-pack.md`](guara-prompt-pack.md) | The working rules and the reproducible prompt sequence used to build this |
 
 ---
@@ -595,13 +596,19 @@ with the repository under Apache-2.0 ([`docs/assets/README.md`](docs/assets/READ
 
 ## 14 · Contributing, citing, contact
 
-**Contributing.** Every safety function needs a test that fails before the implementation.
-Commits are granular — one logical change each — and messages follow
-`type(scope): imperative summary`. C++17 with colcon/ament, gtest and launch_testing; the
-decision path carries no dynamic allocation and bounded time. If a change touches an API, add
-the `repo@commit:file:line` row to `GROUNDING.md` first. No performance claim enters a document
-without a run in `results/` and the command that produced it. A new flight operation needs its
-own document in [`docs/operations/`](docs/operations/README.md) before it needs code.
+**Contributing.** [`CONTRIBUTING.md`](CONTRIBUTING.md) is the guide;
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) applies. In short: every safety function needs a test
+that fails before the implementation. Commits are granular — one logical change each — and
+messages follow `type(scope): imperative summary`. C++17 with colcon/ament, gtest and
+launch_testing; the decision path carries no dynamic allocation and bounded time. If a change
+touches an API, add the `repo@commit:file:line` row to `GROUNDING.md` first. No performance claim
+enters a document without a run in `results/` and the command that produced it. A new flight
+operation needs its own document in [`docs/operations/`](docs/operations/README.md) before it
+needs code.
+
+**Security.** Do not open a public issue for a vulnerability — [`SECURITY.md`](SECURITY.md) has
+the private disclosure address, the accepted limitations of this phase (FM-12 above all), and
+what does count as a physical-authority escape.
 
 **The most useful contributions right now** are a Haskell/LLVM/z3 environment that unblocks
 CopilotVerifier (R-11), sourced well-clear thresholds for small UAS (R-5), a traffic-injection
