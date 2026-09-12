@@ -1,11 +1,15 @@
 # Guará — plan M8–M16: LLM embodiment, F´, and the space domain
 
-Version: 0.3 (2026-09-12) · Status: executable; M8 ACs PASS; M9 in progress; AC-47 analytic PASS
+Version: 0.4 (2026-09-12) · Status: executable; M8 ACs PASS; M9 in progress; AC-47 PASS (`docs/milestones/M13c.md`)
 
 This plan extends `docs/SPEC.md` past the 12-week RTA core (M1–M7, P0–P7) into the three
-threads the project has committed to. Rule O is satisfied (M7 latency and P4 batch are
+threads the project has committed to. The operation-level view of the same scope — one document
+per flight operation, air and space — is `docs/operations/README.md`; the full acceptance-criteria
+inventory, executed and planned, is `docs/milestones/STATUS.md`. Rule O is satisfied (M7 latency and P4 batch are
 PASS). M8 is implemented; M9 is in progress; Thread C has analytic keep-out and space-intent
-tests (AC-47). The F´ host (M13–M15) is specified and not yet extracted.
+tests (AC-47 PASS, `docs/milestones/M13c.md`). The F´ host (M13–M15) is specified and not yet
+extracted: `scripts/fprime.sh`, named by the M13–M15 verification commands below, is a
+deliverable of M13 and does not exist yet.
 
 | Thread | What it is | Milestones | Founding documents |
 |---|---|---|---|

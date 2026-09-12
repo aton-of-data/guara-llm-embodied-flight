@@ -1,27 +1,36 @@
 <p align="center">
-  <img src="docs/assets/guara-mascot.png" alt="Guará mascot: a guará fox in a flight harness piloting a quadrotor" width="320">
+  <img src="docs/assets/guara-mascot.png" alt="Guará mascot: a guará fox flying a multirotor, and the same fox operating a satellite" width="460">
 </p>
 
 # Guará
 
-**An open, measured safety boundary for autonomous and LLM-embodied flight.**
+**An open, measured safety boundary for autonomous and LLM-embodied flight — in the air and in orbit.**
 
-Runtime Assurance (RTA) for PX4 aircraft, aligned with the ASTM F3269 architecture,
-implemented on ROS 2 Humble. An untrusted complex function — a classical planner, a neural
-policy, or a language model — commands the vehicle through a gateway that clamps what it may
-ask for. Monitors generated from formal requirements, a geofence predictor and a DAA node
-watch the physical state. When any of them says the next seconds are unsafe, an arbiter takes
-authority away from the complex function and hands the aircraft to a PX4 internal mode
-(Hold / RTL / Land) inside a **measured** end-to-end latency.
+Runtime Assurance (RTA) aligned with the ASTM F3269 architecture. An untrusted complex
+function — a classical planner, a neural policy, or a language model — commands the vehicle
+through a gateway that clamps what it may ask for. Monitors generated from formal requirements,
+a geofence predictor and a DAA node watch the physical state. When any of them says the next
+seconds are unsafe, an arbiter takes authority away from the complex function and hands the
+vehicle to the platform's own assured recovery mode inside a **measured** end-to-end latency.
+
+One switching core, two hosts:
+
+| | Air — **implemented and measured** | Space — **specified** |
+|---|---|---|
+| Platform | PX4 v1.17 + ROS 2 Humble, arbiter as a `ModeExecutor` | F´ v4.3.0, arbiter as an FPP component on a rate group |
+| Recovery function | PX4 internal modes Hold / RTL / Land — assured and pre-existing | Safe mode — **F´ has none; the project must write it** |
+| Evidence today | 30-run headless SITL batch, p99 switch latency **61 ms** | Analytic keep-out predictor and a closed intent vocabulary |
+| Documents | [ADR 0001](docs/adr/0001-arbiter-as-mode-executor.md), [`docs/SPEC.md`](docs/SPEC.md) | [ADR 0011](docs/adr/0011-fprime-as-second-rta-host.md), [ADR 0012](docs/adr/0012-space-domain-rta-mapping.md) |
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PX4](https://img.shields.io/badge/PX4-v1.17.0-brightgreen.svg)](third_party/VERSIONS.md)
 [![ROS 2](https://img.shields.io/badge/ROS%202-Humble-blue.svg)](third_party/VERSIONS.md)
+[![F prime](https://img.shields.io/badge/F%C2%B4-v4.3.0%20(specified)-lightgrey.svg)](docs/adr/0011-fprime-as-second-rta-host.md)
 [![Status](https://img.shields.io/badge/status-SITL%20research%20prototype-orange.svg)](docs/milestones/STATUS.md)
 
 > This is not certification, and it is not a product. It is a research prototype whose claims
 > are limited to what an executed command in `results/` supports. Read
-> [§7 · Limits](#7--limits-what-guará-does-not-guarantee) before citing anything here.
+> [§8 · Limits](#8--limits-what-guará-does-not-guarantee) before citing anything here.
 
 ---
 
@@ -32,16 +41,17 @@ authority away from the complex function and hands the aircraft to a PX4 interna
 | [1](#1--the-gap) | The gap | Reviewers, funders |
 | [2](#2--related-work-and-the-open-threads-guará-answers) | Related work and the open threads Guará answers | Researchers |
 | [3](#3--principles) | Principles | Everyone |
-| [4](#4--architecture) | Architecture | Engineers |
-| [5](#5--switching-logic) | Switching logic | Engineers, reviewers |
-| [6](#6--measured-results) | Measured results | Reviewers |
-| [7](#7--limits-what-guará-does-not-guarantee) | Limits | Everyone |
-| [8](#8--llm-embodiment-the-long-term-goal) | LLM embodiment: the long-term goal | Everyone |
-| [9](#9--reproduce-it) | Reproduce it | Users |
-| [10](#10--repository-index) | Repository index | Contributors |
-| [11](#11--roadmap) | Roadmap | Everyone |
-| [12](#12--licensing-and-the-nosa-boundary) | Licensing and the NOSA boundary | Integrators, lawyers |
-| [13](#13--contributing-citing-contact) | Contributing, citing, contact | Everyone |
+| [4](#4--scope-two-domains-one-core) | Scope: two domains, one core | Everyone |
+| [5](#5--architecture) | Architecture | Engineers |
+| [6](#6--switching-logic) | Switching logic | Engineers, reviewers |
+| [7](#7--measured-results) | Measured results | Reviewers |
+| [8](#8--limits-what-guará-does-not-guarantee) | Limits | Everyone |
+| [9](#9--llm-embodiment-the-long-term-goal) | LLM embodiment: the long-term goal | Everyone |
+| [10](#10--reproduce-it) | Reproduce it | Users |
+| [11](#11--repository-index) | Repository index | Contributors |
+| [12](#12--roadmap) | Roadmap | Everyone |
+| [13](#13--licensing-copyright-and-the-nosa-boundary) | Licensing, copyright and the NOSA boundary | Integrators, lawyers |
+| [14](#14--contributing-citing-contact) | Contributing, citing, contact | Everyone |
 
 ---
 
@@ -111,17 +121,33 @@ is an attack surface. Guardrail-style answers ([RoboGuard](https://arxiv.org/abs
 constrain the *planner*; Guará constrains the *aircraft*, which is the only layer a jailbreak
 cannot talk its way past.
 
-### 2.3 Adjacent domains
+### 2.3 The same chain, in orbit
 
-The requirements half of the chain — FRET → Ogma → Copilot — targets cFS and F´, the flight
-software of spacecraft and small satellites, as first-class backends. The same decision core
-is specified for F´ as a second host ([ADR 0011](docs/adr/0011-fprime-as-second-rta-host.md)),
-with orbital constraint monitors that are a rewrite, not a port, of `T_gf` / `T_daa`
+The requirements half of the chain — FRET → Ogma → Copilot — already targets cFS and F´, the
+flight software of spacecraft and small satellites, as first-class backends. Three facts,
+re-derived from the pinned clones and recorded in [`GROUNDING.md`](GROUNDING.md) Addendum D,
+decide the shape of the space thread:
+
+- **F´ detects, but does not recover.** `Svc::Health` pings components, tracks timeouts, raises
+  FATAL and strokes a watchdog (D.2) — and a grep for `safe.?mode` over `Svc/` and `Fw/` returns
+  nothing (D.5). On PX4 the recovery function was free; on F´ it is the most safety-critical
+  code the project would have to write.
+- **The trusted disposer already exists.** `Svc::FpySequencer` validates a compiled sequence
+  before running it (D.3) — exactly the artifact [ADR 0010](docs/adr/0010-untrusted-complex-function-contract.md)
+  rule 6 demands between a model and an actuator. It is pre-release upstream (D.4), so nothing
+  here depends on it irreversibly.
+- **Ogma's F´ monitors cannot trigger anything.** The generated component emits events only,
+  into a hardcoded `module Ref`, with no verdict output port (D.8). That is the same gap G3
+  identifies for PX4, restated in the space domain — and two small upstream contributions.
+
+So the space thread is a *rewrite* of the signals, not a port: `T_gf`'s braking model assumes a
+vehicle that can stop, and `T_daa` is an air-traffic construct
 ([ADR 0012](docs/adr/0012-space-domain-rta-mapping.md),
-[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md)). Analytic keep-out
-tests live in `space/keepout.py`. No F´ deployment has flown yet: Rule O in
-[`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) sequences the F´ host after the PX4 latency
-batch. Everything *measured* here is still PX4 multicopter in SITL.
+[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md)). What transfers is the
+architecture: predicted time to violation, threshold with hysteresis, asymmetric switch, gate on
+the untrusted function. Analytic keep-out tests live in `space/keepout.py` and pass AC-47
+([`docs/milestones/M13c.md`](docs/milestones/M13c.md)). **No F´ deployment has run.** Everything
+*measured* in this repository is PX4 multicopter in SITL.
 
 ---
 
@@ -152,9 +178,51 @@ batch. Everything *measured* here is still PX4 multicopter in SITL.
 
 ---
 
-## 4 · Architecture
+## 4 · Scope: two domains, one core
 
-### 4.1 ASTM F3269 roles → Guará components
+What the project covers, what it does not, and how mature each part is. The operation-by-operation
+version of this table — one document per flight operation, with its checks, its channels, its
+recovery function and its evidence — is the catalogue in
+[**`docs/operations/`**](docs/operations/README.md).
+
+### 4.1 Threads
+
+| Thread | Scope | Milestones | Maturity |
+|---|---|---|---|
+| **Core** | The PX4 RTA: arbiter, geofence predictor, DAIDALUS node, latency budget | M1–M7, P4 | Executed; every AC PASS with a recorded run (§7) |
+| **A — air / LLM embodiment** | Voice- and text-driven civil drone operation bounded by that RTA | M8–M12 | M8 complete; M9 in progress, plan flown as the CF in SITL |
+| **B — F´ host** | The same decision core inside a flight software framework with heritage | M13–M15 | Specified (ADR 0011); no code |
+| **C — space domain** | Orbital constraint monitors, a latched safe mode, orbital dynamics | M13c, M16 | Keep-out predictor and intent schema implemented (AC-47); no host, no simulator |
+
+**Rule O** protects the core: no F´ or space work starts before the PX4 latency and batch results
+are complete, because those are what the preprint depends on
+([`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) §1). Rule O is satisfied; that is why thread C
+exists at all today, and why it is one geometric predictor rather than a port in progress.
+
+### 4.2 Operations
+
+| Domain | Operations | State |
+|---|---|---|
+| Air, class **S** (sense) | [survey](docs/operations/air/survey.md), [inspect a point](docs/operations/air/inspect-point.md) | Survey flown as the CF in SITL; inspection compiled and tested |
+| Air, safety | [abort](docs/operations/air/abort.md), [land now](docs/operations/air/land-now.md), [return home](docs/operations/air/return-home.md), [status](docs/operations/air/status.md) | Stop grammar implemented and measured model-independent (AC-29); mode mapping and voice are M10 |
+| Air, classes **D / T / C** | dispense, transport, cooperate | **Gated**: refuse to load until their monitors exist ([ADR 0009](docs/adr/0009-use-case-capability-packs.md)) |
+| Space | [slew](docs/operations/space/slew.md), [point hold](docs/operations/space/point-hold.md), [safe mode](docs/operations/space/safe-mode.md), [abort](docs/operations/space/abort.md), [status](docs/operations/space/status.md) | Schema closed and predictor tested; the host, the dynamics and the safe mode are specified only |
+
+### 4.3 Out of scope, permanently
+
+Weapons and any payload intended to harm; target selection; tracking or identification of
+specific people for enforcement or harassment; covert surveillance; interference with other
+aircraft; defeating geofences, remote ID or failsafes
+([ADR 0009](docs/adr/0009-use-case-capability-packs.md) §4). And, in the space thread, any form
+of detect-and-avoid or conjunction assessment: that is a ground-based probabilistic process, and
+a DAIDALUS port would be overreach ([ADR 0012](docs/adr/0012-space-domain-rta-mapping.md)
+decision 1).
+
+---
+
+## 5 · Architecture
+
+### 5.1 ASTM F3269 roles → Guará components
 
 The ASTM F3269 text is not available in this repository; the mapping uses the component names
 and is marked [REVIEW] until checked against the licensed standard ([`docs/SPEC.md` §2](docs/SPEC.md)).
@@ -168,7 +236,7 @@ and is marked [REVIEW] until checked against the licensed standard ([`docs/SPEC.
 | Input Manager | Age and validity checks on every input; gateway that blocks the CF outside state `CF` | `guara_rta` |
 | Final layer | PX4 internal failsafes and geofence, deliberately left enabled | PX4 |
 
-### 4.2 Runtime view
+### 5.2 Runtime view
 
 ```mermaid
 flowchart LR
@@ -198,7 +266,7 @@ flowchart LR
   DC -. state .-> GW
 ```
 
-### 4.3 What the gateway enforces against an untrusted planner
+### 5.3 What the gateway enforces against an untrusted planner
 
 | Threat | Enforcement | Test |
 |---|---|---|
@@ -216,7 +284,7 @@ compiler (RQ6b); the RQ5 fuzz corpus extended with future stamps and mode-tool a
 
 ---
 
-## 5 · Switching logic
+## 6 · Switching logic
 
 At each tick `k` of period `T_s` the core evaluates the time to loss of well-clear `T_daa`, the
 time to geofence violation `T_gf`, the monitor flag `M`, and the input-validity flag `V`:
@@ -236,11 +304,11 @@ returning only from Hold is [ADR 0005](docs/adr/0005-return-to-complex-function.
 
 The obligation that makes the rule meaningful is **O-1**: `τ_gf ≥ δ_lat` and
 `τ_daa ≥ τ_rec,daa + δ_lat`, where `δ_lat` is the *measured* p99 latency from the sample that
-makes `U` true to the recovery mode being effective. That is the subject of §6.
+makes `U` true to the recovery mode being effective. That is the subject of §7.
 
 ---
 
-## 6 · Measured results
+## 7 · Measured results
 
 From a 30-run headless batch on the current build, aggregated by `scripts/aggregate.py`;
 contract and metrics published in [`docs/evidence/batch_latency/`](docs/evidence/batch_latency),
@@ -269,7 +337,7 @@ discarded and re-measured from scratch on the corrected build.
 
 ---
 
-## 7 · Limits: what Guará does not guarantee
+## 8 · Limits: what Guará does not guarantee
 
 The full list is [`docs/SPEC.md` §7](docs/SPEC.md). The ones that most often get overclaimed:
 
@@ -293,7 +361,7 @@ The full list is [`docs/SPEC.md` §7](docs/SPEC.md). The ones that most often ge
 
 ---
 
-## 8 · LLM embodiment: the long-term goal
+## 9 · LLM embodiment: the long-term goal
 
 The direction is an open-source, open-weight, voice-driven agent for civil drones — agriculture
 first — whose physical authority is bounded by everything above. The design, the full
@@ -318,7 +386,7 @@ Three decisions shape it:
 
 ---
 
-## 9 · Reproduce it
+## 10 · Reproduce it
 
 Everything runs in Docker with the repository mounted at `/work`. Images: `guara-dev:m1`
 ([`docker/Dockerfile`](docker/Dockerfile), ROS 2 Humble + PX4 v1.17.0 SIH SITL + Micro XRCE-DDS
@@ -345,6 +413,8 @@ generation only).
 | NOSA-isolated DAA node | `./scripts/daa.sh build` · `./scripts/daa.sh test` |
 | Regenerate monitors from FRETish | `./scripts/fm.sh ros2_ws/src/guara_monitors/scripts/generate.sh` |
 | Verify the licence boundary | `./scripts/dev.sh python3 scripts/check_license_isolation.py` |
+| Mission compiler, corpus and plan executor | `./scripts/dev.sh python3 -m pytest scripts/tests -q` |
+| Space keep-out predictor (AC-47) | `./scripts/dev.sh python3 scripts/check_ac.py AC-47` |
 
 Every run writes `results/{run_id}/` with the scenario hash, the seed, the Guará SHA, the PX4
 build commit, the pinned third-party commits and the PX4 parameters read back from the vehicle —
@@ -355,15 +425,16 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 
 ---
 
-## 10 · Repository index
+## 11 · Repository index
 
 | Path | Contents |
 |---|---|
+| [`docs/operations/`](docs/operations/README.md) | **The scope map: one document per flight operation, air and space, with its checks, channels, recovery function and evidence** |
 | [`docs/SPEC.md`](docs/SPEC.md) | The engineering truth: scope, F3269 mapping, switching logic, latency budget, failure modes, acceptance criteria, limits, open risks |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
 | [`docs/adr/`](docs/adr) | Thirteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
-| [`docs/milestones/`](docs/milestones) | M1–M8 reports with executed commands, plus the AC tracker |
+| [`docs/milestones/`](docs/milestones) | M1–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-50 |
 | [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 and its remediation record |
 | [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md) | Limitations and design for the voice/LLM layer, with the civil use-case catalogue |
 | [`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) | F´, Ogma's F´ backend, and where a Guará-class RTA fits in orbit |
@@ -379,65 +450,103 @@ which is what makes a number re-derivable rather than merely reported. Twelve sc
 | [`config/`](config) | RTA parameters, copied into every run's `config.yaml` |
 | [`scripts/`](scripts) | Container wrappers, run contract, AC checkers, aggregation, evidence publishing |
 | [`third_party/VERSIONS.md`](third_party/VERSIONS.md) | Pinned commits and the PX4 ↔ `px4_msgs` byte-equality check |
+| [`NOTICE`](NOTICE) · [`CITATION.cff`](CITATION.cff) | Copyright, third-party licences, and how to cite the repository |
 | [`CLAUDE.md`](CLAUDE.md) · [`guara-prompt-pack.md`](guara-prompt-pack.md) | The working rules and the reproducible prompt sequence used to build this |
 
 ---
 
-## 11 · Roadmap
+## 12 · Roadmap
 
-| Milestone | Content | State |
+Ordered by the rule that protects the core: the PX4 results come first, thread A runs beside
+them because it touches no arbiter code, and threads B and C start only after the latency and
+batch milestones are complete ([`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) §1).
+
+### Done
+
+| Milestone | Content | Evidence |
 |---|---|---|
-| M1–M2 | Headless SITL in container, API grounding, first Ogma monitor over `/fmu/out/*` | done |
-| M3–M5 | Arbiter, geofence predictor, DAIDALUS node | done |
-| M6–M7 | Scenario generator, batch execution, latency budget | done (AC-18/19/22 re-run 2026-09-11) |
-| P4–P5 | BR-UAS-Bench scenario suite with Wilson intervals; adversarial LLM complex function (RQ5) | P4 latency batch done; P5 next |
-| P6–P7 | Preprint and NFM submission; `px4_msgs` variable DB upstream to `nasa/ogma` (C2); Ogma F´ verdict port (P7b) | next |
-| M8 | Mission Intent schema and deterministic compiler (no model) | done (AC-23..AC-26, [`docs/milestones/M8.md`](docs/milestones/M8.md)) |
-| M9 | LLM instruments (mock + Cursor) against the corpus; plan flown as CF in SITL | in progress |
-| M10–M11 | Voice pipeline on the ground device; imaging, ODM reports, talk-back | planned |
-| M12 | Field-trial readiness: VLOS operations manual, risk assessment, LGPD policy | planned |
-| M13–M15 | Shared core on F´; safe-mode recovery function; Ogma F´ backend upstream | planned (after Rule O) |
-| M16 | Orbital batch + space intent schema against the sequencer gate | keep-out predictor and space intent schema started |
+| M1–M2 | Headless SITL in a container, API grounding, first Ogma monitor over `/fmu/out/*` | [M1](docs/milestones/M1.md), [M2](docs/milestones/M2.md) |
+| M3–M5 | Arbiter, geofence predictor, DAIDALUS node | [M3](docs/milestones/M3.md)–[M5](docs/milestones/M5.md) |
+| M6–M7, P4 | Scenario generator, 30-run batch, latency budget (AC-18/19/22 re-run 2026-09-11) | [M7](docs/milestones/M7.md), [`docs/evidence/batch_latency/`](docs/evidence/batch_latency) |
+| M8 | Mission Intent schema and deterministic compiler, no model involved | [M8](docs/milestones/M8.md), AC-23..AC-26 |
 
-Blocking risks, tracked in [`docs/SPEC.md` §9](docs/SPEC.md): CopilotVerifier toolchain
-availability (R-11, blocks RQ4), DO-365B thresholds unsuited to small UAS (R-5), Hold as a DAA
-recovery against converging traffic (R-6), traffic injection in SITL never exercised (R-7), and
-the unavailable ASTM F3269 text (R-8).
+### In progress
+
+| Milestone | Thread | Content | State |
+|---|---|---|---|
+| M9 | A | LLM instruments against the labelled corpus; a compiled plan flown as the CF | AC-29, AC-30, AC-31 PASS; AC-27/AC-28 open ([M9](docs/milestones/M9.md)) |
+| M13c | C | Attitude keep-out predictor and the closed space-intent vocabulary | AC-47 PASS; AC-48 needs a simulator ([M13c](docs/milestones/M13c.md)) |
+| P5–P7 | core | Adversarial CF (RQ5), preprint and NFM submission, `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | next |
+
+### Planned
+
+| Milestone | Thread | Content | Gate |
+|---|---|---|---|
+| M9b | A | SROS2 on the CF and bridge topics | closes FM-12; until then, closed local DDS domain only |
+| M10–M11 | A | Voice pipeline, imaging, ODM products, talk-back | AC-34..AC-37 |
+| M12 | A | Field-trial readiness: VLOS operations manual, risk assessment, LGPD policy | human regulatory review |
+| M13 | B | Shared `guara_core` extraction, F´ deployment, `Svc::Health` registration | AC-39 must pass with **no edits to the PX4 test files** |
+| M14 | B | The safe mode F´ does not have — the project's most safety-critical new code | AC-42..AC-44, risk RS-1 |
+| M15 | B | Ogma F´ backend upstream: verdict output port, configurable module name | AC-45, AC-46 |
+| M16 | C | Orbital batch, intent → validated sequence, RQ6b against the space schema | AC-49, AC-50 |
+
+Full acceptance-criteria inventory, executed and planned:
+[`docs/milestones/STATUS.md`](docs/milestones/STATUS.md).
+
+Blocking risks, tracked in [`docs/SPEC.md` §9](docs/SPEC.md) and
+[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) §8: CopilotVerifier
+toolchain availability (R-11, blocks RQ4), DO-365B thresholds unsuited to small UAS (R-5), Hold
+as a DAA recovery against converging traffic (R-6), traffic injection in SITL never exercised
+(R-7), the unavailable ASTM F3269 text (R-8), and the space thread's own RS-1…RS-6 — of which
+RS-1, the safe mode with no heritage, is the one a reviewer should attack first.
 
 ---
 
-## 12 · Licensing and the NOSA boundary
+## 13 · Licensing, copyright and the NOSA boundary
 
 Guará is **Apache-2.0** ([`LICENSE`](LICENSE), [`NOTICE`](NOTICE),
 [ADR 0006](docs/adr/0006-license-apache-2.md)) — the same licence as Ogma, cFS, F´ and ROS 2.
-Every source file carries `SPDX-License-Identifier: Apache-2.0`.
+Every source file carries `SPDX-License-Identifier: Apache-2.0`; the documentation and the
+figures under [`docs/`](docs) are released under the same licence.
+
+> Copyright 2026 Aton Bertini Dornfeld &lt;dornfeld.in@gmail.com&gt; and the Guará contributors.
 
 DAIDALUS and FRET are under the NASA Open Source Agreement. NOSA code lives only in
 [`nosa/`](nosa), is kept off the default colcon path, and is built by its own wrapper; FRET is
 generation-time tooling in the formal-methods image and never ships in a runtime artefact. The
-boundary is enforced by `scripts/check_license_isolation.py`, not by convention. The legal
-interpretation of NOSA alongside Apache-2.0 and BSD is marked [REVIEW] and needs a human lawyer
-before any container that embeds DAIDALUS is distributed
-([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md), risk R-9).
+boundary is enforced by `scripts/check_license_isolation.py`, not by convention. F´, the second
+host, is Apache-2.0 and raises no isolation requirement of its own
+([`GROUNDING.md`](GROUNDING.md) D.1). The legal interpretation of NOSA alongside Apache-2.0 and
+BSD is marked [REVIEW] and needs a human lawyer before any container that embeds DAIDALUS is
+distributed ([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md), risk R-9).
+
+No part of this project implies endorsement by NASA, JPL, PX4, Auterion or any other upstream
+project.
 
 ---
 
-## 13 · Contributing, citing, contact
+## 14 · Contributing, citing, contact
 
 **Contributing.** Every safety function needs a test that fails before the implementation.
 Commits are granular — one logical change each — and messages follow
 `type(scope): imperative summary`. C++17 with colcon/ament, gtest and launch_testing; the
 decision path carries no dynamic allocation and bounded time. If a change touches an API, add
 the `repo@commit:file:line` row to `GROUNDING.md` first. No performance claim enters a document
-without a run in `results/` and the command that produced it.
+without a run in `results/` and the command that produced it. A new flight operation needs its
+own document in [`docs/operations/`](docs/operations/README.md) before it needs code.
 
 **The most useful contributions right now** are a Haskell/LLVM/z3 environment that unblocks
 CopilotVerifier (R-11), sourced well-clear thresholds for small UAS (R-5), a traffic-injection
-path in PX4 SITL (R-7), an SROS2 profile for the CF topics (FM-12), and a review of §4.1 against
-the licensed ASTM F3269 text (R-8).
+path in PX4 SITL (R-7), an SROS2 profile for the CF topics (FM-12), a review of §5.1 against the
+licensed ASTM F3269 text (R-8), and — for the space thread — a Basilisk ↔ ROS 2 setup that lets
+the existing arbiter face orbital dynamics (AC-48) and a review of the safe-mode specification
+by someone who has flown one (RS-1).
 
-**Citing.** There is no preprint yet; cite the repository and the commit. Every quantitative
-claim should cite the run directory under `docs/evidence/` that produced it, not this README.
+**Citing.** There is no preprint yet; cite the repository and the commit
+([`CITATION.cff`](CITATION.cff)). Every quantitative claim should cite the run directory under
+[`docs/evidence/`](docs/evidence) that produced it, not this README.
 
-**Scope.** Civil flight safety. Contributions implementing weapons, target selection, or
-surveillance of specific people will not be accepted.
+**Contact.** Aton Bertini Dornfeld — <dornfeld.in@gmail.com>.
+
+**Scope.** Civil flight safety, in the air and in orbit. Contributions implementing weapons,
+target selection, or surveillance of specific people will not be accepted.
