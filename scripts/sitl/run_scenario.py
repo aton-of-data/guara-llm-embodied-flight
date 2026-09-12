@@ -204,7 +204,8 @@ def run_steps(scenario: dict, run_dir: pathlib.Path, ros_procs: list) -> None:
             spec = step["fly_plan"]
             plan = str(ROOT / spec["file"])
             timeout_s = str(spec.get("timeout_s", 180))
-            ros_action("fly-plan", plan, "--timeout", timeout_s)
+            extra = ["--allow-incomplete"] if spec.get("allow_incomplete") else []
+            ros_action("fly-plan", plan, "--timeout", timeout_s, *extra)
             continue
         if "kill" in step:
             sig = int(step.get("signal", 9))

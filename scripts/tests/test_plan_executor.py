@@ -67,6 +67,12 @@ def test_climb_is_negative_down():
     assert vd == pytest.approx(-2.0)
 
 
+def test_outside_fence_scenario_allows_an_interrupted_plan():
+    """AC-31's outside member is the RTA, not waypoint capture (AC-9 pattern)."""
+    text = (ROOT / "scenarios" / "llm_survey_outside.yaml").read_text()
+    assert "allow_incomplete: true" in text
+
+
 def test_step_advances_and_then_idles(tmp_path):
     path = write_plan(tmp_path, [
         {"north_m": 0.0, "east_m": 0.0, "altitude_agl_m": 10.0},

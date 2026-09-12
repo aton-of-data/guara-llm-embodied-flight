@@ -23,7 +23,7 @@ steps:
   - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
   - {sleep_s: 8}
   - {user_nav_state: owned, wait_until: owned, timeout_s: 20}
-  - {fly_plan: {file: mission/plans/outside_north.json, timeout_s: 90}}
+  - {fly_plan: {file: mission/plans/outside_north.json, timeout_s: 90, allow_incomplete: true}}
   - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
 expect:
   min_altitude_m: 2.0
