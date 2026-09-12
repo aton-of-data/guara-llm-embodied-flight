@@ -136,13 +136,17 @@ def wait_rta(state: int, timeout_s: float) -> int:
 
 
 def fly_plan(plan_file: str, timeout_s: float, rate_hz: float = 20.0,
-             allow_incomplete: bool = False) -> int:
+             allow_incomplete: bool = False,
+             until_north_m: float | None = None) -> int:
     """Trusted plan executor: compiled plan in, CfSetpoint out, no model involved.
 
     `allow_incomplete` is the AC-9 pattern for a plan the RTA is expected to
     interrupt: fly until the deadline, then return 0 so the scenario can land
     and the ULog can be scored. Completing the waypoints is still required
     when the flag is off (nominal surveys).
+
+    `until_north_m` stops on pose, not wall clock: the off-member of AC-31 must
+    actually cross the keep-in edge even when SIH runs slower than realtime.
     """
     track = load_plan(plan_file)
     node = init()
@@ -158,11 +162,16 @@ def fly_plan(plan_file: str, timeout_s: float, rate_hz: float = 20.0,
     period = 1.0 / max(1.0, rate_hz)
     complete = False
     saw_pose = False
+    last_n = None
     while time.monotonic() < deadline:
         if pose["n"] is None:
             rclpy.spin_once(node, timeout_sec=period)
             continue
         saw_pose = True
+        last_n = pose["n"]
+        if until_north_m is not None and last_n >= until_north_m:
+            complete = True
+            break
         cmd = step(track, Vehicle(pose["n"], pose["e"], pose["d"]))
         msg = CfSetpoint()
         msg.stamp = node.get_clock().now().to_msg()
@@ -173,12 +182,12 @@ def fly_plan(plan_file: str, timeout_s: float, rate_hz: float = 20.0,
             complete = True
             break
         rclpy.spin_once(node, timeout_sec=period)
-        time.sleep(period)
     node.destroy_node()
     rclpy.shutdown()
     if complete:
         return 0
-    print(f"timeout flying {plan_file}, last index={track.index}", file=sys.stderr)
+    print(f"timeout flying {plan_file}, last index={track.index} north={last_n}",
+          file=sys.stderr)
     if allow_incomplete and saw_pose:
         return 0
     return 1
@@ -209,6 +218,8 @@ def main() -> int:
     f.add_argument("--rate", type=float, default=20.0)
     f.add_argument("--allow-incomplete", action="store_true",
                    help="return 0 on timeout if at least one pose was flown (RTA-hold cases)")
+    f.add_argument("--until-north", type=float, default=None,
+                   help="stop successfully once local north (m) reaches this value")
     args = p.parse_args()
     if args.cmd == "set-nav-state":
         set_nav_state(args.nav)
@@ -225,7 +236,8 @@ def main() -> int:
         return wait_rta(args.state, args.timeout)
     if args.cmd == "fly-plan":
         return fly_plan(args.plan, args.timeout, args.rate,
-                        allow_incomplete=args.allow_incomplete)
+                        allow_incomplete=args.allow_incomplete,
+                        until_north_m=args.until_north)
     return 2
 
 

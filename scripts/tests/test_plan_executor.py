@@ -68,9 +68,14 @@ def test_climb_is_negative_down():
 
 
 def test_outside_fence_scenario_allows_an_interrupted_plan():
-    """AC-31's outside member is the RTA, not waypoint capture (AC-9 pattern)."""
+    """AC-31's outside member is the RTA, not waypoint capture (AC-9 pattern).
+
+    The keep-in north edge is ~260 m from home; a wall-clock timeout of 90 s
+    stopped both pair members at ~210 m still inside the polygon.
+    """
     text = (ROOT / "scenarios" / "llm_survey_outside.yaml").read_text()
     assert "allow_incomplete: true" in text
+    assert "until_north_m: 300" in text
 
 
 def test_step_advances_and_then_idles(tmp_path):
