@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: Apache-2.0
+# M9 AC-31: fly a compiled inspect plan as the CF. The RTA is on; the vehicle must
+# stay inside the same keep-in fence the compiler used.
+name: llm_survey_nominal
+vehicle:
+  simulator: sihsim
+  model: sihsim_quadx
+  speed_factor: 1
+home:
+  lat: -22.0087
+  lon: -47.8909
+  alt: 850.0
+timeouts_s:
+  boot: 60
+  ready: 120
+ros_nodes:
+  - package: guara_rta
+    executable: guara_rta_node
+    params_file: config/rta_params.yaml
+    extra_params_file: config/demo_farm_geofence.yaml
+steps:
+  - {cmd: "commander takeoff", wait_until: airborne, timeout_s: 60}
+  - {sleep_s: 8}
+  - {user_nav_state: owned, wait_until: owned, timeout_s: 20}
+  - {fly_plan: {file: mission/plans/inspect_pivot2.json, timeout_s: 180}}
+  - {cmd: "commander land", wait_until: disarmed, timeout_s: 90}
+expect:
+  min_altitude_m: 2.0
+  geofence:
+    polygon_lat_lon_deg:
+      - -22.00923959
+      - -47.89245202
+      - -22.00636176
+      - -47.89245199
+      - -22.00636176
+      - -47.88934801
+      - -22.00923959
+      - -47.88934798

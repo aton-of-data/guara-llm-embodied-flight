@@ -1,0 +1,13 @@
+{
+  "plan_version": 1,
+  "compiler_version": "fixture/outside-north",
+  "intent": "survey",
+  "site_id": "demo-farm",
+  "note": "Hand-built AC-31 fixture. Not compiler output. Flies +North through the keep-in fence so the RTA, not the compiler, is the layer under test.",
+  "speed_m_s": 4.0,
+  "altitude_agl_m": 15.0,
+  "waypoints": [
+    {"north_m": 0.0, "east_m": 0.0, "altitude_agl_m": 15.0, "action": "transit"},
+    {"north_m": 400.0, "east_m": 0.0, "altitude_agl_m": 15.0, "action": "capture"}
+  ]
+}

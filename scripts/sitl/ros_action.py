@@ -4,13 +4,20 @@
 from __future__ import annotations
 
 import argparse
+import pathlib
 import sys
 import time
 
 import rclpy
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from guara_msgs.msg import CfSetpoint, MonitorVerdict, RtaState
-from px4_msgs.msg import VehicleCommand, VehicleStatus
+from px4_msgs.msg import VehicleCommand, VehicleLocalPosition, VehicleStatus
+
+ROOT = pathlib.Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from mission.executor import Vehicle, load_plan, step  # noqa: E402
 
 # Topic suffixes follow message MESSAGE_VERSION (GROUNDING 3.5): command v0, status v1.
 CMD_TOPIC = "fmu/in/vehicle_command"
@@ -128,6 +135,44 @@ def wait_rta(state: int, timeout_s: float) -> int:
     return 1
 
 
+def fly_plan(plan_file: str, timeout_s: float, rate_hz: float = 20.0) -> int:
+    """Trusted plan executor: compiled plan in, CfSetpoint out, no model involved."""
+    track = load_plan(plan_file)
+    node = init()
+    qos = QoSProfile(depth=1, reliability=ReliabilityPolicy.BEST_EFFORT,
+                     history=HistoryPolicy.KEEP_LAST)
+    pub = node.create_publisher(CfSetpoint, "/guara/cf/setpoint", qos)
+    pose = {"n": None, "e": None, "d": None}
+    node.create_subscription(
+        VehicleLocalPosition, "fmu/out/vehicle_local_position_v1",
+        lambda m: pose.update(n=float(m.x), e=float(m.y), d=float(m.z)), qos)
+    time.sleep(0.3)
+    deadline = time.monotonic() + timeout_s
+    period = 1.0 / max(1.0, rate_hz)
+    complete = False
+    while time.monotonic() < deadline:
+        if pose["n"] is None:
+            rclpy.spin_once(node, timeout_sec=period)
+            continue
+        cmd = step(track, Vehicle(pose["n"], pose["e"], pose["d"]))
+        msg = CfSetpoint()
+        msg.stamp = node.get_clock().now().to_msg()
+        msg.velocity_ned_m_s = [float(cmd.vn), float(cmd.ve), float(cmd.vd)]
+        msg.yaw_ned_rad = float("nan")
+        pub.publish(msg)
+        if cmd.complete:
+            complete = True
+            break
+        rclpy.spin_once(node, timeout_sec=period)
+        time.sleep(period)
+    node.destroy_node()
+    rclpy.shutdown()
+    if not complete:
+        print(f"timeout flying {plan_file}, last index={track.index}", file=sys.stderr)
+        return 1
+    return 0
+
+
 def main() -> int:
     p = argparse.ArgumentParser()
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -147,6 +192,10 @@ def main() -> int:
     r = sub.add_parser("wait-rta")
     r.add_argument("state", type=int)
     r.add_argument("--timeout", type=float, default=15.0)
+    f = sub.add_parser("fly-plan")
+    f.add_argument("plan")
+    f.add_argument("--timeout", type=float, default=180.0)
+    f.add_argument("--rate", type=float, default=20.0)
     args = p.parse_args()
     if args.cmd == "set-nav-state":
         set_nav_state(args.nav)
@@ -161,6 +210,8 @@ def main() -> int:
         return wait_nav(args.nav, args.timeout)
     if args.cmd == "wait-rta":
         return wait_rta(args.state, args.timeout)
+    if args.cmd == "fly-plan":
+        return fly_plan(args.plan, args.timeout, args.rate)
     return 2
 
 

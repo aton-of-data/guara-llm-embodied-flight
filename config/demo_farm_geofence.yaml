@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: Apache-2.0
+# Keep-in fence of mission/site/demo_farm.yaml, loaded into the arbiter for LLM-plan
+# SITL (AC-31). Same polygon the compiler hashes into every plan (ADR 0004).
+guara_rta:
+  ros__parameters:
+    geofence.enabled: true
+    inputs.geofence.enabled: true
+    core.tau_gf_s: 1.0
+    geofence.polygon_lat_lon_deg:
+      - -22.00923959
+      - -47.89245202
+      - -22.00636176
+      - -47.89245199
+      - -22.00636176
+      - -47.88934801
+      - -22.00923959
+      - -47.88934798
+    geofence.alt_min_m: -1.0
+    geofence.alt_max_m: 130.0

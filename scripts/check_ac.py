@@ -797,6 +797,29 @@ def check_ac29(run_dir: pathlib.Path) -> list[str]:
     return errors
 
 
+def check_ac31(path: pathlib.Path) -> list[str]:
+    """A compiled plan flown as the CF stays inside the fence; an outside-aimed plan
+    is held at 0 m with RTA and exits without it."""
+    if (path / "rta_on").exists() and (path / "rta_off").exists():
+        return check_ac9(path)
+    cfg_path = path / "config.yaml"
+    if not cfg_path.is_file():
+        return [f"missing {cfg_path}"]
+    cfg = yaml.safe_load(cfg_path.read_text()) or {}
+    flat = cfg.get("expect", {}).get("geofence", {}).get("polygon_lat_lon_deg")
+    if not flat or len(flat) < 6:
+        return ["config.yaml missing expect.geofence.polygon_lat_lon_deg"]
+    err, depth = _max_violation_depth(path, flat)
+    if err:
+        return err
+    print(json.dumps({"AC-31": {"depth_m": depth, "scenario": cfg.get("scenario")}}, indent=2))
+    (path / "metrics.json").write_text(json.dumps(
+        {"AC-31": {"depth_m": depth, "scenario": cfg.get("scenario")}}, indent=2) + "\n")
+    if depth > 1e-6:
+        return [f"compiled-plan run max violation depth {depth:.6f} m > 0"]
+    return []
+
+
 CHECKERS = {
     "AC-3": check_ac3,
     "AC-7": check_ac7,
@@ -816,6 +839,7 @@ CHECKERS = {
     "AC-27": check_ac27,
     "AC-28": check_ac28,
     "AC-29": check_ac29,
+    "AC-31": check_ac31,
 }
 
 

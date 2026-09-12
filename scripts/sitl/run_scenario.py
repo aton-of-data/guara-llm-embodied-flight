@@ -132,6 +132,10 @@ def ros_action(*args: str) -> None:
     timeout = 90.0
     if args and args[0] == "inject-cf":
         timeout = 120.0
+    if args and args[0] == "fly-plan":
+        timeout = 240.0
+        if "--timeout" in args:
+            timeout = float(args[args.index("--timeout") + 1]) + 30.0
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
     log(f"ros_action {' '.join(args)} -> rc={result.returncode} {result.stderr.strip()[-200:]}")
     if result.returncode != 0:
@@ -195,6 +199,12 @@ def run_steps(scenario: dict, run_dir: pathlib.Path, ros_procs: list) -> None:
             vel = spec["velocity_ned"]
             ros_action("inject-cf", str(vel[0]), str(vel[1]), str(vel[2]),
                        "--duration", str(spec.get("duration_s", 10)))
+            continue
+        if "fly_plan" in step:
+            spec = step["fly_plan"]
+            plan = str(ROOT / spec["file"])
+            timeout_s = str(spec.get("timeout_s", 180))
+            ros_action("fly-plan", plan, "--timeout", timeout_s)
             continue
         if "kill" in step:
             sig = int(step.get("signal", 9))
