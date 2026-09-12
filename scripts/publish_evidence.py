@@ -22,7 +22,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 RESULTS = ROOT / "results"
 EVIDENCE = ROOT / "docs" / "evidence"
-PUBLISHED = ("config.yaml", "metrics.json", "pair.yaml", "runs.txt", "checks.txt")
+PUBLISHED = ("config.yaml", "metrics.json", "pair.yaml", "runs.txt", "checks.txt",
+             "records.jsonl")
+#: Directories published whole. An LLM evaluation is only reviewable if the exchanges behind
+#: its rates travel with it (ADR 0013 decision 4): they are small text files, unlike a ULog.
+PUBLISHED_DIRS = ("exchanges", "plans")
 
 
 def publish(run_dir: pathlib.Path) -> list[pathlib.Path]:
@@ -36,6 +40,15 @@ def publish(run_dir: pathlib.Path) -> list[pathlib.Path]:
         out.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, out / name)
         written.append(out / name)
+    for name in PUBLISHED_DIRS:
+        src = run_dir / name
+        if not src.is_dir():
+            continue
+        dst = out / name
+        if dst.exists():
+            shutil.rmtree(dst)
+        shutil.copytree(src, dst)
+        written += sorted(dst.rglob("*"))
     # A pair directory holds two symlinked members; publish their contracts as well.
     for member in ("rta_on", "rta_off"):
         if (run_dir / member).is_dir():
