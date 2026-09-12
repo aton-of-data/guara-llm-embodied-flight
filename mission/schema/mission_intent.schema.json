@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aton-of-data/guara/mission/schema/mission_intent.schema.json",
+  "title": "Guara Mission Intent v0",
+  "description": "The only artifact a language model is allowed to produce (ADR 0010 rule 6, ADR 0013 decision 2). A closed vocabulary: additional properties are rejected, and geographic literals are absent by design because a model has no metric grounding (LLM-EMBODIMENT.md L-M3). The compiler, not the model, turns an intent into a plan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["intent", "utterance_hash"],
+  "properties": {
+    "intent": {
+      "enum": ["survey", "inspect_point", "return_home", "land_now", "status", "abort"]
+    },
+    "field_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Must exist in the site model; the model may not invent one."
+    },
+    "poi_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "description": "Named point of interest from the site model, for inspect_point."
+    },
+    "sensor": { "enum": ["rgb", "multispectral", "thermal"] },
+    "gsd_cm": { "type": "number", "exclusiveMinimum": 0, "maximum": 100 },
+    "overlap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["front", "side"],
+      "properties": {
+        "front": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 },
+        "side": { "type": "number", "minimum": 0, "exclusiveMaximum": 1 }
+      }
+    },
+    "altitude_agl_m": {
+      "type": ["number", "null"],
+      "exclusiveMinimum": 0,
+      "maximum": 1000,
+      "description": "null means the compiler derives it from gsd_cm and the sensor model. A value is a request, still clamped by the site's regulatory ceiling."
+    },
+    "deliver": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 6,
+      "uniqueItems": true,
+      "items": { "enum": ["orthomosaic", "ndvi", "ndre", "thermal_map", "photos", "plant_count"] }
+    },
+    "utterance_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Audit link to the recorded command that produced this intent."
+    }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "intent": { "const": "survey" } }, "required": ["intent"] },
+      "then": { "required": ["field_id", "sensor", "gsd_cm", "deliver"] }
+    },
+    {
+      "if": { "properties": { "intent": { "const": "inspect_point" } }, "required": ["intent"] },
+      "then": { "required": ["poi_id", "sensor", "gsd_cm", "deliver"] }
+    }
+  ]
+}

@@ -1,0 +1,120 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Demo site model for the mission compiler (docs/PLAN-M8-M16.md M8).
+#
+# The site model is the *only* source of geography. A language model names fields and points
+# of interest that exist here and nothing else (LLM-EMBODIMENT.md L-M3); it never emits
+# coordinates. The keep-in fence below is the same polygon a run loads into the arbiter
+# (`geofence.polygon_lat_lon_deg`) and into PX4, hashed into the plan — the "same file,
+# hashed" rule of ADR 0004.
+#
+# The origin is the SITL home of scenarios/hover.yaml, so a compiled plan can be flown in
+# the existing headless bench without moving the world. Polygons are rectangles in the local
+# north/east frame about that origin, converted once with the same azimuthal equidistant
+# projection the arbiter uses (mission/compiler/projection.py); the metre extents are in the
+# comments so the geometry stays reviewable.
+#
+# Every limit and every battery number is a [HYPOTHESIS] or [PARAMETER TBD]; none of them is
+# a measurement, and the regulatory ceiling in particular is [REVIEW] against RBAC 100.
+
+site_id: demo-farm
+description: Synthetic reference farm used by the M8/M9 acceptance criteria.
+
+origin:              # local frame reference; equals the SITL home point
+  lat: -22.0087
+  lon: -47.8909
+  alt_amsl_m: 850.0
+
+home:                # where the aircraft launches and returns to, local metres
+  north_m: 0.0
+  east_m: 0.0
+
+pilot:               # remote pilot standing position, for the VLOS check
+  north_m: 0.0
+  east_m: 0.0
+
+geofence:            # keep-in fence, N [-60, 260] x E [-160, 160]
+  polygon_lat_lon_deg:
+    - [-22.00923959, -47.89245202]
+    - [-22.00636176, -47.89245199]
+    - [-22.00636176, -47.88934801]
+    - [-22.00923959, -47.88934798]
+  alt_min_m: -1.0
+  alt_max_m: 130.0
+
+limits:
+  max_altitude_agl_m: 120.0    # [REVIEW] regulatory ceiling, RBAC 100
+  min_altitude_agl_m: 5.0      # [HYPOTHESIS] lowest altitude the compiler will plan
+  vlos_radius_m: 500.0         # [HYPOTHESIS] visual line of sight radius from the pilot
+  fence_margin_m: 5.0          # [HYPOTHESIS] planning margin kept inside the fence
+
+plan:
+  cruise_speed_m_s: 4.0        # [HYPOTHESIS] must fit gateway.max_speed_h_m_s (ADR 0010)
+  climb_speed_m_s: 2.0         # [HYPOTHESIS] must fit gateway.max_climb_rate_m_s
+  descent_speed_m_s: 1.5       # [HYPOTHESIS] must fit gateway.max_descent_rate_m_s
+  turn_penalty_s: 3.0          # [HYPOTHESIS] added per survey line turn
+  waypoint_capture_radius_m: 3.0
+
+battery:
+  usable_wh: 200.0             # [PARAMETER TBD] airframe-specific (ADR 0007, X500 V2)
+  cruise_power_w: 400.0        # [HYPOTHESIS]
+  hover_power_w: 450.0         # [HYPOTHESIS]
+  reserve_fraction: 0.25       # [HYPOTHESIS] energy kept unplanned
+
+sensors:
+  # GSD [cm/px] = sensor_width_mm * altitude_m * 100 / (focal_length_mm * image_width_px)
+  rgb:
+    sensor_width_mm: 13.2
+    focal_length_mm: 8.8
+    image_width_px: 5472
+    gsd_cm_min: 0.5
+    gsd_cm_max: 8.0
+    products: [orthomosaic, photos, plant_count]
+  multispectral:
+    sensor_width_mm: 4.8
+    focal_length_mm: 5.74
+    image_width_px: 1280
+    gsd_cm_min: 1.0
+    gsd_cm_max: 15.0
+    products: [orthomosaic, ndvi, ndre, photos]
+  thermal:
+    sensor_width_mm: 7.68
+    focal_length_mm: 9.1
+    image_width_px: 640
+    gsd_cm_min: 4.0
+    gsd_cm_max: 40.0
+    products: [thermal_map, photos]
+
+fields:
+  north-3:           # N [60, 200] x E [-100, 60]
+    crop: soybean
+    buffer_m: 10.0
+    polygon_lat_lon_deg:
+      - [-22.0081604, -47.89187001]
+      - [-22.00690135, -47.89187]
+      - [-22.00690136, -47.890318]
+      - [-22.00816041, -47.890318]
+  river-edge:        # N [0, 40] x E [80, 140]; wide buffer, watercourse to the east
+    crop: pasture
+    buffer_m: 20.0
+    polygon_lat_lon_deg:
+      - [-22.0087, -47.89012399]
+      - [-22.00834027, -47.89012399]
+      - [-22.00834027, -47.88954199]
+      - [-22.00869999, -47.88954199]
+  outside-fence:     # N [200, 340] x E [40, 150]; deliberately crosses the keep-in fence
+    crop: maize
+    buffer_m: 5.0
+    polygon_lat_lon_deg:
+      - [-22.00690136, -47.890512]
+      - [-22.00564231, -47.890512]
+      - [-22.0056423, -47.88944502]
+      - [-22.00690135, -47.889445]
+
+pois:
+  pivot-2:
+    description: Irrigation pivot inside north-3.
+    lat_lon_deg: [-22.00762081, -47.891094]
+  tower-1:
+    description: Water tower near the river edge.
+    lat_lon_deg: [-22.0084302, -47.88992999]

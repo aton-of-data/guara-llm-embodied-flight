@@ -4,7 +4,9 @@
 
 The compiler is the trusted half of the LLM path (LLM-EMBODIMENT.md §5.3, ADR 0013
 decision 8): whatever a model proposes, only a plan that passes every static check may be
-flown. One test per check, each built so that exactly one check is violated.
+flown. One test per check, each built so that the targeted check is the one that fails.
+Where an input physically violates more than one constraint, the test says so and asserts
+the targeted check instead of the whole failure list.
 """
 import copy
 import pathlib
@@ -66,7 +68,9 @@ def mutate(site, path, value):
 def test_nominal_survey_compiles(site, limits):
     plan = mc.compile_plan(survey_intent(), site, limits)
     assert plan.flyable
-    assert [c.name for c in plan.checks if c.status != "pass"] == []
+    assert plan.failed_checks() == []
+    # `poi_known` is skipped, not passed: a survey has no point of interest to resolve.
+    assert {c.name for c in plan.checks if c.status == "skipped"} == {"poi_known"}
     assert len(plan.waypoints) >= 4
     assert plan.altitude_agl_m == pytest.approx(109.44, abs=0.5)  # rgb, 3 cm/px
     assert plan.path_length_m > 0
@@ -113,8 +117,14 @@ def test_check_altitude_ceiling(site, limits):
 
 
 def test_check_altitude_floor(site, limits):
+    """Below the floor the energy check fails too, and that is physics, not a leak: at 2 m
+    the swath collapses, so the same field needs a hundred lines. The floor is the first
+    failure reported and the positive control is that it passes at a normal altitude."""
     plan = mc.compile_plan(survey_intent(altitude_agl_m=2.0), site, limits)
-    assert plan.failed_checks() == ["altitude_floor"]
+    assert not plan.flyable
+    assert plan.failed_checks()[0] == "altitude_floor"
+    passed = mc.compile_plan(survey_intent(altitude_agl_m=100.0), site, limits)
+    assert [c.status for c in passed.checks if c.name == "altitude_floor"] == ["pass"]
 
 
 def test_check_gsd_bounds(site, limits):

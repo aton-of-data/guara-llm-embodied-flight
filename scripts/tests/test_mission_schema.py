@@ -135,7 +135,7 @@ def test_fenced_json_from_a_chatty_model_is_recovered():
         + '"overlap":{"front":0.75,"side":0.65},"altitude_agl_m":null,'
         + '"deliver":["orthomosaic"],"utterance_hash":"sha256:'
         + "0" * 64
-        + '"}\n```\nLet me know if you want a different resolution."
+        + '"}\n```\nLet me know if you want a different resolution.\n'
     )
     assert mi.parse_model_output(raw).field_id == "north-3"
 
