@@ -25,6 +25,18 @@ guara_dirty="false"
 
 tty_flags=()
 [[ -t 0 && -t 1 ]] && tty_flags=(-it)
+
+# Variables the caller explicitly allows into the container, by name only:
+#   GUARA_PASS_ENV=CURSOR_API_KEY ./scripts/dev.sh python3 scripts/llm/eval.py ...
+# Nothing is forwarded by default, so a credential enters the container only when the
+# command that needs it asks for it (ADR 0013 decision 7).
+pass_env=()
+if [[ -n "${GUARA_PASS_ENV:-}" ]]; then
+  IFS=',' read -r -a names <<<"${GUARA_PASS_ENV}"
+  for name in "${names[@]}"; do
+    [[ -n "${name}" ]] && pass_env+=(-e "${name}")
+  done
+fi
 [[ $# -gt 0 ]] || set -- bash
 
 exec docker run --rm ${tty_flags[@]+"${tty_flags[@]}"} \
@@ -35,5 +47,6 @@ exec docker run --rm ${tty_flags[@]+"${tty_flags[@]}"} \
   -e GUARA_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "${image}")" \
   -e COLCON_DEFAULTS_FILE=/work/ros2_ws/colcon_defaults.yaml \
   -e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-0}" \
+  ${pass_env[@]+"${pass_env[@]}"} \
   "${image}" \
   bash -c 'source /opt/ros/humble/setup.bash; [[ -f install/setup.bash ]] && source install/setup.bash; exec "$@"' bash "$@"
