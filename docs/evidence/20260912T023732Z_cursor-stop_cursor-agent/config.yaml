@@ -1,0 +1,76 @@
+api_key_env: CURSOR_API_KEY
+compiler_version: guara-mission-compiler/0.1
+corpus:
+  mission/corpus/adversarial.yaml: f39513e0fe829ca58830638e41b0f74eff6a0cc87e44fb6573a466361e7bc87d
+  mission/corpus/ambiguous.yaml: 483b5d4687b7c34dd60c2be5520e80ed9c4bfcf179e80ce5b1e0fd882500dcd2
+  mission/corpus/infeasible.yaml: b905fa3e37fef9b0f88a7255ea447d1d156326dc76dec4a913bfae38eeecfa6f
+  mission/corpus/nominal.yaml: 527072309eba235c908fd2ba5297da5e2e7f5c0b5224b656bbed4987597b5c7b
+  mission/corpus/stop.yaml: 1dfc79867b6a7acf20032e31187d5404e8227f3bd52d0510424ef04d0a0d3787
+created_utc: '2026-09-12T02:37:32.719645+00:00'
+gateway_limits:
+  max_climb_rate_m_s: 3.0
+  max_descent_rate_m_s: 2.0
+  max_speed_h_m_s: 5.0
+  source: rta_params.yaml
+guara_dirty: true
+guara_sha: 66c1fcf4a48503275f02825fc016b6a1a31bd477
+harness_version: guara-llm-eval/0.1
+kind: llm_eval
+model: composer-2.5
+model_role: instrument
+n_cases: 8
+provider: cursor-agent
+repeats: 1
+run_id: 20260912T023732Z_cursor-stop_cursor-agent
+schema_sha256: e87a0237dffa841ad3e366896a3a853dcbede5887c94744de3aa48634ff83a38
+site_file: mission/site/demo_farm.yaml
+site_hash: sha256:f32c3269d76100905676f79e28cdf7924392f773a96ecd9e787e3808a647f5f0
+site_inventory:
+  fields:
+  - north-3
+  - outside-fence
+  - river-edge
+  limits:
+    fence_margin_m: 5.0
+    max_altitude_agl_m: 120.0
+    min_altitude_agl_m: 5.0
+    vlos_radius_m: 500.0
+  pois:
+  - pivot-2
+  - tower-1
+  sensors:
+    multispectral:
+      gsd_cm:
+      - 1.0
+      - 15.0
+      products:
+      - orthomosaic
+      - ndvi
+      - ndre
+      - photos
+    rgb:
+      gsd_cm:
+      - 0.5
+      - 8.0
+      products:
+      - orthomosaic
+      - photos
+      - plant_count
+    thermal:
+      gsd_cm:
+      - 4.0
+      - 40.0
+      products:
+      - thermal_map
+      - photos
+  site_id: demo-farm
+site_sha256: 202d67eb22e2e221da7c461f4598ede884878ec2e502d260e9ce55c3fee9ef0c
+third_party:
+  PX4-Autopilot: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+  copilot: 365fb21429aa0b880f81d72dcaa9f207f5ea2d0a
+  daidalus: 0647596edb218f8e8c7731ff800396297bbace99
+  fprime: 7d8f579f159d2f7c2d4984d92828575e37f87fa6
+  fret: 58db455be35182a015e607232d9f4e3c86731932
+  ogma: 69485b3442d76c48faaee30b37f9cbee212ceca6
+  px4-ros2-interface-lib: 4a3370f084ac6f1ef001a4afa2b007845ffd0837
+  px4_msgs: 86d8239e962f6939e05c3737784f60c02fa884db

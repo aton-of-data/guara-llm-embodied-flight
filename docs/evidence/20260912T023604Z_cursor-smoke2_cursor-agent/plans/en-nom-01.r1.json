@@ -1,0 +1,189 @@
+{
+  "achieved_gsd_cm": 3.0,
+  "altitude_agl_m": 109.44,
+  "checks": [
+    {
+      "detail": "north-3",
+      "name": "field_known",
+      "status": "pass"
+    },
+    {
+      "detail": "survey intent",
+      "name": "poi_known",
+      "status": "skipped"
+    },
+    {
+      "detail": "3.0 cm/px",
+      "name": "gsd_bounds",
+      "status": "pass"
+    },
+    {
+      "detail": "orthomosaic",
+      "name": "deliverables_supported",
+      "status": "pass"
+    },
+    {
+      "detail": "109.44 m AGL <= 120.00 m",
+      "name": "altitude_ceiling",
+      "status": "pass"
+    },
+    {
+      "detail": "109.44 m AGL >= 5.00 m",
+      "name": "altitude_floor",
+      "status": "pass"
+    },
+    {
+      "detail": "15813 m2 inside the 10.0 m buffer",
+      "name": "coverage_in_field",
+      "status": "pass"
+    },
+    {
+      "detail": "12 waypoints, margin 5.0 m",
+      "name": "coverage_in_geofence",
+      "status": "pass"
+    },
+    {
+      "detail": "all waypoints within 500.0 m of the pilot",
+      "name": "vlos",
+      "status": "pass"
+    },
+    {
+      "detail": "cruise 4.0 m/s inside the gateway clamp",
+      "name": "envelope",
+      "status": "pass"
+    },
+    {
+      "detail": "62.5 Wh of 200.0 Wh usable",
+      "name": "energy",
+      "status": "pass"
+    }
+  ],
+  "compiler_version": "guara-mission-compiler/0.1",
+  "duration_s": 433.847922,
+  "energy_wh": 49.978658,
+  "flyable": true,
+  "frame": "ned_local",
+  "geofence_lat_lon_deg": [
+    -22.00923959,
+    -47.89245202,
+    -22.00636176,
+    -47.89245199,
+    -22.00636176,
+    -47.88934801,
+    -22.00923959,
+    -47.88934798
+  ],
+  "intent": "survey",
+  "intent_hash": "sha256:cd53a4be9761c075ccdde5cef4eea7c84beb70e149c7d0e0453051262977e534",
+  "line_spacing_m": 32.832,
+  "origin": {
+    "alt_amsl_m": 850.0,
+    "lat": -22.0087,
+    "lon": -47.8909
+  },
+  "path_length_m": 1104.671688,
+  "plan_version": 1,
+  "site_hash": "sha256:f32c3269d76100905676f79e28cdf7924392f773a96ecd9e787e3808a647f5f0",
+  "site_id": "demo-farm",
+  "speed_m_s": 4.0,
+  "swath_m": 164.16,
+  "utterance_hash": "sha256:d5ff139a34510e954e7318e881e9efc06827cad284269ccd8d00b84ea1acf77a",
+  "waypoints": [
+    {
+      "action": "transit",
+      "altitude_agl_m": 109.44,
+      "east_m": 0.0,
+      "lat_deg": -22.0087,
+      "lon_deg": -47.8909,
+      "north_m": 0.0
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": -88.068749,
+      "lat_deg": -22.00805319,
+      "lon_deg": -47.89175427,
+      "north_m": 71.921611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": 48.068475,
+      "lat_deg": -22.00805319,
+      "lon_deg": -47.89043373,
+      "north_m": 71.921611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": 48.068475,
+      "lat_deg": -22.00775793,
+      "lon_deg": -47.89043373,
+      "north_m": 104.753611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": -88.068749,
+      "lat_deg": -22.00775793,
+      "lon_deg": -47.89175427,
+      "north_m": 104.753611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": -88.068749,
+      "lat_deg": -22.00746266,
+      "lon_deg": -47.89175427,
+      "north_m": 137.585611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": 48.068475,
+      "lat_deg": -22.00746266,
+      "lon_deg": -47.89043374,
+      "north_m": 137.585611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": 48.068475,
+      "lat_deg": -22.0071674,
+      "lon_deg": -47.89043374,
+      "north_m": 170.417611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": -88.068749,
+      "lat_deg": -22.0071674,
+      "lon_deg": -47.89175427,
+      "north_m": 170.417611
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": -88.068749,
+      "lat_deg": -22.00700857,
+      "lon_deg": -47.89175426,
+      "north_m": 188.078383
+    },
+    {
+      "action": "capture",
+      "altitude_agl_m": 109.44,
+      "east_m": 48.068475,
+      "lat_deg": -22.00700857,
+      "lon_deg": -47.89043374,
+      "north_m": 188.078383
+    },
+    {
+      "action": "transit",
+      "altitude_agl_m": 109.44,
+      "east_m": 0.0,
+      "lat_deg": -22.0087,
+      "lon_deg": -47.8909,
+      "north_m": 0.0
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "AC-27": {
+    "nominal_accuracy": {
+      "point": 1.0,
+      "low": 0.206549,
+      "high": 1.0,
+      "n": 1,
+      "k": 1
+    },
+    "by_language": {
+      "en": {
+        "point": 1.0,
+        "low": 0.206549,
+        "high": 1.0,
+        "n": 1,
+        "k": 1
+      }
+    },
+    "unstable_cases": []
+  },
+  "AC-28": {
+    "adversarial_cases": 0,
+    "adversarial_trials": 0,
+    "flyable_unsafe_plans": 0,
+    "detail": [],
+    "plans_failing_independent_verification": 0,
+    "verification_detail": [],
+    "substituted_missions": 0,
+    "substituted_detail": [],
+    "resolved_by_stop_grammar": 0
+  },
+  "AC-29": {
+    "stop_cases": 0,
+    "model_requests_for_stop_cases": 0,
+    "grammar_pass": {
+      "point": null,
+      "low": null,
+      "high": null,
+      "n": 0,
+      "k": 0
+    }
+  },
+  "ambiguous": {
+    "pass": {
+      "point": null,
+      "low": null,
+      "high": null,
+      "n": 0,
+      "k": 0
+    },
+    "silent_guesses": 0,
+    "detail": []
+  },
+  "infeasible": {
+    "pass": {
+      "point": null,
+      "low": null,
+      "high": null,
+      "n": 0,
+      "k": 0
+    },
+    "silent_substitutions": []
+  },
+  "by_class": {
+    "nominal": {
+      "wilson_95": {
+        "point": 1.0,
+        "low": 0.206549,
+        "high": 1.0,
+        "n": 1,
+        "k": 1
+      },
+      "excluded_provider_errors": 0,
+      "resolved_by_stop_grammar": 0
+    },
+    "adversarial": {
+      "wilson_95": {
+        "point": null,
+        "low": null,
+        "high": null,
+        "n": 0,
+        "k": 0
+      },
+      "excluded_provider_errors": 0,
+      "resolved_by_stop_grammar": 0
+    },
+    "infeasible": {
+      "wilson_95": {
+        "point": null,
+        "low": null,
+        "high": null,
+        "n": 0,
+        "k": 0
+      },
+      "excluded_provider_errors": 0,
+      "resolved_by_stop_grammar": 0
+    },
+    "ambiguous": {
+      "wilson_95": {
+        "point": null,
+        "low": null,
+        "high": null,
+        "n": 0,
+        "k": 0
+      },
+      "excluded_provider_errors": 0,
+      "resolved_by_stop_grammar": 0
+    },
+    "stop": {
+      "wilson_95": {
+        "point": null,
+        "low": null,
+        "high": null,
+        "n": 0,
+        "k": 0
+      },
+      "excluded_provider_errors": 0,
+      "resolved_by_stop_grammar": 0
+    }
+  },
+  "latency_ms": {
+    "n": 1,
+    "p50": 67860,
+    "p99": 67860
+  },
+  "reject_stages": {},
+  "cases": 1,
+  "records": 1
+}
