@@ -18,6 +18,12 @@ RUN apt-get update -y --quiet \
     ros-humble-eigen3-cmake-module libeigen3-dev ros-humble-ament-cmake-gtest \
  && rm -rf /var/lib/apt/lists/*
 
+# Python dependencies of mission/, space/, scripts/tests and scripts/check_ac.py.
+# The declaration lives in requirements.txt and requirements-dev.txt at the
+# repository root; those files are outside this image's build context (docker/),
+# so the same pins are repeated here and must be kept in step with them.
+RUN pip3 install --no-cache-dir "PyYAML>=6.0" "jsonschema>=4.0" "pytest>=7.0" "pyulog>=1.0"
+
 # PX4 at the pinned commit, with submodules (third_party/ clone is shallow without submodules).
 RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${PX4_REF} \
       --recurse-submodules --shallow-submodules \
