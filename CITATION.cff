@@ -9,7 +9,11 @@ authors:
 repository-code: "https://github.com/aton-of-data/guara-llm-embodied-flight"
 url: "https://github.com/aton-of-data/guara-llm-embodied-flight"
 license: Apache-2.0
-year: 2026
+commit: "7e204a721d2abb8f346dd77460ea2e0565534e42"
+contact:
+  - family-names: "Bertini Dornfeld"
+    given-names: "Aton"
+    email: "dornfeld.in@gmail.com"
 keywords:
   - runtime assurance
   - ASTM F3269
@@ -21,6 +25,10 @@ keywords:
   - detect and avoid
   - spacecraft autonomy
   - large language models
+  - LLM-embodied flight
+  - safety-critical systems
+  - UAV
+  - PX4 SITL
 abstract: >-
   Guará is a runtime-assurance (RTA) boundary aligned with the ASTM F3269 architecture that
   bounds an untrusted complex function — a classical planner, a neural policy or a language
