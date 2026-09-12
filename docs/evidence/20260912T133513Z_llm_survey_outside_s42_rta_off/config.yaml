@@ -1,0 +1,60 @@
+created_utc: '2026-09-12T13:35:13+00:00'
+expect:
+  geofence:
+    polygon_lat_lon_deg:
+    - -22.00923959
+    - -47.89245202
+    - -22.00636176
+    - -47.89245199
+    - -22.00636176
+    - -47.88934801
+    - -22.00923959
+    - -47.88934798
+  min_altitude_m: 2.0
+guara_dirty: false
+guara_sha: 56f4c65aff6818c86afaf0c5d6d0ea38bf20cfa7
+headless: true
+image_id: sha256:4356cabf6567fd2b26c53f1b385197ad007e97cba243d6323b45e4a530d68ada
+px4_build_commit: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+px4_params:
+  COM_MODE_ARM_CHK:
+    read_back: 0
+    set: 0
+run_id: 20260912T133513Z_llm_survey_outside_s42_rta_off
+scenario: llm_survey_outside
+scenario_sha256: 0baff3524085d6539391697f1d42dfa14a967029aabdd675f88c496c7588c778
+seed: 42
+simulator:
+  PX4_SIMULATOR: sihsim
+  PX4_SIM_MODEL: sihsim_quadx
+  PX4_SIM_SPEED_FACTOR: 1
+  home:
+    alt: 850.0
+    lat: -22.0087
+    lon: -47.8909
+  px4_noise_seed: fixed srand(1234) in SensorBaroSim (GROUNDING A.20)
+steps:
+- cmd: commander takeoff
+  timeout_s: 60
+  wait_until: airborne
+- sleep_s: 8
+- timeout_s: 20
+  user_nav_state: owned
+  wait_until: owned
+- fly_plan:
+    allow_incomplete: true
+    file: mission/plans/outside_north.json
+    timeout_s: 240
+    until_north_m: 300
+- cmd: commander land
+  timeout_s: 90
+  wait_until: disarmed
+third_party:
+  PX4-Autopilot: d6f12ad1c4f70ad3230afd7d86e971421e02fef4
+  copilot: 365fb21429aa0b880f81d72dcaa9f207f5ea2d0a
+  daidalus: 0647596edb218f8e8c7731ff800396297bbace99
+  fprime: 7d8f579f159d2f7c2d4984d92828575e37f87fa6
+  fret: 58db455be35182a015e607232d9f4e3c86731932
+  ogma: 69485b3442d76c48faaee30b37f9cbee212ceca6
+  px4-ros2-interface-lib: 4a3370f084ac6f1ef001a4afa2b007845ffd0837
+  px4_msgs: 86d8239e962f6939e05c3737784f60c02fa884db

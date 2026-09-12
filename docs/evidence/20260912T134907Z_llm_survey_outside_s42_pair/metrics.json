@@ -1,0 +1,11 @@
+{
+  "AC-9": {
+    "depth_rta_on_m": 0.0,
+    "depth_rta_off_m": 47.17809960572686,
+    "transitions_rta_on": [
+      "[INFO] [1789214598.398067550] [guara_rta]: T2 INACTIVE/NONE -> CF/NONE cause=0x0 invalid=0x0",
+      "[INFO] [1789218252.305270128] [guara_rta]: T3 CF/NONE -> RF/HOLD cause=0x8 invalid=0x11",
+      "[INFO] [1789218266.997653677] [guara_rta]: T1 RF/HOLD -> INACTIVE/NONE cause=0x40 invalid=0x0"
+    ]
+  }
+}

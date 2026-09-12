@@ -1,0 +1,4 @@
+scenario: llm_survey_outside
+seed: 42
+rta_on: 20260912T120253Z_llm_survey_outside_s42_rta_on
+rta_off: 20260912T133513Z_llm_survey_outside_s42_rta_off

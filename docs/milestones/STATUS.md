@@ -45,5 +45,5 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-28 | M9 | in progress | mock path: 0 flyable unsafe plans (`scripts/tests/test_llm_eval.py`) |
 | AC-29 | M9 | PASS | stop corpus 24/24, 0 model requests, repeats=3, clean tree (`docs/evidence/20260912T114925Z_cursor-stop-r3_cursor-agent/`) |
 | AC-30 | M9 | PASS | `scripts/tests/test_llm_eval.py` (no key, no network) |
-| AC-31 | M9 | in progress | nominal SITL PASS depth 0.000 m; outside pair FAIL (both legs ~210 m north, fence ~260 m; `docs/milestones/M9.md`) |
+| AC-31 | M9 | PASS | pair on=0.000 m off=47.178 m (`docs/evidence/20260912T134907Z_llm_survey_outside_s42_pair/`); nominal member also PASS |
 | AC-47 | M13c | in progress | `scripts/tests/test_keepout_analytic.py` (analytic cases PASS; Basilisk pairing not yet run) |
