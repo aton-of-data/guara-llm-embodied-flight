@@ -28,6 +28,16 @@ One switching core, two hosts:
 [![F prime](https://img.shields.io/badge/F%C2%B4-v4.3.0%20(specified)-lightgrey.svg)](docs/adr/0011-fprime-as-second-rta-host.md)
 [![Status](https://img.shields.io/badge/status-SITL%20research%20prototype-orange.svg)](docs/milestones/STATUS.md)
 
+**Built on** — upstream projects, at the commits pinned in
+[`third_party/VERSIONS.md`](third_party/VERSIONS.md). Wordmarks are used nominatively to say
+what Guará integrates; see [§13 · Trademarks](#trademarks).
+
+[![FRET](https://img.shields.io/badge/FRET-v3.1.0-2b3a55.svg)](https://github.com/NASA-SW-VnV/fret)
+[![Ogma](https://img.shields.io/badge/Ogma-v1.15.0-2b3a55.svg)](https://github.com/nasa/ogma)
+[![Copilot](https://img.shields.io/badge/Copilot-v4.8.1-2b3a55.svg)](https://github.com/Copilot-Language/copilot)
+[![DAIDALUS](https://img.shields.io/badge/DAIDALUS-v2.0.3a-2b3a55.svg)](https://github.com/nasa/daidalus)
+[![px4-ros2-interface-lib](https://img.shields.io/badge/px4--ros2--interface--lib-release%2F1.17-2b3a55.svg)](https://github.com/Auterion/px4-ros2-interface-lib)
+
 > This is not certification, and it is not a product. It is a research prototype whose claims
 > are limited to what an executed command in `results/` supports. Read
 > [§8 · Limits](#8--limits-what-guará-does-not-guarantee) before citing anything here.
@@ -520,8 +530,38 @@ host, is Apache-2.0 and raises no isolation requirement of its own
 BSD is marked [REVIEW] and needs a human lawyer before any container that embeds DAIDALUS is
 distributed ([ADR 0003](docs/adr/0003-daidalus-nosa-isolation.md), risk R-9).
 
-No part of this project implies endorsement by NASA, JPL, PX4, Auterion or any other upstream
-project.
+<a id="trademarks"></a>
+
+### Trademarks
+
+No part of this project implies endorsement by NASA, JPL, the Dronecode Foundation, Open
+Robotics, PX4, Auterion or any other upstream project. Guará is an independent research
+prototype and is not affiliated with, sponsored by, or reviewed by any of them.
+
+NASA, FRET, Ogma, Copilot, DAIDALUS, F´, PX4, ROS and ROS 2 are the marks of their respective
+owners. This repository refers to them **nominatively** — by name, in plain text, only as far as
+is needed to say which software Guará integrates and at which pinned commit. It deliberately
+carries **no** third-party logo, insignia or logotype:
+
+- The **NASA Insignia, Logotype and Seal** are protected by law, are not in the public domain,
+  and may not be used in a way that implies NASA endorsement of software. They do not appear
+  here, and neither do the project identifiers of the NASA-maintained tools Guará builds on
+  ([NASA Brand Center, images and media](https://www.nasa.gov/nasa-brand-center/images-and-media/)).
+- The **PX4 and Dronecode** marks are governed by the Dronecode Foundation trademark policy,
+  which requires official unmodified artwork, no suggestion of affiliation, and a disclaimer —
+  this section is that disclaimer
+  ([Dronecode trademarks](https://dronecode.org/trademarks/)).
+- The **ROS** marks are governed by the Open Robotics trademark rules; ROS is written in
+  capitals and never pluralised or possessive
+  ([ROS Trademark Rules and Guidelines](https://www.ros.org/imgs/TrademarkRulesAndGuidelines2022.pdf)).
+
+The Apache-2.0 licence of Ogma and F´, and the BSD-3-Clause licence of PX4 and Copilot, grant
+rights to the **code** only; Apache-2.0 §6 expressly grants no trademark rights. Nothing in
+`third_party/` is redistributed by this repository — the clones are recreated locally by
+[`scripts/fetch_third_party.sh`](scripts/fetch_third_party.sh).
+
+The Guará name and the guará-fox mascot are the project's own, commissioned for it and released
+with the repository under Apache-2.0 ([`docs/assets/README.md`](docs/assets/README.md)).
 
 ---
 
