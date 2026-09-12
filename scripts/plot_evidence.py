@@ -10,11 +10,13 @@ It writes plain SVG with no plotting dependency, so regenerating a figure needs 
 the Python already required to run the mission compiler.
 
     python3 scripts/plot_evidence.py
+    python3 scripts/plot_evidence.py --out /tmp/figures   # draw elsewhere, e.g. to compare
 
 Exit status 1 if an evidence file is missing — a missing input is never drawn around.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import pathlib
 import re
@@ -165,12 +167,16 @@ def geofence_figure() -> str:
            f'height="{H}" role="img">{"".join(parts)}</svg>\n'
 
 
-def main() -> int:
-    OUT.mkdir(parents=True, exist_ok=True)
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Draw the published figures from the evidence.")
+    ap.add_argument("--out", type=pathlib.Path, default=OUT,
+                    help="directory to write into (default docs/assets)")
+    args = ap.parse_args(argv)
+    args.out.mkdir(parents=True, exist_ok=True)
     for name, svg in (("latency-distribution.svg", latency_figure()),
                       ("geofence-rta-pair.svg", geofence_figure())):
-        (OUT / name).write_text(svg)
-        print(f"wrote docs/assets/{name}  ({len(svg)} bytes)")
+        (args.out / name).write_text(svg)
+        print(f"wrote {args.out / name}  ({len(svg)} bytes)")
     return 0
 
 
