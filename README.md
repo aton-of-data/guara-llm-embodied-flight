@@ -330,6 +330,11 @@ generation only).
 | LLM corpus against any OpenAI-compatible server | `GUARA_OPENAI_BASE_URL=http://localhost:8000/v1 python3 scripts/llm/eval.py --provider openai-compat --model <id>` |
 | Space keep-out predictor (AC-47) | `./scripts/dev.sh python3 scripts/check_ac.py AC-47` |
 
+The four commands above that take a `results/...` path need a run to exist first; `results/` is
+git-ignored and empty in a fresh clone ([`results/README.md`](results/README.md)). Point them at
+a published directory under [`docs/evidence/`](docs/evidence) to check a number without running
+anything.
+
 Every run writes `results/{run_id}/` with the scenario hash, the seed, the Guará SHA, the PX4
 build commit, the pinned third-party commits and the PX4 parameters read back from the vehicle —
 which is what makes a number re-derivable rather than merely reported. Twelve scenarios ship in
