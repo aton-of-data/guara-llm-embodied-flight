@@ -127,8 +127,14 @@ def _extract_json_object(text: str) -> str:
     raise IntentError("not_json", "no balanced JSON object in model output")
 
 
-def parse_model_output(raw: str) -> Intent:
-    """Parse whatever a model returned. Lexical recovery only; no semantic repair."""
+def parse_model_output(raw: str, utterance_hash: str | None = None) -> Intent:
+    """Parse whatever a model returned. Lexical recovery only; no semantic repair.
+
+    `utterance_hash` is provenance, not content: it is produced by whatever recorded the
+    command, so when the caller supplies one it is injected if the model omitted it and it
+    *overrides* any value the model invented. Nothing else in the document is ever written by
+    this function.
+    """
     if not isinstance(raw, str):
         raise IntentError("not_json", f"model output must be text, got {type(raw).__name__}")
     if len(raw.encode("utf-8", errors="replace")) > MAX_MODEL_OUTPUT_BYTES:
@@ -147,6 +153,9 @@ def parse_model_output(raw: str) -> Intent:
             raise IntentError("not_json", f"malformed JSON object: {e.msg}") from None
         if not isinstance(obj, dict):
             raise IntentError("not_json", "recovered value is not a JSON object")
+    if utterance_hash is not None and isinstance(obj, dict):
+        obj = dict(obj)
+        obj["utterance_hash"] = utterance_hash
     return parse(obj)
 
 

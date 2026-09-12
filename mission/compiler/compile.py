@@ -143,8 +143,16 @@ class Plan:
         return json.dumps(self.as_dict(), sort_keys=True, indent=2) + "\n"
 
 
-def _canonical(value):
-    """Round every float to 6 decimals so serialisation is byte-stable (AC-25).
+#: Keys whose values are degrees. Six decimals of a degree is 0.11 m, and that rounding
+#: accumulated into a metre-scale disagreement with the independent verifier of
+#: mission.compiler.verify; eight decimals is about a millimetre.
+_DEGREE_KEYS = ("lat", "lon", "lat_deg", "lon_deg", "geofence_lat_lon_deg")
+_METRE_DECIMALS = 6
+_DEGREE_DECIMALS = 8
+
+
+def _canonical(value, decimals: int = _METRE_DECIMALS):
+    """Round every float so serialisation is byte-stable (AC-25).
 
     Values below the rounding resolution collapse to 0.0 rather than being written in
     exponent form, which keeps plans diffable and free of platform-dependent formatting.
@@ -152,12 +160,13 @@ def _canonical(value):
     if isinstance(value, float):
         if not math.isfinite(value):
             raise ValueError("non-finite value in plan")
-        r = round(value, 6)
-        return 0.0 if abs(r) < 1e-6 else r
+        r = round(value, decimals)
+        return 0.0 if abs(r) < 10.0 ** -decimals else r
     if isinstance(value, dict):
-        return {k: _canonical(v) for k, v in value.items()}
+        return {k: _canonical(v, _DEGREE_DECIMALS if k in _DEGREE_KEYS else decimals)
+                for k, v in value.items()}
     if isinstance(value, (list, tuple)):
-        return [_canonical(v) for v in value]
+        return [_canonical(v, decimals) for v in value]
     return value
 
 

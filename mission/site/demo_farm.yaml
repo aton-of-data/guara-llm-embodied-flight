@@ -94,13 +94,16 @@ fields:
       - [-22.00690135, -47.89187]
       - [-22.00690136, -47.890318]
       - [-22.00816041, -47.890318]
-  river-edge:        # N [0, 40] x E [80, 140]; wide buffer, watercourse to the east
+  river-edge:        # N [0, 80] x E [60, 140]; wide buffer, watercourse to the east.
+                     # 80 x 80 m so that the 20 m buffer still leaves a 40 x 40 m coverage
+                     # area: a field smaller than twice its buffer cannot be surveyed at all,
+                     # which the compiler reports as coverage_in_field.
     crop: pasture
     buffer_m: 20.0
     polygon_lat_lon_deg:
-      - [-22.0087, -47.89012399]
-      - [-22.00834027, -47.89012399]
-      - [-22.00834027, -47.88954199]
+      - [-22.0087, -47.89031799]
+      - [-22.00798054, -47.890318]
+      - [-22.00798054, -47.88954199]
       - [-22.00869999, -47.88954199]
   outside-fence:     # N [200, 340] x E [40, 150]; deliberately crosses the keep-in fence
     crop: maize
