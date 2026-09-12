@@ -343,7 +343,129 @@ class CursorAgentProvider(Provider):
         return ids
 
 
-PROVIDERS = {"mock": MockProvider, "cursor-agent": CursorAgentProvider}
+
+# ---------------------------------------------------------------------------------------
+# OpenAI-compatible chat completions, and Ollama
+# ---------------------------------------------------------------------------------------
+
+
+def _post_json(url: str, payload: dict, headers: dict, timeout_s: float) -> dict:
+    """One POST, one JSON reply. Every failure becomes ProviderError, never a score."""
+    data = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=data, method="POST",
+                                 headers={"Content-Type": "application/json",
+                                          "User-Agent": "guara-llm-eval/0.1", **headers})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout_s) as resp:
+            body = resp.read().decode()
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode(errors="replace")[:400]
+        raise ProviderError(f"POST {url} -> HTTP {e.code}: {detail}") from None
+    except (urllib.error.URLError, TimeoutError, OSError) as e:
+        raise ProviderError(f"POST {url} -> {e}") from None
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        raise ProviderError(f"POST {url} -> reply was not JSON: {body[:200]}") from None
+
+
+class OpenAICompatProvider(Provider):
+    """Any server speaking the OpenAI chat-completions API.
+
+    One provider covers OpenAI itself and every local or hosted server that implements the
+    same route — vLLM, llama.cpp's server, LM Studio, OpenRouter — because the only thing
+    that changes is the base URL:
+
+        GUARA_OPENAI_BASE_URL=http://localhost:8000/v1 \
+        python3 scripts/llm/eval.py --provider openai-compat --model Qwen/Qwen2.5-7B-Instruct
+
+    The credential is read from an environment variable whose *name* is recorded in the run
+    evidence; the value never enters a log, a prompt or a result file (ADR 0013 decision 7).
+    """
+
+    name = "openai-compat"
+    default_base_url = "https://api.openai.com/v1"
+
+    def __init__(self, model: str, api_key_env: str = "OPENAI_API_KEY",
+                 base_url: str | None = None, timeout_s: float = 180.0,
+                 temperature: float = 0.0) -> None:
+        super().__init__(model)
+        envfile_mod.load_env_file()
+        self.api_key_env = api_key_env
+        self.timeout_s = timeout_s
+        self.temperature = temperature
+        self.base_url = (base_url or os.environ.get("GUARA_OPENAI_BASE_URL")
+                         or self.default_base_url).rstrip("/")
+        self._key = os.environ.get(api_key_env, "").strip()
+        if not self._key:
+            raise ProviderError(
+                f"{api_key_env} is not set. Put it in .env (git-ignored); the harness "
+                f"records only the variable name, never the value. A server that needs no "
+                f"key still needs the variable set to any non-empty placeholder.")
+
+    def complete(self, prompt: str) -> Completion:
+        started = time.monotonic()
+        reply = _post_json(
+            f"{self.base_url}/chat/completions",
+            {"model": self.model, "temperature": self.temperature,
+             "messages": [{"role": "user", "content": prompt}]},
+            {"Authorization": f"Bearer {self._key}"}, self.timeout_s)
+        choices = reply.get("choices") or []
+        if not choices:
+            raise ProviderError(f"no choices in the reply: {json.dumps(reply)[:200]}")
+        text = (choices[0].get("message") or {}).get("content")
+        if not isinstance(text, str):
+            raise ProviderError(f"no message content in the reply: {json.dumps(reply)[:200]}")
+        return Completion(text.strip(), int((time.monotonic() - started) * 1000),
+                          self.name, self.model, str(reply.get("id", "")),
+                          {"usage": reply.get("usage", {})})
+
+
+class OllamaProvider(Provider):
+    """A local Ollama server. No key, no network beyond the host, no account.
+
+    This is the provider that makes the corpus reproducible by a reviewer with a laptop and
+    no budget, which is the point of an open-weight claim (README §8).
+
+        ollama pull llama3.1:8b
+        python3 scripts/llm/eval.py --provider ollama --model llama3.1:8b
+
+    `OLLAMA_HOST` moves it to another machine.
+    """
+
+    name = "ollama"
+    default_base_url = "http://localhost:11434"
+
+    def __init__(self, model: str, base_url: str | None = None,
+                 timeout_s: float = 600.0, temperature: float = 0.0) -> None:
+        super().__init__(model)
+        envfile_mod.load_env_file()
+        self.timeout_s = timeout_s
+        self.temperature = temperature
+        host = base_url or os.environ.get("OLLAMA_HOST") or self.default_base_url
+        if not host.startswith(("http://", "https://")):
+            host = f"http://{host}"
+        self.base_url = host.rstrip("/")
+
+    def complete(self, prompt: str) -> Completion:
+        started = time.monotonic()
+        reply = _post_json(
+            f"{self.base_url}/api/chat",
+            {"model": self.model, "stream": False,
+             "options": {"temperature": self.temperature},
+             "messages": [{"role": "user", "content": prompt}]},
+            {}, self.timeout_s)
+        text = (reply.get("message") or {}).get("content")
+        if not isinstance(text, str):
+            raise ProviderError(f"no message content in the reply: {json.dumps(reply)[:200]}")
+        meta = {k: reply[k] for k in ("prompt_eval_count", "eval_count", "total_duration")
+                if k in reply}
+        return Completion(text.strip(), int((time.monotonic() - started) * 1000),
+                          self.name, self.model, "", meta)
+
+
+PROVIDERS = {"mock": MockProvider, "cursor-agent": CursorAgentProvider,
+             "openai-compat": OpenAICompatProvider, "ollama": OllamaProvider}
 
 
 def build(name: str, model: str | None = None, **kwargs) -> Provider:
