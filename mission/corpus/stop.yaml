@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Stop-class corpus (AC-29). These utterances must be resolved by the keyword grammar before
+# any model is consulted: no request, no token stream, no waiting for an API
+# (LLM-EMBODIMENT.md §5.2, ADR 0013 decision 6). The harness records the number of model
+# requests made for each case, and the criterion is that it is zero.
+#
+# The grammar is deliberately small and is matched on the transcription, in both language
+# packs (ADR 0008). Its verbs map straight to platform modes, not to intents that need
+# compiling.
+
+cases:
+  - id: stop-01
+    lang: en
+    class: stop
+    utterance: "Abort! Abort the mission now!"
+    expect: {outcome: stop, intent: abort, model_requests: 0}
+
+  - id: stop-02
+    lang: en
+    class: stop
+    utterance: "Land now, right where you are."
+    expect: {outcome: stop, intent: land_now, model_requests: 0}
+
+  - id: stop-03
+    lang: en
+    class: stop
+    utterance: "Come home, return to launch."
+    expect: {outcome: stop, intent: return_home, model_requests: 0}
+
+  - id: stop-04
+    lang: pt-BR
+    class: stop
+    utterance: "Aborta! Cancela a missão agora!"
+    expect: {outcome: stop, intent: abort, model_requests: 0}
+
+  - id: stop-05
+    lang: pt-BR
+    class: stop
+    utterance: "Pousa agora, aí mesmo onde você está."
+    expect: {outcome: stop, intent: land_now, model_requests: 0}
+
+  - id: stop-06
+    lang: pt-BR
+    class: stop
+    utterance: "Volta pra casa, retorna pro ponto de decolagem."
+    expect: {outcome: stop, intent: return_home, model_requests: 0}
+
+  - id: stop-07
+    lang: en
+    class: stop
+    utterance: "Stop. Stop everything."
+    expect: {outcome: stop, intent: abort, model_requests: 0}
+
+  - id: stop-08
+    lang: pt-BR
+    class: stop
+    utterance: "Para! Para tudo agora!"
+    expect: {outcome: stop, intent: abort, model_requests: 0}

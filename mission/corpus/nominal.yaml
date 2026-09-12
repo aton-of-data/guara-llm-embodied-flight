@@ -1,0 +1,131 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Nominal utterance corpus for RQ6a (intent accuracy), in the two languages ADR 0008
+# requires from the start. Each case names a field or point of interest that exists in
+# mission/site/demo_farm.yaml; the expected outcome is a flyable plan whose intent verb and
+# named objects match. A case is scored wrong when the compiled plan targets something other
+# than what the utterance asked for, which is the failure mode L-M1/L-M3 predicts.
+#
+# `sensor` and `deliver` are scored when the utterance states them. `gsd_cm` is scored with a
+# tolerance because "about three centimetres" is not a specification.
+
+cases:
+  - id: en-nom-01
+    lang: en
+    class: nominal
+    utterance: "Survey the north field with the RGB camera at three centimetres per pixel and give me an orthomosaic."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 3.0}
+
+  - id: en-nom-02
+    lang: en
+    class: nominal
+    utterance: "I need an NDVI map of north 3. Use the multispectral camera, five centimetres per pixel is fine."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: multispectral, gsd_cm: 5.0, deliver: [ndvi]}
+
+  - id: en-nom-04
+    lang: en
+    class: nominal
+    utterance: "Go and check pivot 2 with the thermal camera, ten centimetres per pixel."
+    expect: {outcome: plan, intent: inspect_point, poi_id: pivot-2, sensor: thermal, gsd_cm: 10.0}
+
+  - id: en-nom-05
+    lang: en
+    class: nominal
+    utterance: "Take a look at the water tower with the thermal camera at twelve centimetres and give me a thermal map."
+    expect: {outcome: plan, intent: inspect_point, poi_id: tower-1, sensor: thermal, gsd_cm: 12.0, deliver: [thermal_map]}
+
+  - id: en-nom-06
+    lang: en
+    class: nominal
+    utterance: "Map north 3 for me, two centimetre RGB, orthomosaic and photos please."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 2.0}
+
+  - id: en-nom-07
+    lang: en
+    class: nominal
+    utterance: "Where does the soybean look sick? Do an NDRE survey of north 3 with the multispectral at six centimetres."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: multispectral, gsd_cm: 6.0, deliver: [ndre]}
+
+  - id: en-nom-08
+    lang: en
+    class: nominal
+    utterance: "Count the plants in north 3. RGB, one and a half centimetres per pixel."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 1.5, deliver: [plant_count]}
+
+  - id: en-nom-09
+    lang: en
+    class: nominal
+    utterance: "Survey the river edge with the multispectral camera at seven centimetres per pixel, NDVI please."
+    expect: {outcome: plan, intent: survey, field_id: river-edge, sensor: multispectral, gsd_cm: 7.0, deliver: [ndvi]}
+
+  - id: en-nom-10
+    lang: en
+    class: nominal
+    utterance: "Inspect pivot 2 with the RGB camera at three centimetres and send me the photos."
+    expect: {outcome: plan, intent: inspect_point, poi_id: pivot-2, sensor: rgb, gsd_cm: 3.0, deliver: [photos]}
+
+  - id: en-nom-12
+    lang: en
+    class: nominal
+    utterance: "Thermal survey of the river edge field at fifteen centimetres per pixel."
+    expect: {outcome: plan, intent: survey, field_id: river-edge, sensor: thermal, gsd_cm: 15.0}
+
+  - id: pt-nom-01
+    lang: pt-BR
+    class: nominal
+    utterance: "Mapeia o campo norte com a câmera RGB a três centímetros por pixel e me dá o ortomosaico."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 3.0}
+
+  - id: pt-nom-02
+    lang: pt-BR
+    class: nominal
+    utterance: "Quero um mapa de NDVI do north 3, com a multiespectral, cinco centímetros por pixel."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: multispectral, gsd_cm: 5.0, deliver: [ndvi]}
+
+  - id: pt-nom-04
+    lang: pt-BR
+    class: nominal
+    utterance: "Vai checar o pivô 2 com a câmera térmica, dez centímetros por pixel."
+    expect: {outcome: plan, intent: inspect_point, poi_id: pivot-2, sensor: thermal, gsd_cm: 10.0}
+
+  - id: pt-nom-05
+    lang: pt-BR
+    class: nominal
+    utterance: "Dá uma olhada na caixa d'água com a térmica a doze centímetros e me manda o mapa térmico."
+    expect: {outcome: plan, intent: inspect_point, poi_id: tower-1, sensor: thermal, gsd_cm: 12.0, deliver: [thermal_map]}
+
+  - id: pt-nom-06
+    lang: pt-BR
+    class: nominal
+    utterance: "Levanta o north 3 pra mim, RGB de dois centímetros, ortomosaico e fotos."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 2.0}
+
+  - id: pt-nom-07
+    lang: pt-BR
+    class: nominal
+    utterance: "Onde a soja está doente? Faz um NDRE do north 3 com a multiespectral a seis centímetros."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: multispectral, gsd_cm: 6.0, deliver: [ndre]}
+
+  - id: pt-nom-08
+    lang: pt-BR
+    class: nominal
+    utterance: "Conta as plantas do north 3. RGB, um centímetro e meio por pixel."
+    expect: {outcome: plan, intent: survey, field_id: north-3, sensor: rgb, gsd_cm: 1.5, deliver: [plant_count]}
+
+  - id: pt-nom-09
+    lang: pt-BR
+    class: nominal
+    utterance: "Faz um voo na beira do rio com a multiespectral a sete centímetros por pixel, quero o NDVI."
+    expect: {outcome: plan, intent: survey, field_id: river-edge, sensor: multispectral, gsd_cm: 7.0, deliver: [ndvi]}
+
+  - id: pt-nom-10
+    lang: pt-BR
+    class: nominal
+    utterance: "Inspeciona o pivô 2 com a RGB a três centímetros e me manda as fotos."
+    expect: {outcome: plan, intent: inspect_point, poi_id: pivot-2, sensor: rgb, gsd_cm: 3.0, deliver: [photos]}
+
+  - id: pt-nom-12
+    lang: pt-BR
+    class: nominal
+    utterance: "Levantamento térmico do campo da beira do rio a quinze centímetros por pixel."
+    expect: {outcome: plan, intent: survey, field_id: river-edge, sensor: thermal, gsd_cm: 15.0}
