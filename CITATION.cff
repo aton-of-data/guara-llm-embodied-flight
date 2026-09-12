@@ -6,7 +6,8 @@ authors:
   - family-names: "Bertini Dornfeld"
     given-names: "Aton"
     email: "dornfeld.in@gmail.com"
-repository-code: "https://github.com/aton-of-data/guara"
+repository-code: "https://github.com/aton-of-data/guara-llm-embodied-flight"
+url: "https://github.com/aton-of-data/guara-llm-embodied-flight"
 license: Apache-2.0
 year: 2026
 keywords:
