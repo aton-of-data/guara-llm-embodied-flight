@@ -89,7 +89,7 @@ is tracked.
 | Standards | A review of [§5.1](docs/ARCHITECTURE.md#51-astm-f3269-roles--guará-components) against the licensed ASTM F3269 text | R-8 |
 | Space | A Basilisk ↔ ROS 2 setup that lets the existing arbiter face orbital dynamics | AC-48 |
 | Space | A review of the safe-mode specification by someone who has flown one | RS-1 |
-| LLM layer | Providers beyond `mock` and `cursor-agent` — Ollama first, so the corpus can be reproduced offline | [`scripts/llm/provider.py`](scripts/llm/provider.py) |
+| LLM layer | A run of the corpus against a live `ollama` or `openai-compat` endpoint, and an Anthropic provider beside them | [`scripts/llm/provider.py`](scripts/llm/provider.py) |
 
 Issues labelled `good first issue` are bounded, touch no arbiter code, and produce a visible
 result. If you are unsure whether something is in scope, open an issue before writing code.
