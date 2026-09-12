@@ -398,6 +398,34 @@ Three decisions shape it:
 
 ## 10 · Reproduce it
 
+### In 60 seconds, with no container
+
+The trusted layer between a model and the aircraft is pure Python and needs two packages.
+This runs the deterministic compiler directly — no ROS 2, no PX4 build, no model, no key:
+
+```bash
+pip install -r requirements.txt
+
+# a Mission Intent inside the envelope -> a flyable plan (exit 0)
+python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+
+# the same intent asking for 40 cm/px -> a refusal that names the checks (exit 2)
+python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+# refused (checks): gsd_bounds, altitude_ceiling, energy
+
+# the stop path, which never reaches a model at all (AC-29), in both shipped languages
+python3 -m mission.compiler --stop "land now"     # -> land_now
+python3 -m mission.compiler --stop "pouse agora"  # -> land_now
+```
+
+The second command is the point: an intent that is well-formed, schema-valid and completely
+reasonable-sounding is refused by named, deterministic checks before anything flies. Turning an
+*utterance* into an intent is the untrusted step and needs a provider — that is
+`scripts/llm/eval.py`. Add `-r requirements-dev.txt` and `python3 -m pytest scripts/tests -q`
+runs the mission compiler, the corpus, the plan executor and the space keep-out tests.
+
+### Everything else
+
 Everything runs in Docker with the repository mounted at `/work`. Images: `guara-dev:m1`
 ([`docker/Dockerfile`](docker/Dockerfile), ROS 2 Humble + PX4 v1.17.0 SIH SITL + Micro XRCE-DDS
 Agent) and `guara-fm:m2` ([`docker/Dockerfile.fm`](docker/Dockerfile.fm), FRET + Ogma + Copilot,
