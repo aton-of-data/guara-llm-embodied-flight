@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/aton-of-data/guara-llm-embodied-flight/security/advisories/new
+    about: Report privately. Never open a public issue for a vulnerability — see SECURITY.md.
+  - name: Contribution guide
+    url: https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/CONTRIBUTING.md
+    about: The five rules a reviewer will block on, and where help is most useful right now.

@@ -175,7 +175,7 @@ Confirm the 2027 call when it is published.
 
 ## 10. Prompt pack
 
-`guara-prompt-pack.md` holds the project `CLAUDE.md` and eight sequential prompts:
+`docs/guara-prompt-pack.md` holds the project `CLAUDE.md` and eight sequential prompts:
 P0 grounding · P1 spec and ADRs · P2 milestones (TDD loop, stop after 3 attempts) · P3 FRETish requirements
 with human review · P4 batch benchmark with statistics · P5 adversarial LLM complex function · P6 NFM
 reviewer · P7 Ogma upstream PR. Git rules (granular commits as aton-of-data, no Co-authored-by) and pnpm are embedded.

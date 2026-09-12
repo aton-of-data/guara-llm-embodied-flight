@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: Apache-2.0
+name: New flight operation or capability pack
+description: Propose an operation Guará should be able to bound, in the air or in orbit.
+labels: ["operation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A new flight operation gets its document in `docs/operations/` **before** it gets code.
+        This issue is the first draft of that document.
+  - type: dropdown
+    id: domain
+    attributes:
+      label: Domain
+      options: [Air, Space]
+    validations:
+      required: true
+  - type: dropdown
+    id: capability_class
+    attributes:
+      label: Capability class (air) — ADR 0009
+      description: >
+        D, T and C are gated: they refuse to load until every monitor they require exists and
+        passes its acceptance criteria.
+      options:
+        - S — sense (survey, inspection, mapping, livestock, forestry)
+        - D — dispense (spraying, spreading, biological release)
+        - T — transport
+        - C — cooperate (SAR support, multi-vehicle)
+        - Not applicable (space)
+    validations:
+      required: true
+  - type: textarea
+    id: checks
+    attributes:
+      label: What must be checked before it flies, and what must be monitored during
+      description: >
+        The compiler checks the plan; the RTA monitors the flight. Say which is which.
+    validations:
+      required: true
+  - type: textarea
+    id: recovery
+    attributes:
+      label: Recovery function
+      description: >
+        What the vehicle does when this operation is judged unsafe. In the air this is a PX4
+        internal mode; in orbit it is the latched safe mode that does not exist yet (RS-1).
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope confirmation
+      description: >
+        Confirm this is civil flight safety, and carries no weapon, target-selection,
+        person-tracking or covert-surveillance function (ADR 0009 §4).
+    validations:
+      required: true

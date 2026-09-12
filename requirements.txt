@@ -1,0 +1,14 @@
+# SPDX-License-Identifier: Apache-2.0
+# Runtime dependencies of the pure-Python layers: the Mission Intent schema and
+# compiler (mission/) and the space keep-out predictor and intent schema (space/).
+#
+# These two packages are all that is needed to run the mission compiler, the
+# labelled corpus and the analytic keep-out predictor on a laptop, with no
+# container, no ROS 2 and no PX4 build:
+#
+#     pip install -r requirements.txt
+#
+# The SITL scenarios, the C++ arbiter and the monitor generation need the
+# containers instead; see README "Reproduce it".
+PyYAML>=6.0
+jsonschema>=4.0

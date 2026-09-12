@@ -18,7 +18,8 @@ log/
 # evidence a reviewer needs off this machine is published into docs/evidence/ by
 # scripts/publish_evidence.py (review of 2026-09-11: "results/ is gitignored, so evidence cannot be
 # reviewed off this machine").
-results/
+results/*
+!results/README.md
 
 # Ogma generation scratch (committed outputs live in guara_monitors/generated/)
 ros2_ws/src/guara_monitors/.ogma_out/

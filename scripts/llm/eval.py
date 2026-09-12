@@ -391,7 +391,9 @@ def main() -> int:
     p.add_argument("--only-class", default=None, help="restrict to one corpus class")
     p.add_argument("--only-id", default=None, help="restrict to case ids matching this prefix")
     p.add_argument("--concurrency", type=int, default=1)
-    p.add_argument("--api-key-env", default="CURSOR_API_KEY")
+    p.add_argument("--api-key-env", default=None,
+                   help="name of the variable holding the key; defaults to the provider's "
+                        "own (CURSOR_API_KEY, OPENAI_API_KEY). Never the key itself.")
     p.add_argument("--out", type=pathlib.Path, default=None, help="run directory override")
     p.add_argument("--tag", default="llm", help="run id suffix")
     p.add_argument("--list-models", action="store_true",
@@ -401,8 +403,9 @@ def main() -> int:
     envfile_mod.load_env_file()
     if args.list_models:
         # A placeholder model id is enough to construct the provider; listing does not run it.
-        prov = provider_mod.build("cursor-agent", args.model or "composer-2.5",
-                                  api_key_env=args.api_key_env)
+        prov = provider_mod.build(
+            "cursor-agent", args.model or "composer-2.5",
+            **({"api_key_env": args.api_key_env} if args.api_key_env else {}))
         models = prov.available_models()
         print("\n".join(models) if models else "(no models returned)")
         return 0
@@ -417,7 +420,11 @@ def main() -> int:
 
     site = mc.load_site(args.site)
     limits = mc.load_gateway_limits(args.params)
-    kwargs = {"api_key_env": args.api_key_env} if args.provider == "cursor-agent" else {}
+    # Providers that authenticate take the *name* of the variable holding the key, never
+    # the key. `ollama` and `mock` take neither, so the evidence records no credential.
+    keyed = {"cursor-agent", "openai-compat"}
+    kwargs = ({"api_key_env": args.api_key_env}
+              if args.api_key_env and args.provider in keyed else {})
     prov = provider_mod.build(args.provider, args.model, **kwargs)
     if hasattr(prov, "reclaim"):
         print("[llm_eval] reclaiming leftover Cloud Agents", flush=True)
@@ -440,7 +447,7 @@ def main() -> int:
         "provider": prov.name,
         "model": prov.model,
         "model_role": "instrument" if prov.name != "mock" else "stub",
-        "api_key_env": args.api_key_env if prov.name == "cursor-agent" else None,
+        "api_key_env": getattr(prov, "api_key_env", None),
         "repeats": args.repeats,
         "corpus": corpus_hashes,
         "n_cases": len(cases),
@@ -485,10 +492,15 @@ def main() -> int:
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2,
                                                      ensure_ascii=False) + "\n")
 
-    latest = RESULTS / "latest_llm"
-    if latest.is_symlink() or latest.exists():
-        latest.unlink()
-    latest.symlink_to(out_dir.name)
+    # The `latest_llm` convenience symlink is relative to RESULTS, so it is only
+    # meaningful when the run directory lives there. With an explicit --out
+    # elsewhere (the tests use a temporary directory) there is nothing to point at.
+    if out_dir.parent == RESULTS:
+        RESULTS.mkdir(parents=True, exist_ok=True)
+        latest = RESULTS / "latest_llm"
+        if latest.is_symlink() or latest.exists():
+            latest.unlink()
+        latest.symlink_to(out_dir.name)
 
     print(json.dumps({k: metrics[k] for k in ("AC-27", "AC-28", "AC-29")}, indent=2,
                      ensure_ascii=False))

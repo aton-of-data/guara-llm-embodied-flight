@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Bug report
+description: Something behaves differently from what a document or a test says it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this is a way to reach the vehicle without passing the gateway, or a Mission Intent
+        that compiles into a flyable plan while leaving the envelope, **stop and report it
+        privately** — see [SECURITY.md](https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/SECURITY.md).
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: Output of `git rev-parse HEAD`.
+      placeholder: 7e204a721d2abb8f346dd77460ea2e0565534e42
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - guara_rta (arbiter, decision core, gateway)
+        - guara_geofence (predictor)
+        - guara_monitors (FRET / Ogma / Copilot)
+        - guara_daidalus (NOSA-isolated DAA)
+        - mission (intent schema, compiler, stop grammar)
+        - space (keep-out predictor, space intent)
+        - scripts (SITL, evidence, acceptance criteria)
+        - docker / build
+        - documentation
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: The command you ran, and its output
+      description: >
+        Paste the command and the output excerpt. A scenario file or a Mission Intent that
+        reproduces it is better than a description of either.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected, and what said so
+      description: >
+        Link the document, acceptance criterion or test that states the expected behaviour —
+        docs/SPEC.md, an ADR, docs/milestones/STATUS.md, or the test file.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Host OS, and whether this was inside the container or on the host.
+      placeholder: Ubuntu 22.04, inside guara-dev:m1

@@ -1,0 +1,10 @@
+{
+  "deliver": [
+    "orthomosaic"
+  ],
+  "field_id": "north-3",
+  "gsd_cm": 40.0,
+  "intent": "survey",
+  "sensor": "rgb",
+  "utterance_hash": "sha256:d5ff139a34510e954e7318e881e9efc06827cad284269ccd8d00b84ea1acf77a"
+}

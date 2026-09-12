@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Challenge a claim or a number
+description: A stated result, limit or grounding fact does not hold.
+labels: ["claim"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This project's central rule is that no number exists without a run that produced it.
+        Challenges to a published claim are among the most valuable issues you can open.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of claim
+      options:
+        - A measured number (latency, a rate, an aggregate)
+        - An acceptance criterion marked PASS
+        - A GROUNDING.md fact about an upstream API
+        - A stated limit that is weaker or stronger than reality
+        - A related-work or gap claim (README §1, §2)
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where it is stated
+      description: File and section, or the evidence directory.
+      placeholder: docs/evidence/batch_latency/ , README §7
+    validations:
+      required: true
+  - type: textarea
+    id: challenge
+    attributes:
+      label: Why it does not hold
+      description: >
+        For a number: what you re-derived and how. For a GROUNDING.md row: the
+        repo@commit:file:line that contradicts it. For a limit: the case it misses.
+    validations:
+      required: true
