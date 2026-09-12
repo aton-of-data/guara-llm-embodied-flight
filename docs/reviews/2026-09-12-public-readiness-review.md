@@ -21,7 +21,7 @@ this review cannot make on its own.
 | P0-1 repository is private | **maintainer** | A settings change. Everything below is ready for it |
 | P0-2 `CITATION.cff` | done | Repository name fixed; invalid `year` key dropped; `commit` and `contact` added |
 | P0-3 Python dependencies | done | `requirements.txt`, `requirements-dev.txt`, and the same pins in the dev image |
-| P0-4 CI | done | `checks.yml`: python, boundaries, cpp. The `cpp` job has never run — see below |
+| P0-4 CI | done | `checks.yml`: python, boundaries, cpp. All three green; the `cpp` job builds 2 packages and runs 22 gtest cases |
 | P0-5 contribution surface | done | `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, three issue forms, PR template |
 | P1-1 60-second path | done | `python3 -m mission.compiler`, two example intents, README block |
 | P1-2 README split | done | 630 → 428 lines; four documents under `docs/` |
@@ -35,10 +35,16 @@ this review cannot make on its own.
 | P2-3 figures | done | Generated from the evidence by `scripts/plot_evidence.py` |
 | P2-4 release, Discussions | partly | `CHANGELOG.md` and the release procedure are in; cutting the tag and enabling Discussions are settings actions |
 
-**Two workflows have never executed**, because this environment has no Docker daemon and no
-ROS: the `cpp` job in `checks.yml` and `publish-dev-image.yml`. Their commands are derived from
-the manifests and the existing Dockerfile, but the first real run is what will confirm them,
-and either may need a correction.
+**The `cpp` job needed a correction on its first real run, and it was the worst kind.** It
+reported success having built and tested nothing: `colcon` warns rather than fails when
+`--packages-select` names a package it did not discover, and `colcon test-result` exits 0 on
+zero tests, so the job was green with `0 packages finished` and `0 tests`. Discovery is now
+explicit through `--base-paths`, and a final step fails the job unless both packages produced a
+build directory and at least one test ran. It now reports `2 packages finished` and
+`22 tests, 0 errors, 0 failures`.
+
+**`publish-dev-image.yml` still has never executed**, because it builds PX4 from source and is
+manual by design. Whether it fits a runner's disk and time budget is unknown.
 
 **Defects found while doing the work**, none of which this review predicted:
 
@@ -54,11 +60,13 @@ and either may need a correction.
 - The SPDX rule in `CLAUDE.md` and ADR 0006 had nothing enforcing it, and two relative links
   broke silently during the README split.
 
-**Three checks passed only because they could not fail**, each caught and fixed: a link-checker
+**Four checks passed only because they could not fail**, each caught and fixed: a link-checker
 probe that was untracked and therefore invisible to `git ls-files`; a figure-freshness test that
-regenerated the file it was about to compare; and a missing-evidence test that passed because
-the *script path* did not resolve, never reaching the loader. Any new check on this branch now
-gets a negative test before it is trusted.
+regenerated the file it was about to compare; a missing-evidence test that passed because the
+*script path* did not resolve, never reaching the loader; and the `cpp` CI job above, which is
+the one that mattered, since it would have certified every future pull request while running
+nothing. Any new check on this branch now gets a negative test — run it against the failure it
+is supposed to catch — before it is trusted. A green tick is not evidence; the log is.
 
 ---
 
