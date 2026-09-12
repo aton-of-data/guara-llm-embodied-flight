@@ -48,7 +48,21 @@ what Guará integrates; see [§12 · Trademarks](docs/LICENSING.md#trademarks).
 ## Table of contents
 
 | § | Section | For |
-|---
+|---|---|---|
+| [1](#1--the-gap) | The gap | Reviewers, funders |
+| [2](#2--related-work-and-the-open-threads-guará-answers) | Related work and the open threads Guará answers | Researchers |
+| [3](#3--principles) | Principles | Everyone |
+| [4](#4--scope-two-domains-one-core) | Scope: two domains, one core | Everyone |
+| [5](#5--architecture-and-switching-logic) | Architecture and switching logic | Engineers |
+| [6](#6--measured-results) | Measured results | Reviewers |
+| [7](#7--limits-what-guará-does-not-guarantee) | Limits | Everyone |
+| [8](#8--llm-embodiment-the-long-term-goal) | LLM embodiment: the long-term goal | Everyone |
+| [9](#9--reproduce-it) | Reproduce it | Users |
+| [10](#10--repository-index) | Repository index | Contributors |
+| [11](#11--roadmap) | Roadmap | Everyone |
+| [12](#12--licensing-copyright-and-the-nosa-boundary) | Licensing, copyright and the NOSA boundary | Integrators, lawyers |
+| [13](#13--contributing-citing-contact) | Contributing, citing, contact | Everyone |
+
 ---
 
 ## 1 · The gap
