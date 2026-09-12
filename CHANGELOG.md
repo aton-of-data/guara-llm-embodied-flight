@@ -27,7 +27,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 
 ### Changed
 - The README is split: related work, architecture, roadmap and licensing move to `docs/`.
-- Mascot images sized for the web (2.3 MB to 227 KB).
+- Mascot images sized for the web (2.3 MB to 224 KB).
 
 ### Fixed
 - The evaluation harness no longer fails on a clean clone when `results/` does not exist.

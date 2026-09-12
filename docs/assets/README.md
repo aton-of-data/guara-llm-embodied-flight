@@ -9,7 +9,7 @@
 
 Both files are web-sized: the hero renders at 460 px in the README, so it is stored at 920 px
 for a 2× display, quantised to a 256-colour palette with dithering. That took the pair from
-2.3 MB to 227 KB with no visible loss — a README visitor was pulling 1.8 MB before the first
+2.3 MB to 224 KB with no visible loss — a README visitor was pulling 1.8 MB before the first
 sentence.
 
 The full-resolution originals (1672 × 941 and 720 × 720, full RGBA) are in the git history at

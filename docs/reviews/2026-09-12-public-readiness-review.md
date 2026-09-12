@@ -24,8 +24,8 @@ this review cannot make on its own.
 | P0-4 CI | done | `checks.yml`: python, boundaries, cpp. All three green; the `cpp` job builds 2 packages and runs 22 gtest cases |
 | P0-5 contribution surface | done | `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, three issue forms, PR template |
 | P1-1 60-second path | done | `python3 -m mission.compiler`, two example intents, README block |
-| P1-2 README split | done | 630 → 428 lines; four documents under `docs/` |
-| P1-3 hero image | done | 2.3 MB → 227 KB across both mascots |
+| P1-2 README split | done | 629 → 428 lines at the split; four documents under `docs/` |
+| P1-3 hero image | done | 2.3 MB → 224 KB across both mascots |
 | P1-4 LLM providers | done | `ollama` and `openai-compat` added; unit-tested, never run against a live endpoint |
 | P1-5 empty `results/` | done | `results/README.md`, and the ignore rule corrected to admit it |
 | P1-6 prompt pack | done | Moved to `docs/guara-prompt-pack.md` |
