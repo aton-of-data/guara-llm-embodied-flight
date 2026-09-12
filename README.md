@@ -22,6 +22,7 @@ One switching core, two hosts:
 | Evidence today | 30-run headless SITL batch, p99 switch latency **61 ms** | Analytic keep-out predictor and a closed intent vocabulary |
 | Documents | [ADR 0001](docs/adr/0001-arbiter-as-mode-executor.md), [`docs/SPEC.md`](docs/SPEC.md) | [ADR 0011](docs/adr/0011-fprime-as-second-rta-host.md), [ADR 0012](docs/adr/0012-space-domain-rta-mapping.md) |
 
+[![checks](https://github.com/aton-of-data/guara-llm-embodied-flight/actions/workflows/checks.yml/badge.svg)](https://github.com/aton-of-data/guara-llm-embodied-flight/actions/workflows/checks.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![PX4](https://img.shields.io/badge/PX4-v1.17.0-brightgreen.svg)](third_party/VERSIONS.md)
 [![ROS 2](https://img.shields.io/badge/ROS%202-Humble-blue.svg)](third_party/VERSIONS.md)
@@ -450,7 +451,8 @@ generation only).
 | Publish a run for review | `./scripts/publish_evidence.py results/latest` |
 | NOSA-isolated DAA node | `./scripts/daa.sh build` · `./scripts/daa.sh test` |
 | Regenerate monitors from FRETish | `./scripts/fm.sh ros2_ws/src/guara_monitors/scripts/generate.sh` |
-| Verify the licence boundary | `./scripts/dev.sh python3 scripts/check_license_isolation.py` |
+| Verify the licence boundary | `python3 scripts/check_license_isolation.py` |
+| Verify the SPDX headers and the document links | `python3 scripts/check_spdx.py` · `python3 scripts/check_links.py` |
 | Mission compiler, corpus and plan executor | `./scripts/dev.sh python3 -m pytest scripts/tests -q` |
 | Space keep-out predictor (AC-47) | `./scripts/dev.sh python3 scripts/check_ac.py AC-47` |
 
