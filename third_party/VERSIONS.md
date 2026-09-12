@@ -15,6 +15,7 @@ Cloned on 2026-09-11.
 | daidalus | https://github.com/nasa/daidalus.git | tag `DAIDALUSv2.0.3a` | `0647596edb218f8e8c7731ff800396297bbace99` | 2023-09-08 | NASA Open Source Agreement (NOSA) |
 | fret | https://github.com/NASA-SW-VnV/fret.git | tag `v3.1.0` | `58db455be35182a015e607232d9f4e3c86731932` | 2026-03-13 | NOSA (see `LICENSE.pdf`) |
 | copilot | https://github.com/Copilot-Language/copilot.git | tag `v4.8.1` | `365fb21429aa0b880f81d72dcaa9f207f5ea2d0a` | 2026-09-08 | BSD-3-Clause |
+| fprime | https://github.com/nasa/fprime.git | tag `v4.3.0` | `7d8f579f159d2f7c2d4984d92828575e37f87fa6` | 2026-08-19 | Apache-2.0 |
 
 ## PX4 ↔ px4_msgs ↔ px4-ros2-interface-lib compatibility
 
@@ -38,3 +39,7 @@ that with the commit pinned above.
 - ROS 2: Humble — the only distro "supported and recommended" by PX4 v1.17.0 docs
   (see GROUNDING.md, row R0). Ogma's ROS template uses Jazzy (Space ROS); see risk in GROUNDING.md.
 - Ogma: `v1.15.0` — latest tag.
+- F´: `v4.3.0` — latest tag at clone time; the framework host for the space-domain
+  RTA (ADR 0011) and the target of Ogma's existing `fprime` backend
+  (`ogma-core/src/Command/FPrimeApp.hs`). Apache-2.0, so it raises no isolation
+  requirement of the kind ADR 0003 imposes on DAIDALUS.

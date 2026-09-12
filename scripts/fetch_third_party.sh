@@ -15,6 +15,7 @@ repos=(
   "daidalus|https://github.com/nasa/daidalus.git|DAIDALUSv2.0.3a|0647596edb218f8e8c7731ff800396297bbace99"
   "fret|https://github.com/NASA-SW-VnV/fret.git|v3.1.0|58db455be35182a015e607232d9f4e3c86731932"
   "copilot|https://github.com/Copilot-Language/copilot.git|v4.8.1|365fb21429aa0b880f81d72dcaa9f207f5ea2d0a"
+  "fprime|https://github.com/nasa/fprime.git|v4.3.0|7d8f579f159d2f7c2d4984d92828575e37f87fa6"
 )
 
 for entry in "${repos[@]}"; do
