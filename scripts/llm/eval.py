@@ -485,10 +485,15 @@ def main() -> int:
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2,
                                                      ensure_ascii=False) + "\n")
 
-    latest = RESULTS / "latest_llm"
-    if latest.is_symlink() or latest.exists():
-        latest.unlink()
-    latest.symlink_to(out_dir.name)
+    # The `latest_llm` convenience symlink is relative to RESULTS, so it is only
+    # meaningful when the run directory lives there. With an explicit --out
+    # elsewhere (the tests use a temporary directory) there is nothing to point at.
+    if out_dir.parent == RESULTS:
+        RESULTS.mkdir(parents=True, exist_ok=True)
+        latest = RESULTS / "latest_llm"
+        if latest.is_symlink() or latest.exists():
+            latest.unlink()
+        latest.symlink_to(out_dir.name)
 
     print(json.dumps({k: metrics[k] for k in ("AC-27", "AC-28", "AC-29")}, indent=2,
                      ensure_ascii=False))
