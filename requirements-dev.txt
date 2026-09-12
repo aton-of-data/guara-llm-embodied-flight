@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# Development dependencies: the test suite under scripts/tests and the log
+# readers used by the acceptance-criteria checker.
+#
+#     pip install -r requirements-dev.txt
+#
+# pyulog is imported lazily by scripts/check_ac.py; the criteria that read a
+# PX4 ULog are skipped with a named message when it is absent.
+-r requirements.txt
+pytest>=7.0
+pyulog>=1.0
