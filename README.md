@@ -245,6 +245,13 @@ limitation inventory (model, voice, compute, perception, regulatory, human facto
 mitigation map are in [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md).
 Three decisions shape it:
 
+Four providers ship: `mock` (rule-based, no key and no network, which is what makes the
+harness itself testable), `ollama` (a local open-weight model, no key and no account),
+`openai-compat` (OpenAI and any server on the same route — vLLM, llama.cpp, LM Studio,
+OpenRouter — selected by base URL), and `cursor-agent`. A provider is a text channel: prompt
+in, text out. It never sees the site model, never sees a plan and never learns what the
+expected answer was, so adding one cannot change a result.
+
 - **The model never emits setpoints, MAVLink or code.** It emits a typed, bounded *Mission
   Intent* over a closed vocabulary. A deterministic, unit-tested mission compiler turns that
   into a plan and rejects anything outside the envelope; the plan, not the model, feeds the CF.
@@ -319,6 +326,8 @@ generation only).
 | Verify the licence boundary | `python3 scripts/check_license_isolation.py` |
 | Verify the SPDX headers and the document links | `python3 scripts/check_spdx.py` · `python3 scripts/check_links.py` |
 | Mission compiler, corpus and plan executor | `./scripts/dev.sh python3 -m pytest scripts/tests -q` |
+| LLM corpus against a local open-weight model | `ollama pull llama3.1:8b` then `python3 scripts/llm/eval.py --provider ollama --model llama3.1:8b` |
+| LLM corpus against any OpenAI-compatible server | `GUARA_OPENAI_BASE_URL=http://localhost:8000/v1 python3 scripts/llm/eval.py --provider openai-compat --model <id>` |
 | Space keep-out predictor (AC-47) | `./scripts/dev.sh python3 scripts/check_ac.py AC-47` |
 
 Every run writes `results/{run_id}/` with the scenario hash, the seed, the Guará SHA, the PX4
