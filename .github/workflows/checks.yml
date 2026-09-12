@@ -66,14 +66,38 @@ jobs:
           apt-get update -y --quiet
           apt-get install -y --quiet --no-install-recommends ros-humble-ament-cmake-gtest
           rm -rf /var/lib/apt/lists/*
+      # colcon warns and carries on when --packages-select names something it did not
+      # discover, and `colcon test-result` exits 0 on zero tests. A job that selected
+      # nothing therefore reports success having built and tested nothing, so each step
+      # below is asserted rather than trusted.
+      - name: Show what colcon discovers
+        shell: bash
+        run: |
+          source /opt/ros/humble/setup.bash
+          colcon list --base-paths ros2_ws/src
+
       - name: Build and test the packages that need no PX4 sources
         shell: bash
         run: |
           source /opt/ros/humble/setup.bash
-          colcon build --symlink-install \
+          set -x
+          colcon build --symlink-install --base-paths ros2_ws/src \
             --packages-select guara_msgs guara_geofence \
             --event-handlers console_direct+
-          colcon test --packages-select guara_msgs guara_geofence \
+          colcon test --base-paths ros2_ws/src \
+            --packages-select guara_msgs guara_geofence \
             --event-handlers console_direct+
-          colcon test-result --verbose
-        working-directory: ros2_ws
+          colcon test-result --verbose | tee /tmp/test-result.txt
+
+      - name: Refuse a vacuous pass
+        shell: bash
+        run: |
+          for pkg in guara_msgs guara_geofence; do
+            test -d "build/$pkg" || { echo "$pkg was never built" >&2; exit 1; }
+          done
+          total=$(sed -n 's/^Summary: \([0-9]\+\) tests.*/\1/p' /tmp/test-result.txt | tail -1)
+          echo "tests run: ${total:-0}"
+          if [ -z "$total" ] || [ "$total" -lt 1 ]; then
+            echo "colcon reported no tests; the job built or selected nothing." >&2
+            exit 1
+          fi
