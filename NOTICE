@@ -1,13 +1,19 @@
-Guará — open runtime assurance for PX4 via ROS 2
-Copyright 2026 aton-of-data and the Guará contributors
+Guará — open runtime assurance for autonomous flight (air and space)
+Copyright 2026 Aton Bertini Dornfeld <dornfeld.in@gmail.com>
+and the Guará contributors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+Every source file carries `SPDX-License-Identifier: Apache-2.0` (ADR 0006).
 
 Third-party software is not redistributed in this repository; it is fetched at
 pinned commits by scripts/fetch_third_party.sh (see third_party/VERSIONS.md):
 PX4-Autopilot, px4_msgs, px4-ros2-interface-lib (BSD-3-Clause); Ogma (Apache-2.0);
-Copilot (BSD-3-Clause); FRET and DAIDALUS (NASA Open Source Agreement v1.3).
+F´ / fprime (Apache-2.0); Copilot (BSD-3-Clause); FRET and DAIDALUS (NASA Open
+Source Agreement v1.3).
 
 Any package under nosa/ that builds DAIDALUS is governed by the NASA Open Source
 Agreement v1.3, not by the Apache License (docs/adr/0003). No part of this project
-implies endorsement by NASA.
+implies endorsement by NASA, JPL, PX4, Auterion or any other upstream project.
+
+Documentation and figures under docs/, including docs/assets/, are released under
+the same Apache License, Version 2.0.
