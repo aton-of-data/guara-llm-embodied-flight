@@ -101,6 +101,6 @@ Do not open a public issue. See [`SECURITY.md`](SECURITY.md).
 ## Working notes
 
 [`CLAUDE.md`](CLAUDE.md) is the project's own working-rules file and
-[`guara-prompt-pack.md`](guara-prompt-pack.md) records the prompt sequence used to build
+[`docs/guara-prompt-pack.md`](docs/guara-prompt-pack.md) records the prompt sequence used to build
 parts of this repository. Both are published for transparency about how the work was produced.
 Neither is a contribution guide — this file is.
