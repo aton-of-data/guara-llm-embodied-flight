@@ -150,7 +150,7 @@ recovery function and its evidence — is the catalogue in
 
 | Thread | Scope | Milestones | Maturity |
 |---|---|---|---|
-| **Core** | The PX4 RTA: arbiter, geofence predictor, DAIDALUS node, latency budget | M1–M7, P4 | Executed; every AC PASS with a recorded run (§7) |
+| **Core** | The PX4 RTA: arbiter, geofence predictor, DAIDALUS node, latency budget | M1–M7, P4 | Executed; every AC PASS with a recorded run (§6) |
 | **A — air / LLM embodiment** | Voice- and text-driven civil drone operation bounded by that RTA | M8–M12 | M8 complete; M9 in progress, plan flown as the CF in SITL |
 | **B — F´ host** | The same decision core inside a flight software framework with heritage | M13–M15 | Specified (ADR 0011); no code |
 | **C — space domain** | Orbital constraint monitors, a latched safe mode, orbital dynamics | M13c, M16 | Keep-out predictor and intent schema implemented (AC-47); no host, no simulator |
@@ -395,8 +395,8 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
 | [`docs/adr/`](docs/adr) | Thirteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
-| [`docs/milestones/`](docs/milestones) | M1–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-50 |
-| [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 and its remediation record |
+| [`docs/milestones/`](docs/milestones) | M1–M5, M7–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-50 |
+| [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 with its remediation record, and the public-readiness review |
 | [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md) | Limitations and design for the voice/LLM layer, with the civil use-case catalogue |
 | [`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) | F´, Ogma's F´ backend, and where a Guará-class RTA fits in orbit |
 | [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) | Executable plan for LLM embodiment, the F´ port, and the space domain |
