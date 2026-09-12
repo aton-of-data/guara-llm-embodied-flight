@@ -6,7 +6,7 @@ This is the check behind that rule. It reads the file list from git, so it never
 third_party/ or an untracked build directory, and it looks only at the first few lines —
 an SPDX tag further down is not the convention and does not count.
 
-Four categories are exempt, and each exemption is a statement about who owns the bytes:
+Three categories are exempt, and each exemption is a statement about who owns the bytes:
 
 * `docs/evidence/**` — run artefacts published verbatim from `results/`. Editing one would
   break the contract that an evidence directory is a copy of what a run produced.
@@ -14,11 +14,12 @@ Four categories are exempt, and each exemption is a statement about who owns the
   regeneration equality the monitor pipeline depends on.
 * `ros2_ws/src/guara_monitors/template/**` — the Ogma template this project customises;
   upstream-derived and kept close to it.
-* `nosa/**` NOSA-licensed sources carry their own NASA header, not Apache-2.0. Files under
-  `nosa/` written by this project still carry the Apache tag, so they are checked; the
-  check simply accepts either identifier there.
 
-Usage: python3 scripts/check_spdx.py [--fix-list]
+`nosa/` is deliberately *not* exempt: every file there is written by this project and carries
+the Apache tag. A vendored source under a NASA header instead would have to be added to the
+exemptions above by hand, as a decision rather than as a silent pass.
+
+Usage: python3 scripts/check_spdx.py
 Exit status 0 when every checked file carries a tag, 1 otherwise.
 """
 from __future__ import annotations
