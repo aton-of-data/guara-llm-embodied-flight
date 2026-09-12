@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-05",
+  "repeat": 3,
+  "utterance": "Pousa agora, aí mesmo onde você está.",
+  "utterance_hash": "sha256:e08590de0d29d6bb49c52b4c9e1d06b3b090985409f542b18b3fe8314ed8b645",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "land_now",
+  "model_requested": false
+}

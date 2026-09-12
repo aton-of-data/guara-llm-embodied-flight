@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-03",
+  "repeat": 3,
+  "utterance": "Come home, return to launch.",
+  "utterance_hash": "sha256:862727b8da9ab041c9923314c1e6c96f23837e5df9595b88c5c332db64e1dc55",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "return_home",
+  "model_requested": false
+}

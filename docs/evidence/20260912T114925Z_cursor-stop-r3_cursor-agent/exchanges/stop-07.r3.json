@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-07",
+  "repeat": 3,
+  "utterance": "Stop. Stop everything.",
+  "utterance_hash": "sha256:0bb4b4661b8ac8a6d75ebe684b75419d9c4f1406a646e1b20f1828952bddccd7",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "abort",
+  "model_requested": false
+}

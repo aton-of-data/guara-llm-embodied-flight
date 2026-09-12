@@ -43,7 +43,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-26 | M8 | PASS | `docs/milestones/M8.md` |
 | AC-27 | M9 | in progress | instrument smoke `composer-2.5` 1/1 nominal (`docs/milestones/M9.md`); not PASS (`repeats=1`, dirty tree) |
 | AC-28 | M9 | in progress | mock path: 0 flyable unsafe plans (`scripts/tests/test_llm_eval.py`) |
-| AC-29 | M9 | in progress | stop subset 8/8, 0 model requests (`docs/milestones/M9.md`) |
+| AC-29 | M9 | PASS | stop corpus 24/24, 0 model requests, repeats=3, clean tree (`docs/evidence/20260912T114925Z_cursor-stop-r3_cursor-agent/`) |
 | AC-30 | M9 | PASS | `scripts/tests/test_llm_eval.py` (no key, no network) |
 | AC-31 | M9 | in progress | nominal SITL PASS depth 0.000 m; outside pair FAIL (both legs ~210 m north, fence ~260 m; `docs/milestones/M9.md`) |
 | AC-47 | M13c | in progress | `scripts/tests/test_keepout_analytic.py` (analytic cases PASS; Basilisk pairing not yet run) |

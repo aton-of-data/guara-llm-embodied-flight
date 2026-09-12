@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-06",
+  "repeat": 2,
+  "utterance": "Volta pra casa, retorna pro ponto de decolagem.",
+  "utterance_hash": "sha256:9d0bf5d8069ee0d31b6b87bbc84fddc8ac5c9f8aa4bc0149de2889d77e5d3bb8",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "return_home",
+  "model_requested": false
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-08",
+  "repeat": 2,
+  "utterance": "Para! Para tudo agora!",
+  "utterance_hash": "sha256:7419e088d2fee08196c3bcb0cce656182e1ca4acb6c2326532d923fa5667d0e4",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "abort",
+  "model_requested": false
+}

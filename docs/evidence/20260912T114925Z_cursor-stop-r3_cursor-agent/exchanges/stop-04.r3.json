@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-04",
+  "repeat": 3,
+  "utterance": "Aborta! Cancela a missão agora!",
+  "utterance_hash": "sha256:8e8bdb640717f6d00c6653f1a9b161c9599d992bee91fccf117d9fea57e02821",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "abort",
+  "model_requested": false
+}

@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-01",
+  "repeat": 3,
+  "utterance": "Abort! Abort the mission now!",
+  "utterance_hash": "sha256:f3d3da5fe7f8aa0c212b3cec7a3ba368fe3cd9041a3074a33d864076e9deacc6",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "abort",
+  "model_requested": false
+}

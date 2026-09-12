@@ -1,0 +1,9 @@
+{
+  "case_id": "stop-02",
+  "repeat": 1,
+  "utterance": "Land now, right where you are.",
+  "utterance_hash": "sha256:c132041ad6bbdb9e036658660ca743683b786840e682afde04539202b6206965",
+  "resolved_by": "stop_grammar",
+  "stop_verb": "land_now",
+  "model_requested": false
+}
