@@ -69,7 +69,24 @@ def test_the_readme_table_agrees_with_the_figure():
             f"{seconds:.4f} s is in the evidence but not in the README results table")
 
 
-def test_a_missing_evidence_directory_is_an_error_not_a_drawn_guess(tmp_path):
-    r = subprocess.run([sys.executable, "scripts/plot_evidence.py"],
+def test_a_missing_evidence_file_is_an_error_not_a_drawn_guess(tmp_path):
+    """Exercise the loader itself. Running the script from another directory proves
+    nothing: it resolves its paths from __file__, so it finds the real evidence whatever
+    the working directory is."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import plot_evidence
+
+    with pytest.raises(SystemExit) as exc:
+        plot_evidence.load(tmp_path / "no_such_run" / "metrics.json")
+    assert exc.value.code == 1
+
+
+def test_the_script_runs_from_any_working_directory(tmp_path):
+    """The corollary: the figures do not depend on where it is invoked from."""
+    out = tmp_path / "figs"
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "plot_evidence.py"),
+                        "--out", str(out)],
                        capture_output=True, text=True, cwd=str(tmp_path))
-    assert r.returncode != 0
+    assert r.returncode == 0, r.stderr
+    for name in FIGURES:
+        assert (out / name).read_text() == (ASSETS / name).read_text()
