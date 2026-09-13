@@ -30,13 +30,19 @@ jobs:
     name: check and upload
     runs-on: ubuntu-latest
     steps:
+      # check_site_claims.py resolves each page's commit stamp against history.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Copy the figures from docs/assets, so the site keeps no second copy
         run: ./scripts/sync_site_assets.sh
 
       - name: Every internal link in the site resolves
         run: python3 scripts/check_site_links.py
+
+      - name: The site says what the repository says
+        run: python3 scripts/check_site_claims.py
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
