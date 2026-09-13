@@ -832,6 +832,25 @@ def check_ac47(_path: pathlib.Path) -> list[str]:
     return []
 
 
+def check_ac66(path: pathlib.Path) -> list[str]:
+    """CTK report names versions, port, host, vector hash, and ADR 0014 decision 4."""
+    report = path / "report.txt" if path.is_dir() else path
+    if not report.is_file():
+        return ["missing report.txt"]
+    text = report.read_text(encoding="utf-8")
+    errors: list[str] = []
+    for key in ("port", "core", "abi", "host", "arch", "vectors_sha256", "result"):
+        if not re.search(rf"^{re.escape(key)}\s+\S", text, re.MULTILINE):
+            errors.append(f"missing field {key}")
+    if "necessary and not sufficient" not in text:
+        errors.append("report does not say conformance is necessary and not sufficient")
+    if "nothing about the safety of the system that contains it" not in text:
+        errors.append("report does not state ADR 0014 decision 4")
+    if re.search(r"\bis safe\b", text, re.IGNORECASE):
+        errors.append("report uses 'is safe' of a system (ADR 0014 decision 4)")
+    return errors
+
+
 CHECKERS = {
     "AC-3": check_ac3,
     "AC-7": check_ac7,
@@ -853,6 +872,7 @@ CHECKERS = {
     "AC-29": check_ac29,
     "AC-31": check_ac31,
     "AC-47": check_ac47,
+    "AC-66": check_ac66,
 }
 
 

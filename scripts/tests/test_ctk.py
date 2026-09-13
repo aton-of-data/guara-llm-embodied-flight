@@ -46,3 +46,36 @@ def test_spec_records_the_ambiguities_the_port_found():
     assert "### 3.6 Ambiguities recorded by the independent Python port" in text
     assert "cf_intent_unsafe" in text
     assert "transition 9" in text
+
+
+def test_report_file_satisfies_ac66(tmp_path):
+    dest = tmp_path / "latest_ctk"
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--report", str(dest)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    report = dest / "report.txt"
+    assert report.is_file()
+    text = report.read_text()
+    assert text == r.stdout
+    chk = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_ac.py"), "AC-66", str(dest)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert chk.returncode == 0, chk.stdout + chk.stderr
+    assert "PASS AC-66" in chk.stdout
+
+
+def test_ac66_rejects_a_report_without_the_decision_4_sentence(tmp_path):
+    (tmp_path / "report.txt").write_text(
+        "port python\ncore x\nabi y\nhost z\narch a\nvectors_sha256 abc\nresult PASS\n",
+        encoding="utf-8",
+    )
+    chk = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_ac.py"), "AC-66", str(tmp_path)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert chk.returncode == 1
+    assert "necessary and not sufficient" in chk.stdout

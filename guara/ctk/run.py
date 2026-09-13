@@ -94,6 +94,30 @@ def default_vectors(root: Path) -> Path:
     return root / "core" / "conformance" / "vectors" / "spec_s3.json"
 
 
+def _report_lines(port: str, core_ver: str, abi_ver: str, digest: str,
+                  vectors_name: str, n_ok: int, n_all: int) -> list[str]:
+    return [
+        f"port           {port}",
+        f"core           {core_ver}",
+        f"abi            {abi_ver}",
+        f"host           {sys.platform}",
+        f"arch           {platform.machine() or 'unknown'}",
+        f"vectors        {vectors_name}",
+        f"vectors_sha256 {digest}",
+        f"result         PASS {n_ok}/{n_all}",
+        f"note           {NOTE}",
+    ]
+
+
+def write_report(path: Path, body: str) -> None:
+    if path.suffix:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(body, encoding="utf-8")
+        return
+    path.mkdir(parents=True, exist_ok=True)
+    (path / "report.txt").write_text(body, encoding="utf-8")
+
+
 def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     parser = argparse.ArgumentParser(
         prog="guara ctk",
@@ -103,6 +127,8 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     runp = sub.add_parser("run", help="execute vectors and print a report")
     runp.add_argument("--port", required=True, choices=("python",))
     runp.add_argument("--vectors", type=Path, default=None)
+    runp.add_argument("--report", type=Path, default=None,
+                      help="write the report to a file, or to report.txt in this directory")
     args = parser.parse_args(argv)
     if args.cmd != "run":
         parser.error(f"unknown command {args.cmd}")
@@ -121,13 +147,14 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
 
     digest = hashlib.sha256(vectors.read_bytes()).hexdigest()
     core_ver, abi_ver = params.versions_from_header(root)
-    print(f"port           python-reference", file=out)
-    print(f"core           {core_ver}", file=out)
-    print(f"abi            {abi_ver}", file=out)
-    print(f"host           {sys.platform}", file=out)
-    print(f"arch           {platform.machine() or 'unknown'}", file=out)
-    print(f"vectors        {vectors.name}", file=out)
-    print(f"vectors_sha256 {digest}", file=out)
-    print(f"result         PASS {n_ok}/{n_all}", file=out)
-    print(f"note           {NOTE}", file=out)
+    body = "\n".join(_report_lines(
+        "python-reference", core_ver, abi_ver, digest, vectors.name, n_ok, n_all,
+    )) + "\n"
+    print(body, file=out, end="")
+    if args.report is not None:
+        try:
+            write_report(args.report, body)
+        except OSError as exc:
+            print(f"FAIL ctk: cannot write report: {exc}", file=err)
+            return 1
     return 0
