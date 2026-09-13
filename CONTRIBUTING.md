@@ -100,7 +100,10 @@ Do not open a public issue. See [`SECURITY.md`](SECURITY.md).
 
 ## Working notes
 
-[`CLAUDE.md`](CLAUDE.md) is the project's own working-rules file and
+[`CLAUDE.md`](CLAUDE.md) is the project's own working-rules file,
 [`docs/guara-prompt-pack.md`](docs/guara-prompt-pack.md) records the prompt sequence used to build
-parts of this repository. Both are published for transparency about how the work was produced.
-Neither is a contribution guide — this file is.
+parts of this repository, and [`docs/AGENT-PIPELINE.md`](docs/AGENT-PIPELINE.md) describes the
+three-stage process — scope, execute, review — under which that work is produced, together with
+the skill and rule files that enforce it. All three are published for transparency about how the
+work was produced. None of them is a contribution guide — this file is, and a human contributor
+is bound by it alone.
