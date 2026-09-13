@@ -8,8 +8,9 @@
  * and latch perform no libc I/O and no heap traffic.
  *
  * ABI v0 is provisional until three independent ports pass the conformance
- * kit (ADR 0014 decision 3). Passing this interface demonstrates behavioural
- * access to the reference core; it does not make a containing system safe
+ * kit (ADR 0014 decision 3). Passing the published vectors through this
+ * interface demonstrates behavioural equivalence to the reference core; it
+ * says nothing about the safety of the system that contains it
  * (ADR 0014 decision 4).
  */
 #ifndef GUARA_GUARA_H
@@ -42,6 +43,32 @@ extern "C" {
 #define GUARA_ERR_UNINIT 4
 
 #define GUARA_PARAM_DIGEST_LEN 8
+
+/* Switching states, in the encoding of guara_output.state and of the `state`
+ * argument of guara_gateway_on_core_state (SPEC 3). */
+#define GUARA_STATE_INACTIVE 0
+#define GUARA_STATE_CF 1
+#define GUARA_STATE_RF 2
+#define GUARA_STATE_LATCHED 3
+#define GUARA_STATE_MAX GUARA_STATE_LATCHED
+
+/* Recovery functions, ranked HOLD < RTL < LAND (SPEC 3.5, ADR 0005 item 4).
+ * This is the encoding of guara_output.recovery and of guara_inputs.monitor_action.
+ * It is NOT the GUARA_MONITOR_ACTION_* encoding used on the monitor wire
+ * contract, which starts at HOLD = 0; a host that aggregates verdicts itself
+ * must shift by one. guara_core_step rejects a value above GUARA_RECOVERY_LAND. */
+#define GUARA_RECOVERY_NONE 0
+#define GUARA_RECOVERY_HOLD 1
+#define GUARA_RECOVERY_RTL 2
+#define GUARA_RECOVERY_LAND 3
+#define GUARA_RECOVERY_MAX GUARA_RECOVERY_LAND
+
+/* Mode requests emitted towards the actuator. */
+#define GUARA_COMMAND_NONE 0
+#define GUARA_COMMAND_HOLD 1
+#define GUARA_COMMAND_RTL 2
+#define GUARA_COMMAND_LAND 3
+#define GUARA_COMMAND_OWNED_MODE 4
 
 typedef struct guara_params {
   double tau_daa_s;
@@ -144,6 +171,11 @@ GUARA_API int guara_gateway_on_cf_setpoint(void * storage, double t_recv_s, doub
 GUARA_API int guara_gateway_compute(void * storage, double t_s, guara_gateway_output * out);
 
 #define GUARA_MONITOR_ID_MAX 47
+
+/* guara_monitor_observe returns one of these, NOT a GUARA_ERR_* code, whenever
+ * the call reached the table; GUARA_ERR_NULL and GUARA_ERR_UNINIT are returned
+ * only when it did not. Name them with guara_monitor_accept_name, never with
+ * guara_err_name. */
 #define GUARA_MONITOR_ACCEPTED 0
 #define GUARA_MONITOR_INVALID_FIELD 1
 #define GUARA_MONITOR_TABLE_FULL 2

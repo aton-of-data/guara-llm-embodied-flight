@@ -218,10 +218,10 @@ int guara_core_param_digest(void * storage, uint8_t out[GUARA_PARAM_DIGEST_LEN])
 const char * guara_state_name(uint8_t state)
 {
   switch (state) {
-    case 0: return guara_rta::toString(guara_rta::State::kInactive);
-    case 1: return guara_rta::toString(guara_rta::State::kCf);
-    case 2: return guara_rta::toString(guara_rta::State::kRf);
-    case 3: return guara_rta::toString(guara_rta::State::kLatched);
+    case GUARA_STATE_INACTIVE: return guara_rta::toString(guara_rta::State::kInactive);
+    case GUARA_STATE_CF: return guara_rta::toString(guara_rta::State::kCf);
+    case GUARA_STATE_RF: return guara_rta::toString(guara_rta::State::kRf);
+    case GUARA_STATE_LATCHED: return guara_rta::toString(guara_rta::State::kLatched);
     default: return "UNKNOWN";
   }
 }
@@ -229,10 +229,10 @@ const char * guara_state_name(uint8_t state)
 const char * guara_recovery_name(uint8_t recovery)
 {
   switch (recovery) {
-    case 0: return guara_rta::toString(guara_rta::Recovery::kNone);
-    case 1: return guara_rta::toString(guara_rta::Recovery::kHold);
-    case 2: return guara_rta::toString(guara_rta::Recovery::kRtl);
-    case 3: return guara_rta::toString(guara_rta::Recovery::kLand);
+    case GUARA_RECOVERY_NONE: return guara_rta::toString(guara_rta::Recovery::kNone);
+    case GUARA_RECOVERY_HOLD: return guara_rta::toString(guara_rta::Recovery::kHold);
+    case GUARA_RECOVERY_RTL: return guara_rta::toString(guara_rta::Recovery::kRtl);
+    case GUARA_RECOVERY_LAND: return guara_rta::toString(guara_rta::Recovery::kLand);
     default: return "UNKNOWN";
   }
 }
@@ -240,11 +240,11 @@ const char * guara_recovery_name(uint8_t recovery)
 const char * guara_command_name(uint8_t command)
 {
   switch (command) {
-    case 0: return guara_rta::toString(guara_rta::Command::kNone);
-    case 1: return guara_rta::toString(guara_rta::Command::kHold);
-    case 2: return guara_rta::toString(guara_rta::Command::kRtl);
-    case 3: return guara_rta::toString(guara_rta::Command::kLand);
-    case 4: return guara_rta::toString(guara_rta::Command::kOwnedMode);
+    case GUARA_COMMAND_NONE: return guara_rta::toString(guara_rta::Command::kNone);
+    case GUARA_COMMAND_HOLD: return guara_rta::toString(guara_rta::Command::kHold);
+    case GUARA_COMMAND_RTL: return guara_rta::toString(guara_rta::Command::kRtl);
+    case GUARA_COMMAND_LAND: return guara_rta::toString(guara_rta::Command::kLand);
+    case GUARA_COMMAND_OWNED_MODE: return guara_rta::toString(guara_rta::Command::kOwnedMode);
     default: return "UNKNOWN";
   }
 }
