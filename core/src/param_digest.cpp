@@ -28,8 +28,8 @@ void write_le16(std::uint8_t * d, std::uint16_t v) noexcept
 
 void write_le64(std::uint8_t * d, std::uint64_t v) noexcept
 {
-  for (int i = 0; i < 8; ++i) {
-    d[i] = static_cast<std::uint8_t>(v >> (8 * i));
+  for (unsigned i = 0U; i < 8U; ++i) {
+    d[i] = static_cast<std::uint8_t>(v >> (8U * i));
   }
 }
 
