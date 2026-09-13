@@ -4,6 +4,7 @@
 // After init, this translation unit performs no heap allocation and no I/O.
 #include "guara/guara.h"
 
+#include <cstdint>
 #include <cstring>
 #include <new>
 
@@ -25,6 +26,12 @@ struct Storage
 Storage * as_storage(void * p) noexcept
 {
   return static_cast<Storage *>(p);
+}
+
+// True if p meets the alignment guara_core_storage_align() publishes.
+bool aligned_for_storage(const void * p) noexcept
+{
+  return (reinterpret_cast<std::uintptr_t>(p) % alignof(Storage)) == 0U;
 }
 
 guara_rta::DecisionCore * core_of(Storage * s) noexcept
@@ -155,7 +162,7 @@ int guara_core_init(void * storage, size_t n, const guara_params * params)
   if (storage == nullptr || params == nullptr) {
     return GUARA_ERR_NULL;
   }
-  if (n < sizeof(Storage)) {
+  if (n < sizeof(Storage) || !aligned_for_storage(storage)) {
     return GUARA_ERR_STORAGE;
   }
   const guara_rta::Parameters p = from_c(*params);

@@ -5,6 +5,8 @@
  */
 #include "guara/guara.h"
 
+#include "storage.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -35,9 +37,11 @@ int main(void)
   CHECK(guara_core_init(tiny, sizeof tiny, &p) == GUARA_ERR_STORAGE);
 
   p.n_max = 0;
-  unsigned char buf[1024];
-  CHECK(sizeof buf >= guara_core_storage_size());
-  CHECK(guara_core_init(buf, sizeof buf, &p) == GUARA_ERR_PARAMS);
+  unsigned char raw[1024 + 64];
+  unsigned char * buf = guara_test_align(raw, guara_core_storage_align());
+  const size_t cap = guara_test_capacity(raw, sizeof raw, guara_core_storage_align());
+  CHECK(cap >= guara_core_storage_size());
+  CHECK(guara_core_init(buf, cap, &p) == GUARA_ERR_PARAMS);
   CHECK(strcmp(guara_params_error(&p), "n_max must be >= 1") == 0);
   CHECK(guara_params_error(NULL) != NULL);
 
@@ -47,8 +51,13 @@ int main(void)
   guara_output out;
   CHECK(guara_core_step(buf, NULL, &out) == GUARA_ERR_NULL);
 
-  unsigned char uninit[1024];
-  memset(uninit, 0, sizeof uninit);
+  if (guara_core_storage_align() > 1U) {
+    CHECK(guara_core_init(buf + 1, cap - 1U, &p) == GUARA_ERR_STORAGE);
+  }
+
+  unsigned char uninit_raw[1024 + 64];
+  unsigned char * uninit = guara_test_align(uninit_raw, guara_core_storage_align());
+  memset(uninit, 0, guara_core_storage_size());
   guara_inputs in;
   memset(&in, 0, sizeof in);
   CHECK(guara_core_step(uninit, &in, &out) == GUARA_ERR_UNINIT);

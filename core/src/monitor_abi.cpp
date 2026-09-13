@@ -3,6 +3,7 @@
 // C ABI for MonitorTable (SPEC §3.1, ADR 0002). Caller-supplied storage.
 #include "guara/guara.h"
 
+#include <cstdint>
 #include <new>
 
 #include "guara_rta/monitor_table.hpp"
@@ -21,6 +22,12 @@ struct MonStorage
 MonStorage * as_mon(void * p) noexcept
 {
   return static_cast<MonStorage *>(p);
+}
+
+// True if p meets the alignment guara_monitor_storage_align() publishes.
+bool aligned_for_mon(const void * p) noexcept
+{
+  return (reinterpret_cast<std::uintptr_t>(p) % alignof(MonStorage)) == 0U;
 }
 
 guara_rta::MonitorTable * table_of(MonStorage * s) noexcept
@@ -79,7 +86,7 @@ int guara_monitor_init(void * storage, size_t n, double max_age_s)
   if (storage == nullptr) {
     return GUARA_ERR_NULL;
   }
-  if (n < sizeof(MonStorage)) {
+  if (n < sizeof(MonStorage) || !aligned_for_mon(storage)) {
     return GUARA_ERR_STORAGE;
   }
   if (guara_monitor_max_age_error(max_age_s) != nullptr) {

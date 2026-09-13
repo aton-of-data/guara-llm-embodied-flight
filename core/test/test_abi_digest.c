@@ -6,6 +6,8 @@
  */
 #include "guara/guara.h"
 
+#include "storage.h"
+
 #include <stdio.h>
 #include <string.h>
 
@@ -38,13 +40,16 @@ int main(void)
   CHECK(memcmp(a, b, GUARA_PARAM_DIGEST_LEN) != 0);
 
   guara_params_default(&p);
-  unsigned char buf[1024];
-  CHECK(guara_core_init(buf, sizeof buf, &p) == GUARA_OK);
+  unsigned char raw[1024 + 64];
+  unsigned char * buf = guara_test_align(raw, guara_core_storage_align());
+  const size_t cap = guara_test_capacity(raw, sizeof raw, guara_core_storage_align());
+  CHECK(guara_core_init(buf, cap, &p) == GUARA_OK);
   CHECK(guara_core_param_digest(buf, stored) == GUARA_OK);
   CHECK(memcmp(a, stored, GUARA_PARAM_DIGEST_LEN) == 0);
 
-  unsigned char uninit[1024];
-  memset(uninit, 0, sizeof uninit);
+  unsigned char uninit_raw[1024 + 64];
+  unsigned char * uninit = guara_test_align(uninit_raw, guara_core_storage_align());
+  memset(uninit, 0, guara_core_storage_size());
   CHECK(guara_core_param_digest(uninit, stored) == GUARA_ERR_UNINIT);
 
   printf("PASS abi_digest\n");

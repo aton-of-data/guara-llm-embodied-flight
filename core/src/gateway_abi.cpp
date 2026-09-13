@@ -4,6 +4,7 @@
 #include "guara/guara.h"
 
 #include <array>
+#include <cstdint>
 #include <new>
 
 #include "guara_rta/gateway_logic.hpp"
@@ -30,6 +31,12 @@ struct GwStorage
 GwStorage * as_gw(void * p) noexcept
 {
   return static_cast<GwStorage *>(p);
+}
+
+// True if p meets the alignment guara_gateway_storage_align() publishes.
+bool aligned_for_gw(const void * p) noexcept
+{
+  return (reinterpret_cast<std::uintptr_t>(p) % alignof(GwStorage)) == 0U;
 }
 
 guara_rta::GatewayLogic * gw_of(GwStorage * s) noexcept
@@ -118,7 +125,7 @@ int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * li
   if (storage == nullptr || limits == nullptr) {
     return GUARA_ERR_NULL;
   }
-  if (n < sizeof(GwStorage)) {
+  if (n < sizeof(GwStorage) || !aligned_for_gw(storage)) {
     return GUARA_ERR_STORAGE;
   }
   if (guara_gateway_limits_error(limits) != nullptr) {
@@ -162,7 +169,7 @@ int guara_gateway_on_core_state(void * storage, uint8_t state, double t_s)
   if (rc != GUARA_OK) {
     return rc;
   }
-  if (state > 3) {
+  if (state > GUARA_STATE_MAX) {
     return GUARA_ERR_PARAMS;
   }
   gw_of(as_gw(storage))->onCoreState(static_cast<guara_rta::State>(state), t_s);

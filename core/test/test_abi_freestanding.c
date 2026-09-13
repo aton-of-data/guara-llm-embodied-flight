@@ -4,24 +4,30 @@
  */
 #include "guara/guara.h"
 
+#include "storage.h"
+
 #include <math.h>
 #include <string.h>
 
 int main(void)
 {
-  unsigned char buf[1024];
-  if (sizeof buf < 64) {
+  unsigned char raw[1024 + 64];
+  unsigned char * buf = guara_test_align(raw, guara_core_storage_align());
+  const size_t cap = guara_test_capacity(raw, sizeof raw, guara_core_storage_align());
+  if (cap < guara_core_storage_size()) {
     return 1;
   }
   guara_params p;
   guara_params_default(&p);
-  if (guara_core_init(buf, sizeof buf, &p) != GUARA_OK) {
+  if (guara_core_init(buf, cap, &p) != GUARA_OK) {
     return 2;
   }
-  unsigned char gwbuf[1024];
+  unsigned char gwraw[1024 + 64];
+  unsigned char * gwbuf = guara_test_align(gwraw, guara_gateway_storage_align());
+  const size_t gwcap = guara_test_capacity(gwraw, sizeof gwraw, guara_gateway_storage_align());
   guara_gateway_limits lim;
   guara_gateway_limits_default(&lim);
-  if (guara_gateway_init(gwbuf, sizeof gwbuf, &lim) != GUARA_OK) {
+  if (guara_gateway_init(gwbuf, gwcap, &lim) != GUARA_OK) {
     return 5;
   }
   if (guara_gateway_on_core_state(gwbuf, 1, 0.0) != GUARA_OK) {

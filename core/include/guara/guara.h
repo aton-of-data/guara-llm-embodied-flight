@@ -7,6 +7,11 @@
  * guara_core_storage_align(). After guara_core_init returns GUARA_OK, step
  * and latch perform no libc I/O and no heap traffic.
  *
+ * Every entry point validates its own arguments and fails closed. Storage
+ * passed to an init function must be at least the matching *_storage_size()
+ * bytes and aligned to the matching *_storage_align(); a short or misaligned
+ * buffer is rejected with GUARA_ERR_STORAGE rather than written through.
+ *
  * ABI v0 is provisional until three independent ports pass the conformance
  * kit (ADR 0014 decision 3). Passing the published vectors through this
  * interface demonstrates behavioural equivalence to the reference core; it

@@ -5,6 +5,8 @@
  */
 #include "guara/guara.h"
 
+#include "storage.h"
+
 #include <ctype.h>
 #include <math.h>
 #include <stdio.h>
@@ -568,8 +570,10 @@ static int run_vector(Cursor *c, unsigned *seen)
     fprintf(stderr, "FAIL %s: missing steps\n", id);
     return 0;
   }
-  unsigned char buf[1024];
-  if (guara_core_init(buf, sizeof buf, &params) != GUARA_OK) {
+  unsigned char raw[1024 + 64];
+  unsigned char *buf = guara_test_align(raw, guara_core_storage_align());
+  if (guara_core_init(buf, guara_test_capacity(raw, sizeof raw, guara_core_storage_align()),
+                      &params) != GUARA_OK) {
     fprintf(stderr, "FAIL %s: init rejected\n", id);
     return 0;
   }

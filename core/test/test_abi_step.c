@@ -5,6 +5,8 @@
  */
 #include "guara/guara.h"
 
+#include "storage.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
@@ -19,11 +21,13 @@
 
 int main(void)
 {
-  unsigned char buf[1024];
-  CHECK(sizeof buf >= guara_core_storage_size());
+  unsigned char raw[1024 + 64];
+  unsigned char * buf = guara_test_align(raw, guara_core_storage_align());
+  const size_t cap = guara_test_capacity(raw, sizeof raw, guara_core_storage_align());
+  CHECK(cap >= guara_core_storage_size());
   guara_params p;
   guara_params_default(&p);
-  CHECK(guara_core_init(buf, sizeof buf, &p) == GUARA_OK);
+  CHECK(guara_core_init(buf, cap, &p) == GUARA_OK);
 
   guara_inputs in;
   memset(&in, 0, sizeof in);
