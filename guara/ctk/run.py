@@ -13,10 +13,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .. import doctor, params
+from .geofence import GfParams, GfPrediction, GfState, ReferenceGeofence
 from .gateway import GatewayLimits, ReferenceGateway
 from .monitors import MonitorEval, ReferenceMonitor
 from .reference import Inputs, Params, ReferenceCore
-from .sil import SilCore, SilGateway, SilMonitor, find_cabi, load_cabi
+from .sil import SilCore, SilGateway, SilGeofence, SilMonitor, find_cabi, load_cabi
 
 NOTE = (
     "Conformance is necessary and not sufficient: this run demonstrates "
@@ -99,6 +100,85 @@ def _num(value) -> float:
     if value == "inf":
         return math.inf
     return float(value)
+
+
+def _looks_like_geofence(data: list) -> bool:
+    if not data:
+        return False
+    return "vertices" in data[0] or bool(
+        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict"}
+    )
+
+
+def _gf_params(raw: dict | None) -> GfParams:
+    p = GfParams()
+    if not raw:
+        return p
+    for key in ("a_brake_h_m_s2", "a_brake_v_m_s2", "k_sigma", "v_min_m_s", "horizon_s"):
+        if key in raw:
+            setattr(p, key, float(raw[key]))
+    return p
+
+
+def _gf_state(step: dict) -> GfState:
+    return GfState(
+        north_m=float(step.get("north_m", 0.0)),
+        east_m=float(step.get("east_m", 0.0)),
+        altitude_m=float(step.get("altitude_m", 0.0)),
+        vn_m_s=float(step.get("vn_m_s", 0.0)),
+        ve_m_s=float(step.get("ve_m_s", 0.0)),
+        climb_rate_m_s=float(step.get("climb_rate_m_s", 0.0)),
+        eph_m=float(step.get("eph_m", 0.0)),
+        epv_m=float(step.get("epv_m", 0.0)),
+    )
+
+
+def _check_geofence(vec_id: str, step_i: int, expect: dict, got: GfPrediction) -> None:
+    mapping = {
+        "t_gf_s": got.t_gf_s,
+        "t_horizontal_s": got.t_horizontal_s,
+        "t_vertical_s": got.t_vertical_s,
+        "inside": got.inside,
+        "exit_distance_m": got.exit_distance_m,
+    }
+    for key, want in expect.items():
+        if key not in mapping:
+            continue
+        got_v = mapping[key]
+        if key == "inside":
+            if int(got_v) != int(want):
+                raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
+            continue
+        want_n = _num(want)
+        if math.isinf(want_n) or math.isinf(got_v):
+            if not (math.isinf(want_n) and math.isinf(got_v) and (want_n > 0) == (got_v > 0)):
+                raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
+            continue
+        tol = 1e-6 if key == "exit_distance_m" else 0.05
+        if abs(got_v - want_n) > tol:
+            raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
+
+
+def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
+    for vec in data:
+        table = make_geofence()
+        table.configure(
+            [float(x) for x in vec["vertices"]],
+            float(vec.get("alt_min_m", 0.0)),
+            float(vec.get("alt_max_m", 1.0e9)),
+        )
+        params = _gf_params(vec.get("params"))
+        vec_id = vec["id"]
+        for i, step in enumerate(vec["steps"]):
+            if step.get("op") != "predict":
+                raise CtkError(f"{vec_id} step {i}: unknown op {step.get('op')}")
+            t0 = time.perf_counter_ns()
+            got = table.predict(params, _gf_state(step))
+            _mark(stats, t0)
+            _check_geofence(vec_id, i, step.get("expect") or {}, got)
+        stats.n_ok += 1
+    return stats
 
 
 def _looks_like_gateway(data: list) -> bool:
@@ -255,14 +335,19 @@ def _run_monitor_vectors(data: list, make_monitor) -> VectorRun:
     return stats
 
 
-def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None) -> VectorRun:
+def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None,
+                make_geofence=None) -> VectorRun:
     if make_core is None:
         make_core = lambda params: ReferenceCore(params=params)
     if make_gateway is None:
         make_gateway = lambda limits: ReferenceGateway(limits=limits)
     if make_monitor is None:
         make_monitor = lambda max_age: ReferenceMonitor(max_age_s=max_age)
+    if make_geofence is None:
+        make_geofence = lambda: ReferenceGeofence()
     data = json.loads(path.read_text(encoding="utf-8"))
+    if _looks_like_geofence(data):
+        return _run_geofence_vectors(data, make_geofence)
     if _looks_like_monitor(data):
         return _run_monitor_vectors(data, make_monitor)
     if _looks_like_gateway(data):
@@ -332,6 +417,7 @@ def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
     make_core = lambda params: ReferenceCore(params=params)
     make_gateway = lambda limits: ReferenceGateway(limits=limits)
     make_monitor = lambda max_age: ReferenceMonitor(max_age_s=max_age)
+    make_geofence = lambda: ReferenceGeofence()
     port_name = "python-reference"
     if port == "sil":
         lib_path = find_cabi(root, lib_arg)
@@ -346,8 +432,9 @@ def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
         make_core = lambda params, _lib=lib: SilCore(_lib, params)
         make_gateway = lambda limits, _lib=lib: SilGateway(_lib, limits)
         make_monitor = lambda max_age, _lib=lib: SilMonitor(_lib, max_age)
+        make_geofence = lambda _lib=lib: SilGeofence(_lib)
         port_name = "sil-cabi"
-    return port_name, make_core, make_gateway, make_monitor
+    return port_name, make_core, make_gateway, make_monitor, make_geofence
 
 
 def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
@@ -381,12 +468,12 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     factory = _port_factory(root, args.port, args.lib, err)
     if factory is None:
         return 1
-    port_name, make_core, make_gateway, make_monitor = factory
+    port_name, make_core, make_gateway, make_monitor, make_geofence = factory
 
     if args.cmd == "run":
         vectors = args.vectors if args.vectors is not None else default_vectors(root)
         try:
-            stats = run_vectors(vectors, make_core, make_gateway, make_monitor)
+            stats = run_vectors(vectors, make_core, make_gateway, make_monitor, make_geofence)
         except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
             print(f"FAIL ctk: {exc}", file=err)
             return 1
@@ -414,7 +501,7 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
             for f in files:
                 hasher.update(f.read_bytes())
                 names.append(f.name)
-                one = run_vectors(f, make_core, make_gateway, make_monitor)
+                one = run_vectors(f, make_core, make_gateway, make_monitor, make_geofence)
                 acc.n_ok += one.n_ok
                 acc.n_all += one.n_all
                 acc.n_ops += one.n_ops

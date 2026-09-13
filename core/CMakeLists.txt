@@ -109,8 +109,14 @@ if(GUARA_CORE_STANDALONE)
   add_test(NAME abi_monitor COMMAND test_abi_monitor)
 
   add_executable(test_abi_geofence test/test_abi_geofence.c)
-  target_link_libraries(test_abi_geofence PRIVATE guara_core)
+  target_link_libraries(test_abi_geofence PRIVATE  guara_core)
   add_test(NAME abi_geofence COMMAND test_abi_geofence)
+
+  add_executable(test_geofence_vectors test/test_geofence_vectors.c)
+  target_link_libraries(test_geofence_vectors PRIVATE guara_core)
+  target_compile_definitions(test_geofence_vectors PRIVATE
+    "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
+  add_test(NAME conformance_geofence COMMAND test_geofence_vectors)
 
   add_executable(test_monitor_vectors test/test_monitor_vectors.c)
   target_link_libraries(test_monitor_vectors PRIVATE guara_core)

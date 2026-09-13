@@ -20,6 +20,7 @@ from ctypes import (
 )
 from pathlib import Path
 
+from .geofence import GfParams, GfPrediction, GfState
 from .gateway import GatewayLimits, GatewayOutput
 from .monitors import MonitorEval
 from .reference import Inputs, Output, Params
@@ -124,6 +125,39 @@ class CMonitorEval(ctypes.Structure):
     ]
 
 
+class CGfParams(ctypes.Structure):
+    _fields_ = [
+        ("a_brake_h_m_s2", c_double),
+        ("a_brake_v_m_s2", c_double),
+        ("k_sigma", c_double),
+        ("v_min_m_s", c_double),
+        ("horizon_s", c_double),
+    ]
+
+
+class CGfState(ctypes.Structure):
+    _fields_ = [
+        ("north_m", c_double),
+        ("east_m", c_double),
+        ("altitude_m", c_double),
+        ("vn_m_s", c_double),
+        ("ve_m_s", c_double),
+        ("climb_rate_m_s", c_double),
+        ("eph_m", c_double),
+        ("epv_m", c_double),
+    ]
+
+
+class CGfPrediction(ctypes.Structure):
+    _fields_ = [
+        ("t_gf_s", c_double),
+        ("t_horizontal_s", c_double),
+        ("t_vertical_s", c_double),
+        ("inside", c_uint8),
+        ("exit_distance_m", c_double),
+    ]
+
+
 class _Aligned:
     def __init__(self, size: int, align: int) -> None:
         align = max(int(align), 1)
@@ -169,6 +203,11 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_monitor_observe.restype = c_int
     lib.guara_monitor_evaluate.argtypes = [c_void_p, c_double, POINTER(CMonitorEval)]
     lib.guara_monitor_evaluate.restype = c_int
+    lib.guara_gf_params_default.argtypes = [POINTER(CGfParams)]
+    lib.guara_gf_predict.argtypes = [
+        POINTER(c_double), c_size_t, c_double, c_double,
+        POINTER(CGfParams), POINTER(CGfState), POINTER(CGfPrediction)]
+    lib.guara_gf_predict.restype = c_int
     return lib
 
 
@@ -382,4 +421,51 @@ class SilMonitor:
             invalid=int(out.invalid),
             first_violating_id=_cstr(bytes(out.first_violating_id)),
             first_invalid_id=_cstr(bytes(out.first_invalid_id)),
+        )
+
+
+class SilGeofence:
+    def __init__(self, lib: ctypes.CDLL) -> None:
+        self._lib = lib
+        self._verts: list[float] = []
+        self._alt_min = 0.0
+        self._alt_max = 1.0e9
+
+    def configure(self, vertices_ne: list[float], alt_min_m: float, alt_max_m: float) -> None:
+        self._verts = list(vertices_ne)
+        self._alt_min = alt_min_m
+        self._alt_max = alt_max_m
+
+    def predict(self, params: GfParams, state: GfState) -> GfPrediction:
+        n = len(self._verts) // 2
+        arr = (c_double * len(self._verts))(*self._verts)
+        cp = CGfParams(
+            a_brake_h_m_s2=params.a_brake_h_m_s2,
+            a_brake_v_m_s2=params.a_brake_v_m_s2,
+            k_sigma=params.k_sigma,
+            v_min_m_s=params.v_min_m_s,
+            horizon_s=params.horizon_s,
+        )
+        cs = CGfState(
+            north_m=state.north_m,
+            east_m=state.east_m,
+            altitude_m=state.altitude_m,
+            vn_m_s=state.vn_m_s,
+            ve_m_s=state.ve_m_s,
+            climb_rate_m_s=state.climb_rate_m_s,
+            eph_m=state.eph_m,
+            epv_m=state.epv_m,
+        )
+        out = CGfPrediction()
+        rc = self._lib.guara_gf_predict(
+            arr, n, c_double(self._alt_min), c_double(self._alt_max),
+            ctypes.byref(cp), ctypes.byref(cs), ctypes.byref(out))
+        if rc != GUARA_OK:
+            raise OSError(f"guara_gf_predict returned {rc}")
+        return GfPrediction(
+            t_gf_s=float(out.t_gf_s),
+            t_horizontal_s=float(out.t_horizontal_s),
+            t_vertical_s=float(out.t_vertical_s),
+            inside=int(out.inside),
+            exit_distance_m=float(out.exit_distance_m),
         )

@@ -61,3 +61,16 @@ def test_monitor_table_vectors_cover_stale_incomplete_and_hostile_fields():
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_monitor_table" in cmake
     assert "test_monitor_vectors.c" in cmake
+
+
+def test_geofence_vectors_cover_ac8_and_uncertainty_band():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/geofence.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "convex_straight_approach" in ids
+    assert "zero_velocity_is_infinite" in ids
+    assert "outside_is_zero" in ids
+    assert "hover_inside_uncertainty_band" in ids
+    cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
+    assert "conformance_geofence" in cmake
