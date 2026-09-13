@@ -40,6 +40,7 @@ endif()
 add_library(guara_core
   src/types.cpp
   src/decision_core.cpp
+  src/param_digest.cpp
   src/abi.cpp
 )
 add_library(guara::core ALIAS guara_core)

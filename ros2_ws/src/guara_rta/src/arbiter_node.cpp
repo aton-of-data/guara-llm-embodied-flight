@@ -28,6 +28,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -61,7 +62,9 @@
 #include "guara_rta/geofence_channel.hpp"
 #include "guara_rta/input_manager.hpp"
 #include "guara_rta/monitor_table.hpp"
+#include "guara_rta/param_digest.hpp"
 #include "guara_rta/safety_profile.hpp"
+#include "guara/guara.h"
 
 namespace guara_rta
 {
@@ -232,6 +235,16 @@ public:
     const char * invalid = validate(params_);
     if (invalid != nullptr) {
       throw std::invalid_argument(std::string("invalid RTA parameters: ") + invalid);
+    }
+    {
+      std::uint8_t digest[kParamDigestLen];
+      paramDigest(params_, digest);
+      char hex[2 * kParamDigestLen + 1];
+      for (std::size_t i = 0; i < kParamDigestLen; ++i) {
+        std::snprintf(hex + (2U * i), 3, "%02x", static_cast<unsigned>(digest[i]));
+      }
+      RCLCPP_INFO(get_logger(), "guara-core %s abi %s digest=%s",
+        GUARA_CORE_VERSION, GUARA_ABI_VERSION, hex);
     }
     // The geofence channel exists only if the predictor is configured; the two switches must agree,
     // otherwise a fence is either evaluated without being checked for freshness (review H-5) or a
