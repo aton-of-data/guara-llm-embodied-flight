@@ -29,6 +29,10 @@ One switching core, two hosts:
 [![F prime](https://img.shields.io/badge/F%C2%B4-v4.3.0%20(specified)-lightgrey.svg)](docs/adr/0011-fprime-as-second-rta-host.md)
 [![Status](https://img.shields.io/badge/status-SITL%20research%20prototype-orange.svg)](docs/milestones/STATUS.md)
 
+**Project site** — the same material, organised for reading rather than for grepping:
+[**aton-of-data.github.io/guara-llm-embodied-flight**](https://aton-of-data.github.io/guara-llm-embodied-flight/)
+(overview, architecture, an integration guide, and the evidence). Source in [`site/`](site).
+
 **Built on** — upstream projects, at the commits pinned in
 [`third_party/VERSIONS.md`](third_party/VERSIONS.md). Wordmarks are used nominatively to say
 what Guará integrates; see [§12 · Trademarks](docs/LICENSING.md#trademarks).
