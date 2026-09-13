@@ -3,11 +3,12 @@
 Updated: 2026-09-13. An AC is PASS only with an executed command and an excerpt in the
 milestone report. This table is a tracker, not a substitute for those reports.
 
-Threads (`docs/PLAN-M8-M16.md` §1, `docs/PLAN-M17-M28.md`): **core** = the PX4 RTA of
+Threads (`docs/PLAN-M8-M16.md` §1, `docs/PLAN-M17-M28.md` §7): **core** = the PX4 RTA of
 M1–M7 · **A** = air / LLM embodiment · **B** = the F´ host · **C** = the space domain ·
-**S** = setup and delivery. Statuses are `PASS`, `in progress` (code exists, the criterion
-is not met yet) and `planned` (specified, no code). Every `planned` row is a promise in
-the plan, not work in flight.
+**S** = setup and reproducibility (G-S1..G-S8) · **K** = the kernel and its delivery
+(G-K1..G-K8). Statuses are `PASS`, `in progress` (code exists, the criterion is not met
+yet) and `planned` (specified, no code). Every `planned` row is a promise in the plan, not
+work in flight.
 
 The review `docs/reviews/2026-09-11-m1-m5-review.md` invalidated part of the evidence behind this
 table (one false PASS, and eleven rows produced by a checker that no longer ran). Every finding was
@@ -61,11 +62,13 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-56 | S | M17 | in progress | `GUARA_OFFLINE=1` refuses clone, fetch and image build; `dev.sh` uses `--network=none`; tier-2 colcon evidence unrecorded |
 | AC-57 | K | M18 | in progress | `scripts/check_core_consumer.sh` installs a package config and links `guara::core`; CI matrix not yet green on this commit |
 | AC-58 | K | M18 | in progress | `colcon test --packages-select guara_rta --ctest-args -R 'decision_core\|hysteresis\|latch\|gateway'`: 8/8 on arm64 in `guara-dev:m1`; no milestone report yet |
+| AC-59 | K | M18 | in progress | `ctest -R 'abi_no_alloc\|abi_freestanding'`: no heap and no `write` after init, through the C ABI; GCC-only link, so macOS and Windows are unrecorded |
 | AC-60 | K | M18 | in progress | `guara ctk bench` records `max_step_ns` as measured, not a bound; x86 evidence unrecorded |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan and clang-tidy; gcov line coverage measured when GCC is available; pass threshold PARAMETER TBD |
+| AC-61 | K | M18 | in progress | `scripts/check_abi.py --baseline core/abi_symbols.txt` runs on every push; the golden-decision half of the criterion is the CTK set hash, not yet gated against a released tag |
 | AC-63 | K | M19 | in progress | spec_s3 T1–T9; adr0010 rules 1–3; monitor_table H-4/H-6; geofence AC-8/uncertainty vectors through C ABI, Python and SIL; rules 6–7 and coverage PARAMETER TBD |
-| AC-64 | K | M19 | in progress | SIL ctypes port; T4 mutation rejected in Python and C ABI; ROS/F´ ports absent |
-| AC-65 | K | M19 | in progress | `guara ctk run --port python` passes spec_s3; ambiguities filed in SPEC §3.6, not resolved |
+| AC-64 | K | M19 | in progress | SIL ctypes port; both ports run the whole published set (94 vectors, one set hash) and agree; T4 mutation rejected in Python and C ABI; ROS/F´ ports absent |
+| AC-65 | K | M19 | in progress | `guara ctk run --port python` passes the published set; ambiguities filed in SPEC §3.6, not resolved |
 | AC-66 | K | M19 | in progress | `--report` + `check_ac.py AC-66`; not signed; only the Python port |
 
 ## Planned criteria
@@ -99,3 +102,5 @@ place as the evidence for it.
 M18–M28 (AC-57..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §3–§6 and are not yet inventoried here as in-progress work.
 
 Operation-level view of the same scope: [`docs/operations/`](../operations/README.md).
+Findings against the M17–M19 code, and their remediation:
+[`docs/reviews/2026-09-13-m17-m19-kernel-review.md`](../reviews/2026-09-13-m17-m19-kernel-review.md).
