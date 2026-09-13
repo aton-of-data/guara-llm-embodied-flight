@@ -6,7 +6,18 @@ set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export PYTHONPATH="${root}${PYTHONPATH:+:${PYTHONPATH}}"
 
-lib=""
+case "$(uname -s)" in
+  Darwin) suffix=".dylib" ;;
+  MINGW*|MSYS*|CYGWIN*) suffix=".dll" ;;
+  *) suffix=".so" ;;
+esac
+
+lib="${GUARA_CABI:-}"
+if [[ -n "${lib}" && ! -f "${lib}" ]]; then
+  echo "FAIL ctk-sil: GUARA_CABI=${lib} is not a file" >&2
+  exit 1
+fi
+if [[ -z "${lib}" ]]; then
 for candidate in \
   "${root}/build/core/libguara_cabi.so" \
   "${root}/build/core/libguara_cabi.dylib" \
@@ -16,11 +27,12 @@ for candidate in \
   "${root}/build/core-prefix/lib/libguara_cabi.dylib" \
   "${root}/build/core-prefix/bin/guara_cabi.dll"
 do
-  if [[ -f "${candidate}" ]]; then
+  if [[ -f "${candidate}" && "${candidate}" == *"${suffix}" ]]; then
     lib="${candidate}"
     break
   fi
 done
+fi
 if [[ -z "${lib}" ]]; then
   echo "FAIL ctk-sil: guara_cabi shared library not found; build core/ first" >&2
   exit 1
