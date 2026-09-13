@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,18 +11,18 @@
 <style>
   :root { --figpfx: "C-"; }
   .page-head { padding-block: 3.2rem 1rem; }
-  .gap-card { display: flex; flex-direction: column; height: 100%; border-top: 2px solid var(--accent); }
+  .gap-card { display: flex; flex-direction: column; height: 100%; }
   .gap-card .meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
   .gap-card h3 { font-size: 1.05rem; margin-bottom: .5rem; }
-  .gap-card p { font-size: .92rem; color: var(--fg-muted); margin: 0 0 .8rem; }
-  .gap-card .need { font-size: .85rem; margin-top: auto; padding-top: .7rem; border-top: 1px solid var(--line-soft); }
-  .gap-card .need b { color: var(--fg); font-weight: 600; }
+  .gap-card p { font-size: .92rem; color: var(--ink-2); margin: 0 0 .8rem; }
+  .gap-card .need { font-size: .85rem; margin-top: auto; padding-top: .7rem; border-top: 1px solid var(--rule-soft); }
+  .gap-card .need b { color: var(--ink); font-weight: 600; }
 
-  .rule { display: grid; grid-template-columns: 2.4rem 1fr; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line-soft); }
+  .rule { display: grid; grid-template-columns: 2.4rem 1fr; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--rule-soft); }
   .rule:last-child { border-bottom: none; }
   .rule .n { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; color: var(--accent); line-height: 1.1; }
   .rule h3 { margin: 0 0 .3rem; font-size: 1rem; }
-  .rule p { margin: 0; font-size: .92rem; color: var(--fg-muted); }
+  .rule p { margin: 0; font-size: .92rem; color: var(--ink-2); }
 
   .fund { border-top: 2px solid var(--clear); }
   .fund h3 { font-size: 1.03rem; }
@@ -58,7 +58,7 @@
   <div class="btn-row">
     <a class="btn btn-primary" href="#asks">Open work items</a>
     <a class="btn" href="#rules">Review criteria</a>
-    <a class="btn" href="#fund">Fund the work</a>
+    <a class="btn" href="#fund">Funding</a>
   </div>
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-05</dd></div>
@@ -73,13 +73,13 @@
 <div class="wrap doc">
   <aside class="toc">
     <h4>On this page</h4>
-    <a href="#asks">1 Open work items</a>
-    <a href="#rules">2 Review criteria</a>
-    <a href="#challenge">Challenge a claim</a>
-    <a href="#start">Getting set up</a>
-    <a href="#fund">Funding</a>
-    <a href="#scope">Scope and conduct</a>
-    <a href="#cite">Citing</a>
+    <a href="#asks">1 · Open work items</a>
+    <a href="#rules">2 · Mandatory review criteria</a>
+    <a href="#challenge">3 · Challenge a claim</a>
+    <a href="#start">4 · Getting set up</a>
+    <a href="#fund">5 · Funding</a>
+    <a href="#scope">6 · Scope and conduct</a>
+    <a href="#cite">7 · Citing</a>
   </aside>
 
   <main class="doc-body">
@@ -426,9 +426,9 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
       produced it — not this site, and not the README.
     </p>
     <div class="btn-row">
-      <a class="btn btn-primary" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Open the repository →</a>
-      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/CONTRIBUTING.md">Full CONTRIBUTING.md</a>
-      <a class="btn" href="mailto:dornfeld.in@gmail.com">Email the author</a>
+      <a class="btn btn-primary" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Repository</a>
+      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/CONTRIBUTING.md">Contribution guide</a>
+      <a class="btn" href="mailto:dornfeld.in@gmail.com">Contact</a>
     </div>
   </section>
 

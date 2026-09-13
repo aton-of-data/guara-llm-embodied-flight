@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,20 +13,20 @@
   .page-head { padding-block: 3.2rem 1rem; }
   .obars { display: grid; gap: .55rem; margin: 1.5rem 0; }
   .obar { display: grid; grid-template-columns: 8.5rem 1fr 5.5rem; gap: .8rem; align-items: center; font-size: .88rem; }
-  .obar .t { font-family: var(--mono); font-size: .8rem; color: var(--fg-muted); }
-  .obar .track { background: var(--bg-raise); border: 1px solid var(--line); border-radius: 4px; height: 1.5rem; position: relative; overflow: hidden; }
+  .obar .t { font-family: var(--mono); font-size: .8rem; color: var(--ink-2); }
+  .obar .track { background: var(--paper-3); border: 1px solid var(--rule); border-radius: 4px; height: 1.5rem; position: relative; overflow: hidden; }
   .obar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px 0 0 3px; }
   .obar .n { font-family: var(--mono); font-size: .82rem; text-align: right; }
   @media (max-width: 620px) { .obar { grid-template-columns: 6rem 1fr; } .obar .n { grid-column: 2; text-align: left; } }
 
-  .fm { display: grid; grid-template-columns: 5rem 1fr; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--line-soft); }
+  .fm { display: grid; grid-template-columns: 5rem 1fr; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--rule-soft); }
   .fm:last-child { border-bottom: none; }
   .fm .id { font-family: var(--mono); font-weight: 640; color: var(--unsafe); font-size: .85rem; }
   .fm p { margin: 0; font-size: .92rem; }
   @media (max-width: 560px) { .fm { grid-template-columns: 1fr; gap: .2rem; } }
 
-  .ac-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
-  .ac-summary > div { background: var(--bg-panel); padding: 1.1rem 1.2rem; }
+  .ac-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
+  .ac-summary > div { background: var(--paper-2); padding: 1.1rem 1.2rem; }
   @media (max-width: 620px) { .ac-summary { grid-template-columns: 1fr; } }
 </style>
 </head>
@@ -50,7 +50,7 @@
 
 <div class="wrap page-head">
   <p class="eyebrow">Evidence</p>
-  <h1>What has actually been measured</h1>
+  <h1>Evidence and limits</h1>
   <p class="lede">
     Performance figures are obtained only from <code>results/</code> via the aggregation script;
     the reviewable portion of each run is published verbatim; and no milestone is recorded complete
@@ -70,13 +70,13 @@
 <div class="wrap doc">
   <aside class="toc">
     <h4>On this page</h4>
-    <a href="#latency">The latency batch</a>
-    <a href="#pair">RTA on vs off</a>
-    <a href="#rerun">Re-derive it yourself</a>
-    <a href="#criteria">Acceptance criteria</a>
-    <a href="#review">The review that failed</a>
-    <a href="#failures">Failure modes</a>
-    <a href="#limits">Limits</a>
+    <a href="#latency">1 · The latency batch</a>
+    <a href="#pair">2 · Effect of the boundary</a>
+    <a href="#rerun">3 · Re-derivation</a>
+    <a href="#criteria">4 · Acceptance criteria</a>
+    <a href="#review">5 · Internal review and remediation</a>
+    <a href="#failures">6 · Known failure modes</a>
+    <a href="#limits">7 · Limits</a>
   </aside>
 
   <main class="doc-body">
@@ -131,7 +131,7 @@
       the geofence one is a factor of 16, the DAA one a factor of 17.
     </p>
 
-    <p class="tbl-cap">Latency batch results over 30 runs, seeds 1–30. Stage L1 is excluded; see §1.2.</p>
+    <p class="tbl-cap">End-to-end switch latency and its stages over 30 runs, seeds 1–30, reported as p50 and p99. Stage L1 is excluded; see §1.2.</p>
     <div class="table-scroll" style="margin-top:1.4rem">
       <table>
         <thead><tr><th>Quantity</th><th>n</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
@@ -200,7 +200,7 @@
       the fence is a legitimate test of exactly that.
     </p>
 
-    <p class="tbl-cap">Published run directories and the behaviour each demonstrates.</p>
+    <p class="tbl-cap">Published run directories under docs/evidence, and the behaviour each one demonstrates.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Published run</th><th>What it demonstrates</th></tr></thead>
@@ -367,7 +367,7 @@ python3 scripts/check_links.py                 # every relative document link re
     </div>
 
     <h3 style="margin-top:1.8rem">Blocking risks</h3>
-    <p class="tbl-cap">Blocking risks and the work each prevents.</p>
+    <p class="tbl-cap">Blocking risks of the air and space threads, and the work each one prevents.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Risk</th><th>What it blocks</th></tr></thead>
@@ -412,7 +412,7 @@ python3 scripts/check_links.py                 # every relative document link re
     </div>
 
     <div class="btn-row">
-      <a class="btn btn-primary" href="contribute.html">Help close one of these gaps →</a>
+      <a class="btn btn-primary" href="contribute.html">Open work items</a>
       <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md">The full SPEC §7 and §9</a>
     </div>
   </section>

@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -53,12 +53,12 @@
 <div class="wrap doc">
   <aside class="toc">
     <h4>On this page</h4>
-    <a href="#symbols">1 Symbols</a>
-    <a href="#states">2 States and signals</a>
-    <a href="#stages">3 Latency stages</a>
-    <a href="#identifiers">4 Identifier schemes</a>
-    <a href="#acronyms">5 Acronyms</a>
-    <a href="#refs">6 References</a>
+    <a href="#symbols">1 · Symbols</a>
+    <a href="#states">2 · States and signals</a>
+    <a href="#stages">3 · Latency stages</a>
+    <a href="#identifiers">4 · Identifier schemes</a>
+    <a href="#acronyms">5 · Acronyms</a>
+    <a href="#refs">6 · References</a>
   </aside>
 
   <main class="doc-body">
@@ -69,41 +69,53 @@
       Parameters are configuration values. Signals are evaluated once per decision tick.
       Measurements are quantities obtained from a recorded run and are not configurable.
     </p>
-    <p class="tbl-cap">Symbols used in the switching rule and the latency budget.</p>
+    <p class="tbl-cap">Symbols of the switching rule and the latency budget, with units and definitions. Latin symbols precede Greek.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Symbol</th><th>Unit</th><th>Kind</th><th>Definition</th></tr></thead>
         <tbody>
-          <tr><td>δ_lat</td><td>s</td><td>measurement</td>
-              <td>End-to-end switch latency: from the input sample that makes <code>U(k)</code> true to the recovery mode being effective. Reported as a p99 over a batch.</td></tr>
-          <tr><td>τ_gf</td><td>s</td><td>parameter</td>
-              <td>Geofence trigger threshold. The switch is commanded when the predicted time to keep-in violation falls to this value.</td></tr>
-          <tr><td>τ_daa</td><td>s</td><td>parameter</td>
-              <td>Detect-and-avoid trigger threshold, against the time to the corrective well-clear volume.</td></tr>
-          <tr><td>τ_rec</td><td>s</td><td>measurement</td>
-              <td>Recovery settling time: from entry into the recovery mode until the vehicle reaches the recovered condition. For Hold, until horizontal speed falls below 0.5 m/s.</td></tr>
-          <tr><td>τ_rec,daa</td><td>s</td><td>measurement</td>
-              <td>The value of τ_rec applicable to the recovery selected for a detect-and-avoid trigger.</td></tr>
-          <tr><td>T_gf</td><td>s</td><td>signal</td>
-              <td>Predicted time to keep-in geofence violation, including the braking model and position uncertainty. Positive infinity when no violation is predicted.</td></tr>
+          <tr><td>C(k)</td><td>—</td><td>signal</td>
+              <td>Clear predicate at tick k. Necessary but not sufficient for a return; see T_d.</td></tr>
+          <tr><td>Cdur(k)</td><td>s</td><td>signal</td>
+              <td>Duration for which the clear predicate has held continuously up to tick k.</td></tr>
+          <tr><td>h_daa, h_gf</td><td>s</td><td>parameter</td>
+              <td>Additive hysteresis applied to the corresponding threshold on the return path only. Neither delays the switch away from the complex function.</td></tr>
+          <tr><td>IC(k)</td><td>—</td><td>signal</td>
+              <td>In-charge flag. True when the arbiter holds the authority it believes it holds.</td></tr>
+          <tr><td>k</td><td>—</td><td>index</td>
+              <td>Decision tick index. The switching logic is evaluated once per tick.</td></tr>
+          <tr><td>M(k)</td><td>—</td><td>signal</td>
+              <td>Monitor flag. True when any switch-class runtime monitor reports its property violated.</td></tr>
+          <tr><td>N_max</td><td>—</td><td>parameter</td>
+              <td>Switch budget. After this many transitions from the complex function to a recovery function within the window W, the recovery latches.</td></tr>
+          <tr><td>S(k)</td><td>—</td><td>signal</td>
+              <td>Number of switches recorded within the window W at tick k.</td></tr>
           <tr><td>T_daa</td><td>s</td><td>signal</td>
               <td>Minimum over intruders of the time until the ownship enters the corrective-level well-clear volume. Positive infinity when no intruder is predicted to enter it within the lookahead time.</td></tr>
-          <tr><td>h_gf, h_daa</td><td>s</td><td>parameter</td>
-              <td>Additive hysteresis applied to the corresponding threshold on the return path only. They never delay the switch away from the complex function.</td></tr>
           <tr><td>T_d</td><td>s</td><td>parameter</td>
-              <td>Dwell time. Both the minimum time spent in a recovery function and the minimum continuous duration for which <code>C(k)</code> must hold before a return is permitted.</td></tr>
-          <tr><td>T_s</td><td>s</td><td>parameter</td>
-              <td>Decision period. The switching logic is evaluated once per tick of this period.</td></tr>
+              <td>Dwell time. Both the minimum time spent in a recovery function and the minimum continuous duration for which the clear predicate must hold before a return is permitted.</td></tr>
           <tr><td>T_esc</td><td>s</td><td>parameter</td>
               <td>Persistence escalation time. Disabled by default.</td></tr>
-          <tr><td>N_max</td><td>—</td><td>parameter</td>
-              <td>Switch budget. After this many complex-function-to-recovery switches within the window <code>W</code>, the recovery latches.</td></tr>
+          <tr><td>T_gf</td><td>s</td><td>signal</td>
+              <td>Predicted time to keep-in geofence violation, including the braking model and position uncertainty. Positive infinity when no violation is predicted.</td></tr>
+          <tr><td>T_s</td><td>s</td><td>parameter</td>
+              <td>Decision period. One evaluation of the switching logic per tick of this period.</td></tr>
+          <tr><td>U(k)</td><td>—</td><td>signal</td>
+              <td>Unsafe predicate at tick k. Commands a switch to the recovery function within the same tick.</td></tr>
+          <tr><td>V(k)</td><td>—</td><td>signal</td>
+              <td>Input-invalid flag. True when any enabled channel is stale, absent or malformed. Enabled channels fail closed.</td></tr>
           <tr><td>W</td><td>s</td><td>parameter</td>
-              <td>The sliding window over which the switch budget is counted.</td></tr>
-          <tr><td>S(k)</td><td>—</td><td>signal</td>
-              <td>Number of switches recorded within the window <code>W</code> at tick <code>k</code>.</td></tr>
-          <tr><td>Cdur(k)</td><td>s</td><td>signal</td>
-              <td>Duration for which the clear condition <code>C</code> has held continuously up to tick <code>k</code>.</td></tr>
+              <td>Sliding window over which the switch budget is counted.</td></tr>
+          <tr><td>δ_lat</td><td>s</td><td>measurement</td>
+              <td>End-to-end switch latency, from the input sample that makes the unsafe predicate true to the recovery mode being effective. Reported as a p99 over a batch.</td></tr>
+          <tr><td>τ_daa</td><td>s</td><td>parameter</td>
+              <td>Detect-and-avoid trigger threshold, applied to T_daa.</td></tr>
+          <tr><td>τ_gf</td><td>s</td><td>parameter</td>
+              <td>Geofence trigger threshold, applied to T_gf.</td></tr>
+          <tr><td>τ_rec</td><td>s</td><td>measurement</td>
+              <td>Recovery settling time, from entry into the recovery mode until the recovered condition is reached. For Hold, until horizontal speed falls below 0.5 m/s.</td></tr>
+          <tr><td>τ_rec,daa</td><td>s</td><td>measurement</td>
+              <td>The value of τ_rec applicable to the recovery selected on a detect-and-avoid trigger.</td></tr>
         </tbody>
       </table>
     </div>
@@ -121,7 +133,7 @@
 
   <section id="states">
     <h2>2 · States and signals</h2>
-    <p class="tbl-cap">States of the switching logic.</p>
+    <p class="tbl-cap">States of the switching logic, and the condition under which each is entered.</p>
     <div class="table-scroll" style="margin-bottom:1.6rem">
       <table class="nomen">
         <thead><tr><th>State</th><th>Meaning</th></tr></thead>
@@ -134,7 +146,7 @@
       </table>
     </div>
 
-    <p class="tbl-cap">Boolean signals evaluated at each decision tick.</p>
+    <p class="tbl-cap">Boolean signals evaluated at each decision tick, with the component that produces each.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Signal</th><th>Source</th><th>Definition</th></tr></thead>
@@ -157,7 +169,7 @@
       for that stage. Stating the decomposition is what makes it possible to say which stage is
       excluded, and why.
     </p>
-    <p class="tbl-cap">Stages of the end-to-end latency budget.</p>
+    <p class="tbl-cap">Stages of the end-to-end latency budget, the clock each is measured on, and the interval each spans.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Stage</th><th>Clock</th><th>Interval</th></tr></thead>
@@ -180,7 +192,7 @@
       Claims in this documentation set are traceable by identifier. Each scheme has a single
       authority in the repository, which governs where the site and the repository differ.
     </p>
-    <p class="tbl-cap">Identifier prefixes and their governing documents.</p>
+    <p class="tbl-cap">Identifier prefixes used across the documentation set, their meaning, and the repository document governing each.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Prefix</th><th>Meaning</th><th>Authority</th></tr></thead>
@@ -201,7 +213,7 @@
       </table>
     </div>
 
-    <p class="tbl-cap">Status markers used in the repository and reproduced on this site.</p>
+    <p class="tbl-cap">Status markers used in the repository and reproduced on this site, with the epistemic claim each one makes.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Marker</th><th>Meaning</th></tr></thead>
@@ -220,7 +232,7 @@
 
   <section id="acronyms">
     <h2>5 · Acronyms</h2>
-    <p class="tbl-cap">Acronyms used across the documentation set.</p>
+    <p class="tbl-cap">Acronyms used across the documentation set, with expansions and domain notes.</p>
     <div class="table-scroll">
       <table class="nomen">
         <thead><tr><th>Acronym</th><th>Expansion</th><th>Note</th></tr></thead>

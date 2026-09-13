@@ -15,7 +15,8 @@
   }
   var stored = null;
   try { stored = localStorage.getItem("guara-theme"); } catch (e) {}
-  apply(stored || (window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"));
+  // The default presentation is ink on paper; dark follows an explicit system preference.
+  apply(stored || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
 
   document.addEventListener("click", function (ev) {
     var t = ev.target.closest && ev.target.closest("#theme-toggle");
