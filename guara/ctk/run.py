@@ -75,6 +75,15 @@ def _params(overlay: dict | None, base: Params | None = None) -> Params:
     return p
 
 
+def _known(vec_id: str, step_i: int, key: str, known) -> None:
+    """Raise unless `key` is a field this vector set compares."""
+    if key not in known:
+        raise CtkError(
+            f"{vec_id} step {step_i}: unknown expectation {key!r}; "
+            f"this vector set compares {', '.join(sorted(known))}"
+        )
+
+
 def _check(vec_id: str, step_i: int, expect: dict, got) -> None:
     mapping = {
         "state": got.state,
@@ -84,8 +93,7 @@ def _check(vec_id: str, step_i: int, expect: dict, got) -> None:
         "unsafe_causes": got.unsafe_causes,
     }
     for key, want in expect.items():
-        if key not in mapping:
-            continue
+        _known(vec_id, step_i, key, mapping)
         if mapping[key] != want:
             raise CtkError(
                 f"{vec_id} step {step_i}: {key} got {mapping[key]} want {want}"
@@ -142,8 +150,7 @@ def _check_geofence(vec_id: str, step_i: int, expect: dict, got: GfPrediction) -
         "exit_distance_m": got.exit_distance_m,
     }
     for key, want in expect.items():
-        if key not in mapping:
-            continue
+        _known(vec_id, step_i, key, mapping)
         got_v = mapping[key]
         if key == "inside":
             if int(got_v) != int(want):
@@ -162,8 +169,7 @@ def _check_geofence(vec_id: str, step_i: int, expect: dict, got: GfPrediction) -
 def _check_project(vec_id: str, step_i: int, expect: dict, north_m: float, east_m: float) -> None:
     mapping = {"north_m": north_m, "east_m": east_m}
     for key, want in expect.items():
-        if key not in mapping:
-            continue
+        _known(vec_id, step_i, key, mapping)
         got_v = mapping[key]
         tol = 1e-6 if abs(float(want)) < 1e-9 else 0.01
         if abs(got_v - float(want)) > tol:
@@ -351,8 +357,7 @@ def _check_gateway(vec_id: str, step_i: int, expect: dict, got) -> None:
             if abs(speed - float(want)) > 1e-4:
                 raise CtkError(f"{vec_id} step {step_i}: speed_h got {speed} want {want}")
             continue
-        if key not in mapping:
-            continue
+        _known(vec_id, step_i, key, set(mapping) | {"yaw", "speed_h"})
         got_v = mapping[key]
         if isinstance(want, (int, float)) and isinstance(got_v, float):
             if abs(got_v - float(want)) > 1e-4:
@@ -435,8 +440,7 @@ def _check_monitor(vec_id: str, step_i: int, expect: dict, got: MonitorEval) -> 
         "first_invalid_id": got.first_invalid_id,
     }
     for key, want in expect.items():
-        if key not in mapping:
-            continue
+        _known(vec_id, step_i, key, mapping)
         if mapping[key] != want:
             raise CtkError(f"{vec_id} step {step_i}: {key} got {mapping[key]!r} want {want!r}")
 

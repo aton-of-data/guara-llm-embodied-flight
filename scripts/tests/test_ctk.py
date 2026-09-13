@@ -75,6 +75,34 @@ def test_spec_s3_alone_still_runs_and_is_a_strict_subset():
     assert n < _published_vector_count()
 
 
+def test_an_unknown_expectation_key_is_refused_not_skipped(tmp_path):
+    """A typo in a vector must fail the kit; a vacuous pass is the worse failure."""
+    from guara.ctk.run import CtkError, run_vectors
+
+    vectors = tmp_path / "typo.json"
+    vectors.write_text(json.dumps([{
+        "id": "typo",
+        "steps": [{
+            "in": {"t_s": 1.0, "in_charge": 1, "owned_mode_active": 1},
+            "expect": {"stat": 1},
+        }],
+    }]), encoding="utf-8")
+    with pytest.raises(CtkError) as exc:
+        run_vectors(vectors)
+    assert "unknown expectation 'stat'" in str(exc.value)
+
+
+def test_a_monitor_action_outside_the_recovery_encoding_is_refused():
+    """Ranking an unrepresentable action would emit RF with no command at all."""
+    from guara.ctk.reference import CoreRejected, Inputs, ReferenceCore
+
+    core = ReferenceCore()
+    with pytest.raises(CoreRejected) as exc:
+        core.step(Inputs(t_s=1.0, in_charge=1, owned_mode_active=1,
+                         monitor_violation=1, monitor_action=200))
+    assert exc.value.code == "PARAMS"
+
+
 def test_python_port_passes_adr0010_gateway_vectors():
     vectors = ROOT / "core/conformance/vectors/adr0010_gateway.json"
     n = len(json.loads(vectors.read_text()))
@@ -296,14 +324,3 @@ def test_ac60_rejects_a_report_that_omits_the_measured_disclaimer(tmp_path):
     )
     assert chk.returncode == 1
     assert "measured, not a bound" in chk.stdout
-
-
-def test_a_monitor_action_outside_the_recovery_encoding_is_refused():
-    """Ranking an unrepresentable action would emit RF with no command at all."""
-    from guara.ctk.reference import CoreRejected, Inputs, ReferenceCore
-
-    core = ReferenceCore()
-    with pytest.raises(CoreRejected) as exc:
-        core.step(Inputs(t_s=1.0, in_charge=1, owned_mode_active=1,
-                         monitor_violation=1, monitor_action=200))
-    assert exc.value.code == "PARAMS"
