@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 
@@ -69,6 +70,19 @@ def test_a_t4_mutation_is_rejected_by_the_kit():
     )
     assert r.returncode == 0, r.stdout + r.stderr
     assert "PASS ctk_mutation" in r.stdout
+
+
+def test_a_t4_mutation_in_the_c_abi_is_rejected_when_cmake_is_present():
+    if shutil.which("cmake") is None:
+        pytest.skip("cmake is not on PATH")
+    env = _env()
+    env["PYTHON"] = sys.executable
+    r = subprocess.run(
+        ["bash", str(ROOT / "scripts/ctk_mutation_sil.sh")],
+        cwd=str(ROOT), capture_output=True, text=True, env=env,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "PASS ctk_mutation_sil" in r.stdout
 
 
 def test_spec_records_the_ambiguities_the_port_found():

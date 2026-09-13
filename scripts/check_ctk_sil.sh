@@ -38,4 +38,5 @@ fi
 bench="${TMPDIR:-/tmp}/guara-ctk-bench"
 "${py}" -m guara ctk bench --port sil --report "${bench}"
 "${py}" "${root}/scripts/check_ac.py" AC-60 "${bench}"
+bash "${root}/scripts/ctk_mutation_sil.sh"
 echo "PASS ctk-sil: C ABI port matched the published vectors via ${lib}"
