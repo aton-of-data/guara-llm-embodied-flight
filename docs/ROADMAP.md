@@ -39,6 +39,24 @@ batch milestones are complete ([`docs/PLAN-M8-M16.md`](PLAN-M8-M16.md) §1).
 | M15 | B | Ogma F´ backend upstream: verdict output port, configurable module name | AC-45, AC-46 |
 | M16 | C | Orbital batch, intent → validated sequence, RQ6b against the space schema | AC-49, AC-50 |
 
+## Proposed — delivery and real hardware
+
+[`docs/PLAN-M17-M28.md`](PLAN-M17-M28.md) continues past M16: the gap register, and the
+milestones that turn the repository into installable artifacts and take the architecture off
+the simulator. Its packaging decision is [ADR 0014](adr/0014-delivery-model.md) — a versioned
+safety kernel, a conformance kit, two host packages and a companion image, rather than a
+single SDK.
+
+| Milestone | Track | Content | Gate |
+|---|---|---|---|
+| M17 | S | Hermetic setup: single pin source, hash-pinned lock, `guara doctor`, multi-arch image, four install tiers | AC-51..AC-56 |
+| M18 | K | `guara-core`: host-free kernel with a C ABI; absorbs M13's extraction and precedes it | AC-57..AC-62 |
+| M19 | K | `guara-ctk`: golden vectors, a portable runner, an independent reimplementation | AC-63..AC-66 |
+| M20 | K | Published artifacts: ROS 2 packages, F´ library, wheel, companion image, SBOM, Jazzy | AC-67..AC-71 |
+| M21–M23 | H | HITL, companion bring-up and on-target timing, flight instrumentation | AC-72..AC-83 |
+| M24–M25 | H | Operational safety dossier, then the bounded-LLM flight campaign | AC-84..AC-92 |
+| M26–M28 | Z | F´ on an OBC-class target, the space operational interface, the orbital campaign | AC-93..AC-101 |
+
 Full acceptance-criteria inventory, executed and planned:
 [`docs/milestones/STATUS.md`](milestones/STATUS.md).
 
