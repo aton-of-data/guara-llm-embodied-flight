@@ -153,4 +153,14 @@ const char * guara_monitor_action_name(uint8_t action)
   }
 }
 
+const char * guara_monitor_accept_name(int code)
+{
+  switch (code) {
+    case GUARA_MONITOR_ACCEPTED: return "ACCEPTED";
+    case GUARA_MONITOR_INVALID_FIELD: return "INVALID_FIELD";
+    case GUARA_MONITOR_TABLE_FULL: return "TABLE_FULL";
+    default: return "UNKNOWN";
+  }
+}
+
 }  // extern "C"

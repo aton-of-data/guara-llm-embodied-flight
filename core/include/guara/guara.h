@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.13.0-provisional"
+#define GUARA_ABI_VERSION "0.14.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -176,6 +176,7 @@ GUARA_API int guara_monitor_observe(void * storage, const guara_monitor_sample *
 GUARA_API int guara_monitor_evaluate(void * storage, double t_s, guara_monitor_eval * out);
 GUARA_API const char * guara_monitor_class_name(uint8_t monitor_class);
 GUARA_API const char * guara_monitor_action_name(uint8_t action);
+GUARA_API const char * guara_monitor_accept_name(int code);
 
 #define GUARA_GF_MAX_VERTICES 64
 #define GUARA_GF_POLY_NONE 0

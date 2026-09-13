@@ -220,6 +220,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_monitor_class_name.restype = c_char_p
     lib.guara_monitor_action_name.argtypes = [c_uint8]
     lib.guara_monitor_action_name.restype = c_char_p
+    lib.guara_monitor_accept_name.argtypes = [c_int]
+    lib.guara_monitor_accept_name.restype = c_char_p
     lib.guara_gf_params_default.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.restype = c_char_p
@@ -351,6 +353,9 @@ class SilCore:
             "monitor_action": self._lib.guara_monitor_action_name,
         }.get(kind)
         if fn is None:
+            if kind == "monitor_accept":
+                raw = self._lib.guara_monitor_accept_name(c_int(code))
+                return "UNKNOWN" if raw is None else raw.decode("utf-8")
             return "UNKNOWN"
         raw = fn(c_uint8(code))
         return "UNKNOWN" if raw is None else raw.decode("utf-8")

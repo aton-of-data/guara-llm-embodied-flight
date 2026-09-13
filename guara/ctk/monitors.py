@@ -22,6 +22,7 @@ TABLE_FULL = 2
 
 CLASS_NAMES = ("LOG", "SWITCH")
 ACTION_NAMES = ("HOLD", "RTL", "LAND")
+ACCEPT_NAMES = ("ACCEPTED", "INVALID_FIELD", "TABLE_FULL")
 
 
 def monitor_class_name(code: int) -> str:
@@ -35,6 +36,13 @@ def monitor_action_name(code: int) -> str:
     n = int(code)
     if 0 <= n < len(ACTION_NAMES):
         return ACTION_NAMES[n]
+    return "UNKNOWN"
+
+
+def monitor_accept_name(code: int) -> str:
+    n = int(code)
+    if 0 <= n < len(ACCEPT_NAMES):
+        return ACCEPT_NAMES[n]
     return "UNKNOWN"
 
 

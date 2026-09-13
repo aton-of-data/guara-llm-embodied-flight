@@ -100,5 +100,15 @@
       {"op": "check_name", "kind": "monitor_action", "code": 2, "expect": {"name": "LAND"}},
       {"op": "check_name", "kind": "monitor_action", "code": 3, "expect": {"name": "UNKNOWN"}}
     ]
+  },
+  {
+    "id": "monitor_accept_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_accept", "code": 0, "expect": {"name": "ACCEPTED"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 1, "expect": {"name": "INVALID_FIELD"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 2, "expect": {"name": "TABLE_FULL"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
   }
 ]

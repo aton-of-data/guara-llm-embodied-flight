@@ -10,7 +10,7 @@ import math
 from dataclasses import dataclass, field
 
 from .geofence import polygon_error_name
-from .monitors import monitor_action_name, monitor_class_name
+from .monitors import monitor_accept_name, monitor_action_name, monitor_class_name
 
 INACTIVE, CF, RF, LATCHED = 0, 1, 2, 3
 NONE, HOLD, RTL, LAND = 0, 1, 2, 3
@@ -58,6 +58,8 @@ def vocabulary_name(kind: str, code: int) -> str:
         return monitor_class_name(n)
     if kind == "monitor_action":
         return monitor_action_name(n)
+    if kind == "monitor_accept":
+        return monitor_accept_name(n)
     table = {
         "state": STATE_NAMES,
         "recovery": RECOVERY_NAMES,

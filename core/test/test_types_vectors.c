@@ -160,6 +160,9 @@ static const char *lookup_name(const char *kind, unsigned code)
   if (strcmp(kind, "monitor_action") == 0) {
     return guara_monitor_action_name((uint8_t)code);
   }
+  if (strcmp(kind, "monitor_accept") == 0) {
+    return guara_monitor_accept_name((int)code);
+  }
   return "UNKNOWN";
 }
 
@@ -384,8 +387,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 8) {
-    fprintf(stderr, "FAIL expected at least 8 vocabulary vectors, got %d\n", nvec);
+  if (nvec < 9) {
+    fprintf(stderr, "FAIL expected at least 9 vocabulary vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_types vectors=%d\n", nvec);
