@@ -28,6 +28,7 @@
 #include <cinttypes>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -61,7 +62,9 @@
 #include "guara_rta/geofence_channel.hpp"
 #include "guara_rta/input_manager.hpp"
 #include "guara_rta/monitor_table.hpp"
+#include "guara_rta/param_digest.hpp"
 #include "guara_rta/safety_profile.hpp"
+#include "guara/guara.h"
 
 namespace guara_rta
 {
@@ -232,6 +235,17 @@ public:
     const char * invalid = validate(params_);
     if (invalid != nullptr) {
       throw std::invalid_argument(std::string("invalid RTA parameters: ") + invalid);
+    }
+    {
+      paramDigest(params_, param_digest_.data());
+      char hex[2 * kParamDigestLen + 1];
+      for (std::size_t i = 0; i < kParamDigestLen; ++i) {
+        std::snprintf(hex + (2U * i), 3, "%02x", static_cast<unsigned>(param_digest_[i]));
+      }
+      core_version_ = GUARA_CORE_VERSION;
+      abi_version_ = GUARA_ABI_VERSION;
+      RCLCPP_INFO(get_logger(), "guara-core %s abi %s digest=%s",
+        core_version_.c_str(), abi_version_.c_str(), hex);
     }
     // The geofence channel exists only if the predictor is configured; the two switches must agree,
     // otherwise a fence is either evaluated without being checked for freshness (review H-5) or a
@@ -702,6 +716,9 @@ private:
     st.cf_rejected_non_finite = shared_.cf_rejected_non_finite.load();
     st.cf_rejected_guard = shared_.cf_rejected_guard.load();
     st.cf_clamped = shared_.cf_clamped.load();
+    st.core_version = core_version_;
+    st.abi_version = abi_version_;
+    st.param_digest = param_digest_;
     state_pub_->publish(st);
     t_last_state_pub_s_ = t;
   }
@@ -736,6 +753,9 @@ private:
   std::unique_ptr<GuaraExecutor> executor_;
   std::unique_ptr<GeofenceSetpointGuard> guard_;
   std::uint16_t source_component_{0};
+  std::string core_version_;
+  std::string abi_version_;
+  std::array<std::uint8_t, kParamDigestLen> param_digest_{};
 
   rclcpp::CallbackGroup::SharedPtr decision_group_;
   rclcpp::Subscription<px4_msgs::msg::VehicleLocalPosition>::SharedPtr lpos_sub_;

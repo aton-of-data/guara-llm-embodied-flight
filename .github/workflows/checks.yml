@@ -29,16 +29,63 @@ jobs:
         with:
           python-version: "3.10"
           cache: pip
-      - name: Install declared dependencies
-        run: pip install -r requirements-dev.txt
+      - name: Install hash-pinned dependencies (AC-52)
+        run: pip install --require-hashes -r requirements.lock
+      - name: Install the tier-0 package
+        run: pip install -e . --no-deps
+      - name: Single pin source (versions.env; AC-52 / G-S2)
+        run: python3 scripts/check_reproducible.py --pins
+      - name: Workstation preflight (AC-51 / G-S5)
+        run: guara doctor
+      - name: C ABI symbol baseline (AC-61)
+        run: python3 scripts/check_abi.py --baseline core/abi_symbols.txt
       - name: Mission compiler, corpus, plan executor, space keep-out
         run: python3 -m pytest scripts/tests -q
       - name: The no-container path the README promises
         run: |
-          python3 -m mission.compiler --intent mission/intents/survey_north_3.json
-          ! python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
-          test "$(python3 -m mission.compiler --stop 'land now')" = land_now
-          test "$(python3 -m mission.compiler --stop 'pouse agora')" = land_now
+          guara compile --intent mission/intents/survey_north_3.json
+          ! guara compile --intent mission/intents/survey_north_3_out_of_envelope.json
+          test "$(guara compile --stop 'land now')" = land_now
+          test "$(guara compile --stop 'pouse agora')" = land_now
+          python3 -m mission.compiler --stop 'land now' | grep -x land_now
+          guara params check config/rta_params.yaml config/rta_params_flight.yaml
+          guara ctk run --port python --report /tmp/guara-ctk-report
+          python3 scripts/check_ac.py AC-66 /tmp/guara-ctk-report
+          ./scripts/ctk_mutation.sh
+          ./scripts/ctk_mutation_geofence.sh
+
+  core:
+    name: host-free kernel
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure, build, test and consume guara-core (AC-55 / AC-57)
+        run: ./scripts/check_core_consumer.sh
+        shell: bash
+        env:
+          CMAKE_BUILD_TYPE: Release
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: SIL port through the C ABI (AC-64)
+        run: ./scripts/check_ctk_sil.sh
+        shell: bash
+
+  core-qa:
+    name: kernel sanitizers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update -y --quiet
+          sudo apt-get install -y --quiet --no-install-recommends clang-tidy
+      - name: ASan, UBSan and clang-tidy (AC-62)
+        run: ./scripts/core_qa.sh --require-tidy
 
   boundaries:
     name: licence, headers and links

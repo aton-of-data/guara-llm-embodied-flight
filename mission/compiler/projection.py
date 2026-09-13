@@ -3,7 +3,7 @@
 
 AC-26 compares compiler waypoints against the fence polygon the arbiter loads, so the two
 must project geographic coordinates the same way. This is a transcription of
-`guara_geofence::projectToLocal` (`ros2_ws/src/guara_geofence/src/predictor.cpp:262`), which
+`guara_geofence::projectToLocal` (`core/src/geofence_predictor.cpp`), which
 itself follows `px4_ros2_cpp/src/utils/map_projection_impl.cpp:28-85`; the inverse follows
 `localToGlobal` in the same file. Earth radius is PX4's 6371 km sphere, not WGS84.
 """

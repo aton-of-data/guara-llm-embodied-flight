@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Guará development image: ROS 2 Humble + PX4 v1.17.0 SITL (SIH, headless) + Micro XRCE-DDS Agent.
-# Versions must match third_party/VERSIONS.md. Sources: GROUNDING.md A.17-A.21.
+# ARG defaults and the FROM image must equal versions.env (scripts/check_reproducible.py --pins).
+# Sources: GROUNDING.md A.17-A.21.
 FROM ros:humble-ros-base-jammy
 
 ARG PX4_REF=v1.17.0
@@ -17,12 +18,6 @@ RUN apt-get update -y --quiet \
  && apt-get install -y --quiet --no-install-recommends sudo git lsb-release python3-pip \
     ros-humble-eigen3-cmake-module libeigen3-dev ros-humble-ament-cmake-gtest \
  && rm -rf /var/lib/apt/lists/*
-
-# Python dependencies of mission/, space/, scripts/tests and scripts/check_ac.py.
-# The declaration lives in requirements.txt and requirements-dev.txt at the
-# repository root; those files are outside this image's build context (docker/),
-# so the same pins are repeated here and must be kept in step with them.
-RUN pip3 install --no-cache-dir "PyYAML>=6.0" "jsonschema>=4.0" "pytest>=7.0" "pyulog>=1.0"
 
 # PX4 at the pinned commit, with submodules (third_party/ clone is shallow without submodules).
 RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${PX4_REF} \
@@ -48,6 +43,15 @@ RUN git -c advice.detachedHead=false clone --quiet --depth 1 --branch ${XRCE_AGE
 RUN apt-get update -y --quiet \
  && apt-get install -y --quiet --no-install-recommends bc \
  && rm -rf /var/lib/apt/lists/*
+
+# Python dependencies of mission/, space/, scripts/tests and scripts/check_ac.py.
+# Declared in the repository's requirements files (G-S2); the build context is
+# the repository root so those files can be copied rather than restated.
+COPY requirements.txt requirements-dev.txt /tmp/guara-py/
+RUN pip3 install --no-cache-dir -r /tmp/guara-py/requirements-dev.txt \
+ && rm -rf /tmp/guara-py
+
+COPY versions.env /opt/guara/versions.env
 
 ENV PX4_DIR=/opt/PX4-Autopilot \
     PX4_BUILD=/opt/PX4-Autopilot/build/px4_sitl_default

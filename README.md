@@ -306,22 +306,28 @@ expected answer was, so adding one cannot change a result.
 
 ### In 60 seconds, with no container
 
-The trusted layer between a model and the aircraft is pure Python and needs two packages.
-This runs the deterministic compiler directly — no ROS 2, no PX4 build, no model, no key:
+The trusted layer between a model and the aircraft is pure Python. `pip install -e .`
+installs it as the `guara` package (G-S3); `guara doctor` is the workstation preflight
+(AC-51). The hermetic path (AC-52) is `pip install --require-hashes -r requirements.lock`
+then `pip install -e . --no-deps`; the lock is generated on CPython 3.10 by
+`scripts/lock_python.sh`. `pip install -r requirements.txt` still works if you do not
+want a package install. This runs the deterministic compiler directly — no ROS 2, no
+PX4 build, no model, no key:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
+guara doctor
 
 # a Mission Intent inside the envelope -> a flyable plan (exit 0)
-python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+guara compile --intent mission/intents/survey_north_3.json
 
 # the same intent asking for 40 cm/px -> a refusal that names the checks (exit 2)
-python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+guara compile --intent mission/intents/survey_north_3_out_of_envelope.json
 # refused (checks): gsd_bounds, altitude_ceiling, energy
 
 # the stop path, which never reaches a model at all (AC-29), in both shipped languages
-python3 -m mission.compiler --stop "land now"     # -> land_now
-python3 -m mission.compiler --stop "pouse agora"  # -> land_now
+guara compile --stop "land now"     # -> land_now
+guara compile --stop "pouse agora"  # -> land_now
 ```
 
 The second command is the point: an intent that is well-formed, schema-valid and completely
@@ -329,6 +335,26 @@ reasonable-sounding is refused by named, deterministic checks before anything fl
 *utterance* into an intent is the untrusted step and needs a provider — that is
 `scripts/llm/eval.py`. Add `-r requirements-dev.txt` and `python3 -m pytest scripts/tests -q`
 runs the mission compiler, the corpus, the plan executor and the space keep-out tests.
+
+### The kernel on its own, with no ROS and no container
+
+The switching core is also a host-free CMake library with a C ABI, released together with the
+published conformance vectors ([ADR 0014](docs/adr/0014-delivery-model.md)). Building it needs a
+C++17 compiler and nothing else:
+
+```bash
+cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/core
+ctest --test-dir build/core --output-on-failure
+
+guara ctk run --port python   # the independent port, over the whole published set
+guara ctk run --port sil      # the same vectors through the C ABI
+```
+
+Both runs print a report naming the core version, the ABI version, the host, the architecture and
+the hash of the vector set, and stating in its own text that conformance is necessary and not
+sufficient. [`core/README.md`](core/README.md) is the integrator's page: the storage contract, the
+CMake consumption path, and what the kit does and does not demonstrate.
 
 ### Everything else
 
@@ -351,6 +377,7 @@ generation only).
 
 ```bash
 ./scripts/fetch_third_party.sh            # pinned shallow clones (once)
+# Cached clones and image: GUARA_OFFLINE=1 ./scripts/dev.sh colcon test --packages-select guara_rta
 
 ./scripts/dev.sh colcon build --symlink-install
 ./scripts/dev.sh colcon test --packages-select guara_rta guara_geofence guara_monitors
@@ -398,12 +425,13 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 | [`docs/SPEC.md`](docs/SPEC.md) | The engineering truth: scope, F3269 mapping, switching logic, latency budget, failure modes, acceptance criteria, limits, open risks |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
-| [`docs/adr/`](docs/adr) | Thirteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
-| [`docs/milestones/`](docs/milestones) | M1–M5, M7–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-50 |
-| [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 with its remediation record, and the public-readiness review |
+| [`core/`](core/README.md) | **`guara-core`: the host-free switching kernel with a C ABI, the CMake package, the published conformance vectors and their runners** |
+| [`docs/adr/`](docs/adr) | Fourteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
+| [`docs/milestones/`](docs/milestones) | M1–M5, M7–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-66 |
+| [`docs/reviews/`](docs/reviews) | Internal reviews with their remediation records: M1–M5, public readiness, and the M17–M19 kernel and conformance kit |
 | [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md) | Limitations and design for the voice/LLM layer, with the civil use-case catalogue |
 | [`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) | F´, Ogma's F´ backend, and where a Guará-class RTA fits in orbit |
-| [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) | Executable plan for LLM embodiment, the F´ port, and the space domain |
+| [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) · [`docs/PLAN-M17-M28.md`](docs/PLAN-M17-M28.md) | Executable plans: LLM embodiment, the F´ port and the space domain; then delivery, the gap register and the path to real hardware |
 | [`docs/evidence/`](docs/evidence) | Run contracts and metrics published verbatim from `results/` |
 | `mission/` | Mission Intent schema, site model, deterministic compiler, labelled corpus, trusted plan executor |
 | `space/` | Space intent schema, attitude keep-out predictor, demo-sat vehicle model |

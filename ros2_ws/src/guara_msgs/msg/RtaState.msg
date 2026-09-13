@@ -33,3 +33,9 @@ uint32 cf_rejected_stamp    # CF setpoints rejected for an implausible stamp
 uint32 cf_rejected_non_finite
 uint32 cf_rejected_guard    # CF setpoints blocked by the shadow guard
 uint32 cf_clamped           # CF setpoints clamped to the gateway envelope
+
+# --- G-K8: the running core names itself on every snapshot ---
+string core_version         # GUARA_CORE_VERSION of the linked kernel
+string abi_version          # GUARA_ABI_VERSION (provisional until three ports pass the kit)
+uint8[8] param_digest       # FNV-1a-64 of the canonical core parameter fields
+

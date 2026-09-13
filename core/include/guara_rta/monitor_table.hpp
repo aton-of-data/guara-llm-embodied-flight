@@ -114,12 +114,7 @@ public:
       }
       const bool seen = s.t_recv_s > -std::numeric_limits<double>::infinity();
       const bool stale = !seen || t_s - s.t_recv_s > max_age_s_;
-      if (s.expected && (stale || s.malformed || !s.inputs_complete)) {
-        out.invalid = true;
-        if (out.first_invalid_id == nullptr) {
-          out.first_invalid_id = s.id.data();
-        }
-      } else if (s.malformed) {
+      if ((s.expected && (stale || !s.inputs_complete)) || s.malformed) {
         out.invalid = true;
         if (out.first_invalid_id == nullptr) {
           out.first_invalid_id = s.id.data();
@@ -190,7 +185,10 @@ private:
     for (auto & s : slots_) {
       if (!s.used) {
         s.used = true;
-        std::strncpy(s.id.data(), id, s.id.size() - 1U);
+        s.id.fill('\0');
+        for (std::size_t i = 0; i < kMonitorIdCapacity && id[i] != '\0'; ++i) {
+          s.id[i] = id[i];
+        }
         return &s;
       }
     }

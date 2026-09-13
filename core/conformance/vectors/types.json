@@ -1,0 +1,136 @@
+[
+  {
+    "id": "state_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "state", "code": 0, "expect": {"name": "INACTIVE"}},
+      {"op": "check_name", "kind": "state", "code": 1, "expect": {"name": "CF"}},
+      {"op": "check_name", "kind": "state", "code": 2, "expect": {"name": "RF"}},
+      {"op": "check_name", "kind": "state", "code": 3, "expect": {"name": "LATCHED"}},
+      {"op": "check_name", "kind": "state", "code": 255, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "recovery_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "recovery", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "recovery", "code": 1, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "recovery", "code": 2, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "recovery", "code": 3, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "recovery", "code": 4, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "command_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "command", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "command", "code": 1, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "command", "code": 2, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "command", "code": 3, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "command", "code": 4, "expect": {"name": "OWNED_MODE"}},
+      {"op": "check_name", "kind": "command", "code": 5, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "transition_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "transition", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "transition", "code": 1, "expect": {"name": "T1"}},
+      {"op": "check_name", "kind": "transition", "code": 2, "expect": {"name": "T2"}},
+      {"op": "check_name", "kind": "transition", "code": 3, "expect": {"name": "T3"}},
+      {"op": "check_name", "kind": "transition", "code": 4, "expect": {"name": "T4"}},
+      {"op": "check_name", "kind": "transition", "code": 5, "expect": {"name": "T5"}},
+      {"op": "check_name", "kind": "transition", "code": 6, "expect": {"name": "T6"}},
+      {"op": "check_name", "kind": "transition", "code": 7, "expect": {"name": "T7"}},
+      {"op": "check_name", "kind": "transition", "code": 8, "expect": {"name": "T2B"}},
+      {"op": "check_name", "kind": "transition", "code": 9, "expect": {"name": "ACTUATION"}},
+      {"op": "check_name", "kind": "transition", "code": 10, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "cause_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "cause", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "cause", "code": 1, "expect": {"name": "DAA"}},
+      {"op": "check_name", "kind": "cause", "code": 2, "expect": {"name": "GEOFENCE"}},
+      {"op": "check_name", "kind": "cause", "code": 4, "expect": {"name": "MONITOR"}},
+      {"op": "check_name", "kind": "cause", "code": 8, "expect": {"name": "INPUT"}},
+      {"op": "check_name", "kind": "cause", "code": 16, "expect": {"name": "LATCH"}},
+      {"op": "check_name", "kind": "cause", "code": 32, "expect": {"name": "RETURN"}},
+      {"op": "check_name", "kind": "cause", "code": 64, "expect": {"name": "NOT_IN_CHARGE"}},
+      {"op": "check_name", "kind": "cause", "code": 128, "expect": {"name": "ESCALATION"}},
+      {"op": "check_name", "kind": "cause", "code": 256, "expect": {"name": "ACTUATION"}},
+      {"op": "check_name", "kind": "cause", "code": 3, "expect": {"name": "UNKNOWN"}},
+      {"op": "check_name", "kind": "cause", "code": 512, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "polygon_error_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "polygon", "code": 0, "expect": {"name": "none"}},
+      {"op": "check_name", "kind": "polygon", "code": 1, "expect": {"name": "too_few_vertices"}},
+      {"op": "check_name", "kind": "polygon", "code": 2, "expect": {"name": "too_many_vertices"}},
+      {"op": "check_name", "kind": "polygon", "code": 3, "expect": {"name": "non_finite_vertex"}},
+      {"op": "check_name", "kind": "polygon", "code": 4, "expect": {"name": "degenerate_edge"}},
+      {"op": "check_name", "kind": "polygon", "code": 5, "expect": {"name": "self_intersecting"}},
+      {"op": "check_name", "kind": "polygon", "code": 6, "expect": {"name": "zero_area"}},
+      {"op": "check_name", "kind": "polygon", "code": 7, "expect": {"name": "unknown"}}
+    ]
+  },
+  {
+    "id": "monitor_class_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_class", "code": 0, "expect": {"name": "LOG"}},
+      {"op": "check_name", "kind": "monitor_class", "code": 1, "expect": {"name": "SWITCH"}},
+      {"op": "check_name", "kind": "monitor_class", "code": 2, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "monitor_action_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_action", "code": 0, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 1, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 2, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "monitor_accept_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_accept", "code": 0, "expect": {"name": "ACCEPTED"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 1, "expect": {"name": "INVALID_FIELD"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 2, "expect": {"name": "TABLE_FULL"}},
+      {"op": "check_name", "kind": "monitor_accept", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "err_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "err", "code": 0, "expect": {"name": "OK"}},
+      {"op": "check_name", "kind": "err", "code": 1, "expect": {"name": "NULL"}},
+      {"op": "check_name", "kind": "err", "code": 2, "expect": {"name": "STORAGE"}},
+      {"op": "check_name", "kind": "err", "code": 3, "expect": {"name": "PARAMS"}},
+      {"op": "check_name", "kind": "err", "code": 4, "expect": {"name": "UNINIT"}},
+      {"op": "check_name", "kind": "err", "code": 5, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "guard_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "guard", "code": 0, "expect": {"name": "OFF"}},
+      {"op": "check_name", "kind": "guard", "code": 1, "expect": {"name": "ALLOW"}},
+      {"op": "check_name", "kind": "guard", "code": 2, "expect": {"name": "DENY"}},
+      {"op": "check_name", "kind": "guard", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
+  }
+]

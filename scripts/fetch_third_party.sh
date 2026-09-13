@@ -1,26 +1,44 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
-# Recreate third_party/ shallow clones at the commits pinned in third_party/VERSIONS.md.
+# Recreate third_party/ shallow clones at the commits pinned in versions.env.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 dest="${root}/third_party"
 
+# Pins live in versions.env (M17 / G-S2). Sourcing it is the only way this
+# script learns a commit; check_reproducible.py --pins refuses hardcoded hashes.
+# shellcheck disable=SC1091
+source "${root}/versions.env"
+
 # name|remote|ref|commit
 repos=(
-  "PX4-Autopilot|https://github.com/PX4/PX4-Autopilot.git|v1.17.0|d6f12ad1c4f70ad3230afd7d86e971421e02fef4"
-  "px4_msgs|https://github.com/PX4/px4_msgs.git|release/1.17|86d8239e962f6939e05c3737784f60c02fa884db"
-  "px4-ros2-interface-lib|https://github.com/Auterion/px4-ros2-interface-lib.git|release/1.17|4a3370f084ac6f1ef001a4afa2b007845ffd0837"
-  "ogma|https://github.com/nasa/ogma.git|v1.15.0|69485b3442d76c48faaee30b37f9cbee212ceca6"
-  "daidalus|https://github.com/nasa/daidalus.git|DAIDALUSv2.0.3a|0647596edb218f8e8c7731ff800396297bbace99"
-  "fret|https://github.com/NASA-SW-VnV/fret.git|v3.1.0|58db455be35182a015e607232d9f4e3c86731932"
-  "copilot|https://github.com/Copilot-Language/copilot.git|v4.8.1|365fb21429aa0b880f81d72dcaa9f207f5ea2d0a"
-  "fprime|https://github.com/nasa/fprime.git|v4.3.0|7d8f579f159d2f7c2d4984d92828575e37f87fa6"
+  "PX4-Autopilot|${PX4_REMOTE}|${PX4_REF}|${PX4_COMMIT}"
+  "px4_msgs|${PX4_MSGS_REMOTE}|${PX4_MSGS_REF}|${PX4_MSGS_COMMIT}"
+  "px4-ros2-interface-lib|${PX4_ROS2_INTERFACE_LIB_REMOTE}|${PX4_ROS2_INTERFACE_LIB_REF}|${PX4_ROS2_INTERFACE_LIB_COMMIT}"
+  "ogma|${OGMA_REMOTE}|${OGMA_REF}|${OGMA_COMMIT}"
+  "daidalus|${DAIDALUS_REMOTE}|${DAIDALUS_REF}|${DAIDALUS_COMMIT}"
+  "fret|${FRET_REMOTE}|${FRET_REF}|${FRET_COMMIT}"
+  "copilot|${COPILOT_REMOTE}|${COPILOT_REF}|${COPILOT_COMMIT}"
+  "fprime|${FPRIME_REMOTE}|${FPRIME_REF}|${FPRIME_COMMIT}"
 )
 
 for entry in "${repos[@]}"; do
   IFS='|' read -r name remote ref commit <<<"${entry}"
   dir="${dest}/${name}"
+  if [[ "${GUARA_OFFLINE:-}" == "1" ]]; then
+    if [[ ! -d "${dir}/.git" ]]; then
+      echo "FAIL ${name}: missing (GUARA_OFFLINE=1; clone is not cached)" >&2
+      exit 1
+    fi
+    head="$(git -C "${dir}" rev-parse HEAD)"
+    if [[ "${head}" != "${commit}" ]]; then
+      echo "FAIL ${name}: ${head} != ${commit} (GUARA_OFFLINE=1; will not fetch)" >&2
+      exit 1
+    fi
+    echo "ok ${name} ${head}"
+    continue
+  fi
   if [[ ! -d "${dir}/.git" ]]; then
     git -c advice.detachedHead=false clone --quiet --depth 1 --branch "${ref}" "${remote}" "${dir}"
   fi

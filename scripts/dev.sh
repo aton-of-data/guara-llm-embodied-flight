@@ -11,12 +11,28 @@ if [[ -f /.dockerenv && "${GUARA_IN_CONTAINER:-}" == "1" ]]; then
   exec "$@"
 fi
 
-if ! docker image inspect "${image}" >/dev/null 2>&1; then
-  docker build -t "${image}" -f "${root}/docker/Dockerfile" "${root}/docker"
+offline=0
+[[ "${GUARA_OFFLINE:-}" == "1" ]] && offline=1
+
+if docker image inspect "${image}" >/dev/null 2>&1; then
+  :
+elif [[ "${offline}" -eq 1 ]]; then
+  echo "FAIL GUARA_OFFLINE=1: image ${image} is not cached" >&2
+  exit 1
+else
+  docker build -t "${image}" -f "${root}/docker/Dockerfile" "${root}"
 fi
 
 for dep in px4_msgs px4-ros2-interface-lib; do
-  [[ -d "${root}/third_party/${dep}/.git" ]] || { echo "missing third_party/${dep}: run scripts/fetch_third_party.sh" >&2; exit 1; }
+  if [[ -d "${root}/third_party/${dep}/.git" ]]; then
+    continue
+  fi
+  if [[ "${offline}" -eq 1 ]]; then
+    echo "FAIL GUARA_OFFLINE=1: missing third_party/${dep}" >&2
+    exit 1
+  fi
+  echo "missing third_party/${dep}: run scripts/fetch_third_party.sh" >&2
+  exit 1
 done
 
 guara_sha="$(git -C "${root}" rev-parse HEAD)"
@@ -39,9 +55,14 @@ if [[ -n "${GUARA_PASS_ENV:-}" ]]; then
 fi
 [[ $# -gt 0 ]] || set -- bash
 
+network_flags=()
+[[ "${offline}" -eq 1 ]] && network_flags=(--network=none)
+
 exec docker run --rm ${tty_flags[@]+"${tty_flags[@]}"} \
+  ${network_flags[@]+"${network_flags[@]}"} \
   -v "${root}:/work" -w /work \
   -e GUARA_IN_CONTAINER=1 \
+  -e GUARA_OFFLINE="${GUARA_OFFLINE:-}" \
   -e GUARA_SHA="${guara_sha}" \
   -e GUARA_DIRTY="${guara_dirty}" \
   -e GUARA_IMAGE_ID="$(docker image inspect --format '{{.Id}}' "${image}")" \

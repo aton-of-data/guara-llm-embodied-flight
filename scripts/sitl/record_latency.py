@@ -60,6 +60,9 @@ def main() -> int:
             "clock_err_s": _f(msg.clock_err_s),
             "t_px4_timestamp_s": _f(msg.t_px4_timestamp_s),
             "t_ros_recv_s": _f(msg.t_ros_recv_s),
+            "core_version": msg.core_version,
+            "abi_version": msg.abi_version,
+            "param_digest": bytes(msg.param_digest).hex(),
         }
         states_out.write(json.dumps(rec) + "\n")
         states_out.flush()

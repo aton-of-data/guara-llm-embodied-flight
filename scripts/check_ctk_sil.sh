@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# AC-64: run the published vectors through the C ABI (SIL port).
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+export PYTHONPATH="${root}${PYTHONPATH:+:${PYTHONPATH}}"
+
+case "$(uname -s)" in
+  Darwin) suffix=".dylib" ;;
+  MINGW*|MSYS*|CYGWIN*) suffix=".dll" ;;
+  *) suffix=".so" ;;
+esac
+
+lib="${GUARA_CABI:-}"
+if [[ -n "${lib}" && ! -f "${lib}" ]]; then
+  echo "FAIL ctk-sil: GUARA_CABI=${lib} is not a file" >&2
+  exit 1
+fi
+if [[ -z "${lib}" ]]; then
+for candidate in \
+  "${root}/build/core/libguara_cabi.so" \
+  "${root}/build/core/libguara_cabi.dylib" \
+  "${root}/build/core/Release/guara_cabi.dll" \
+  "${root}/build/core/Debug/guara_cabi.dll" \
+  "${root}/build/core-prefix/lib/libguara_cabi.so" \
+  "${root}/build/core-prefix/lib/libguara_cabi.dylib" \
+  "${root}/build/core-prefix/bin/guara_cabi.dll"
+do
+  if [[ -f "${candidate}" && "${candidate}" == *"${suffix}" ]]; then
+    lib="${candidate}"
+    break
+  fi
+done
+fi
+if [[ -z "${lib}" ]]; then
+  echo "FAIL ctk-sil: guara_cabi shared library not found; build core/ first" >&2
+  exit 1
+fi
+export GUARA_CABI="${lib}"
+export PATH="$(cd "$(dirname "${lib}")" && pwd):${PATH}"
+
+py="python3"
+if ! command -v python3 >/dev/null 2>&1; then
+  py="python"
+fi
+
+report="${TMPDIR:-/tmp}/guara-ctk-sil-report"
+"${py}" -m guara ctk run --port sil --report "${report}"
+"${py}" "${root}/scripts/check_ac.py" AC-66 "${report}"
+bench="${TMPDIR:-/tmp}/guara-ctk-bench"
+"${py}" -m guara ctk bench --port sil --report "${bench}"
+"${py}" "${root}/scripts/check_ac.py" AC-60 "${bench}"
+bash "${root}/scripts/ctk_mutation_sil.sh"
+bash "${root}/scripts/ctk_mutation_geofence_sil.sh"
+echo "PASS ctk-sil: C ABI port matched the published vectors via ${lib}"

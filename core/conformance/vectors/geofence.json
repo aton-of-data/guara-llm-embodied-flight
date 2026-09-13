@@ -1,0 +1,315 @@
+[
+  {
+    "id": "convex_straight_approach",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 5, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"inside": 1, "exit_distance_m": 50.0, "t_gf_s": 9.0}}
+    ]
+  },
+  {
+    "id": "convex_diagonal_with_eph",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 3, "ve_m_s": 4, "altitude_m": 10, "eph_m": 1.5,
+       "expect": {"exit_distance_m": 62.5, "t_gf_s": 10.9}}
+    ]
+  },
+  {
+    "id": "concave_ray_enters_notch",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 100, 0, 100, 100, 60, 100, 60, 40, 40, 40, 40, 100, 0, 100],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 20, "east_m": 50, "vn_m_s": 4, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"exit_distance_m": 20.0, "t_gf_s": 4.2}}
+    ]
+  },
+  {
+    "id": "zero_velocity_is_infinite",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 49.9, "east_m": 49.9, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"inside": 1, "t_gf_s": "inf"}}
+    ]
+  },
+  {
+    "id": "beyond_horizon_is_infinite",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 0.5, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"t_gf_s": "inf"}}
+    ]
+  },
+  {
+    "id": "inside_stopping_distance_is_zero",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 45, "east_m": 0, "vn_m_s": 10, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"t_gf_s": 0.0}}
+    ]
+  },
+  {
+    "id": "outside_is_zero",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 60, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"inside": 0, "t_gf_s": 0.0}}
+    ]
+  },
+  {
+    "id": "vertical_ceiling_approach",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10, "climb_rate_m_s": 4,
+       "expect": {"t_vertical_s": 4.0, "t_gf_s": 4.0}}
+    ]
+  },
+  {
+    "id": "min_of_horizontal_and_vertical",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 5, "ve_m_s": 0, "altitude_m": 10, "climb_rate_m_s": 4,
+       "expect": {"t_horizontal_s": 9.0, "t_gf_s": 4.0}}
+    ]
+  },
+  {
+    "id": "hover_inside_uncertainty_band",
+    "spec": ["H-review-4"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 48, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10, "eph_m": 3.0,
+       "expect": {"t_gf_s": 0.0}},
+      {"op": "predict", "north_m": 48, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10, "eph_m": 0.5,
+       "expect": {"t_gf_s": "inf"}}
+    ]
+  },
+  {
+    "id": "parallel_flight_inside_band",
+    "spec": ["H-review-4"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 48, "east_m": -40, "vn_m_s": 0, "ve_m_s": 5, "altitude_m": 10, "eph_m": 3.0,
+       "expect": {"t_gf_s": 0.0}}
+    ]
+  },
+  {
+    "id": "outside_band_ray_model_unchanged",
+    "spec": ["H-review-4"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 20, "east_m": 0, "vn_m_s": 10, "ve_m_s": 0, "altitude_m": 10, "eph_m": 0.5,
+       "expect": {"t_gf_s": 0.9}}
+    ]
+  },
+  {
+    "id": "concave_tangent_reflex_stays_inside",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 100, 0, 100, 100, 60, 100, 60, 40, 40, 40, 40, 100, 0, 100],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 30, "east_m": 50, "vn_m_s": 3, "ve_m_s": -3, "altitude_m": 10,
+       "expect": {"exit_distance_m": 70.710678, "t_gf_s": 15.8184}}
+    ]
+  },
+  {
+    "id": "concave_collinear_boundary_edge",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 100, 0, 100, 100, 60, 100, 60, 40, 40, 40, 40, 100, 0, 100],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 20, "east_m": 40, "vn_m_s": 4, "ve_m_s": 0, "altitude_m": 10,
+       "expect": {"exit_distance_m": 80.0, "t_gf_s": 19.2}}
+    ]
+  },
+  {
+    "id": "tangent_parallel_uses_far_boundary",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 49, "east_m": 0, "vn_m_s": 0, "ve_m_s": 2, "altitude_m": 10,
+       "expect": {"t_gf_s": 24.6}}
+    ]
+  },
+  {
+    "id": "vertical_floor_with_epv",
+    "spec": ["AC-8"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 12, "climb_rate_m_s": -3, "epv_m": 0.5,
+       "expect": {"t_gf_s": 2.9167}}
+    ]
+  },
+  {
+    "id": "altitude_band_uses_epv",
+    "spec": ["H-review-4"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 2.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 29, "eph_m": 0.1, "epv_m": 3.0,
+       "expect": {"t_gf_s": 0.0}},
+      {"op": "predict", "north_m": 0, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 29, "eph_m": 0.1, "epv_m": 0.2,
+       "expect": {"t_gf_s": "inf"}}
+    ]
+  },
+  {
+    "id": "zero_k_sigma_disables_the_band",
+    "spec": ["H-review-4"],
+    "vertices": [-50, -50, 50, -50, 50, 50, -50, 50],
+    "alt_min_m": 0.0,
+    "alt_max_m": 30.0,
+    "params": {"a_brake_h_m_s2": 2.5, "a_brake_v_m_s2": 2.0, "k_sigma": 0.0, "v_min_m_s": 0.2, "horizon_s": 30.0},
+    "steps": [
+      {"op": "predict", "north_m": 49.9, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10, "eph_m": 50.0,
+       "expect": {"t_gf_s": "inf"}}
+    ]
+  },
+  {
+    "id": "projection_small_distance",
+    "spec": ["AC-8"],
+    "steps": [
+      {"op": "project", "lat_deg": -22.001, "lon_deg": -47.89, "ref_lat_deg": -22.0, "ref_lon_deg": -47.89,
+       "expect": {"north_m": -111.195, "east_m": 0.0}},
+      {"op": "project", "lat_deg": -22.0, "lon_deg": -47.889, "ref_lat_deg": -22.0, "ref_lon_deg": -47.89,
+       "expect": {"east_m": 103.099}}
+    ]
+  },
+  {
+    "id": "triangle_is_simple",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "none"}}]
+  },
+  {
+    "id": "too_few_vertices",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 1, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "too_few_vertices"}}]
+  },
+  {
+    "id": "too_many_vertices",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "too_many_vertices"}}]
+  },
+  {
+    "id": "self_intersecting_bowtie",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 10, 10, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "self_intersecting"}}]
+  },
+  {
+    "id": "degenerate_edge",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 0, 0, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "degenerate_edge"}}]
+  },
+  {
+    "id": "zero_area_collinear",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 5, 0, 10, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "zero_area"}}]
+  },
+  {
+    "id": "non_finite_vertex",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, "nan", 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "non_finite_vertex"}}]
+  },
+  {
+    "id": "non_finite_inf_vertex",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, "inf", 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "non_finite_vertex"}}]
+  },
+  {
+    "id": "default_predictor_params_are_valid",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "expect": {"params_error": null}}]
+  },
+  {
+    "id": "a_brake_h_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"a_brake_h_m_s2": 0.0},
+               "expect": {"params_error": "a_brake_h_m_s2 must be > 0"}}]
+  },
+  {
+    "id": "a_brake_v_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"a_brake_v_m_s2": 0.0},
+               "expect": {"params_error": "a_brake_v_m_s2 must be > 0"}}]
+  },
+  {
+    "id": "k_sigma_must_be_non_negative",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"k_sigma": -1.0},
+               "expect": {"params_error": "k_sigma must be >= 0"}}]
+  },
+  {
+    "id": "v_min_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"v_min_m_s": 0.0},
+               "expect": {"params_error": "v_min_m_s must be > 0"}}]
+  },
+  {
+    "id": "horizon_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"horizon_s": 0.0},
+               "expect": {"params_error": "horizon_s must be > 0"}}]
+  }
+]
