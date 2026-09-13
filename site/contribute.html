@@ -1,0 +1,445 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contribute and support — Guará</title>
+<meta name="description" content="The specific open gaps in Guará, the five rules a reviewer will block on, how to challenge a claim, and how to fund the parts of open-source flight safety that cost money.">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .page-head { padding-block: 3.2rem 1rem; }
+  .gap-card { display: flex; flex-direction: column; height: 100%; border-top: 2px solid var(--accent); }
+  .gap-card .meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
+  .gap-card h3 { font-size: 1.05rem; margin-bottom: .5rem; }
+  .gap-card p { font-size: .92rem; color: var(--fg-muted); margin: 0 0 .8rem; }
+  .gap-card .need { font-size: .85rem; margin-top: auto; padding-top: .7rem; border-top: 1px solid var(--line-soft); }
+  .gap-card .need b { color: var(--fg); font-weight: 600; }
+
+  .rule { display: grid; grid-template-columns: 2.4rem 1fr; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--line-soft); }
+  .rule:last-child { border-bottom: none; }
+  .rule .n { font-family: var(--mono); font-size: 1.3rem; font-weight: 600; color: var(--accent); line-height: 1.1; }
+  .rule h3 { margin: 0 0 .3rem; font-size: 1rem; }
+  .rule p { margin: 0; font-size: .92rem; color: var(--fg-muted); }
+
+  .fund { border-top: 2px solid var(--clear); }
+  .fund h3 { font-size: 1.03rem; }
+  .fund .amt { font-family: var(--mono); font-size: .78rem; color: var(--clear); letter-spacing: .05em; text-transform: uppercase; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html">Evidence</a>
+      <a href="contribute.html" aria-current="page">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap page-head">
+  <p class="eyebrow">Get involved</p>
+  <h1>The gaps are named, and they are specific</h1>
+  <p class="lede">
+    Guará is one person&rsquo;s research prototype with an unusually strict evidence discipline.
+    That discipline is why the open problems below can be stated precisely instead of vaguely — and
+    why a contribution that closes one is worth something concrete rather than being absorbed into
+    a backlog.
+  </p>
+  <div class="btn-row">
+    <a class="btn btn-primary" href="#asks">See the open gaps</a>
+    <a class="btn" href="#rules">Read the five rules first</a>
+    <a class="btn" href="#fund">Fund the work</a>
+  </div>
+</div>
+
+<div class="wrap doc">
+  <aside class="toc">
+    <h4>On this page</h4>
+    <a href="#asks">The open gaps</a>
+    <a href="#rules">Five rules</a>
+    <a href="#challenge">Challenge a claim</a>
+    <a href="#start">Getting set up</a>
+    <a href="#fund">Funding</a>
+    <a href="#scope">Scope and conduct</a>
+    <a href="#cite">Citing</a>
+  </aside>
+
+  <main class="doc-body">
+
+  <!-- ============ ASKS ============ -->
+  <section id="asks">
+    <h2>1 · The open gaps</h2>
+    <p>
+      Each of these blocks a named risk or research question. None is a placeholder issue, and none
+      is padding — if you finish one, a claim on this site changes.
+    </p>
+
+    <div class="grid g2" style="margin-top:1.8rem">
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill warn">R-11</span><span class="pill">blocks RQ4</span><span class="pill info">formal methods</span></div>
+        <h3>Unblock CopilotVerifier</h3>
+        <p>
+          Monitors are generated from FRETish requirements through Ogma into Copilot C99 — and that
+          C99 is currently <em>trusted</em> rather than proved, because the verifier toolchain has
+          not been made to work here.
+        </p>
+        <div class="need"><b>You need:</b> Haskell, LLVM and z3, and the patience to make them agree with each other.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill warn">R-5</span><span class="pill info">airspace</span></div>
+        <h3>Well-clear thresholds for small UAS</h3>
+        <p>
+          τ_daa currently rests on DO-365B thresholds written for considerably larger aircraft.
+          Sourced, citable values appropriate to small multirotors would replace a parameter that is
+          openly labelled a hypothesis.
+        </p>
+        <div class="need"><b>You need:</b> DAA or airspace-integration background, and access to the literature.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill warn">R-7</span><span class="pill info">simulation</span></div>
+        <h3>Traffic injection in PX4 SITL</h3>
+        <p>
+          The DAA path has never faced a converging intruder in simulation, because there is no way
+          to inject one. Building that path turns an untested branch into a measured one — and would
+          also let R-6 (is Hold an adequate DAA recovery?) finally be answered with data.
+        </p>
+        <div class="need"><b>You need:</b> PX4 SITL internals, transponder message plumbing.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill no">FM-12</span><span class="pill info">security</span></div>
+        <h3>Authenticate the transport</h3>
+        <p>
+          An SROS2 profile for the complex-function and FMU topics. Until it exists, any node on the
+          DDS domain can publish setpoints, and that is stated as an accepted limitation of this
+          phase rather than pretended away.
+        </p>
+        <div class="need"><b>You need:</b> SROS2, DDS security, ROS 2 Humble.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill warn">R-8</span><span class="pill info">standards</span></div>
+        <h3>Review the F3269 mapping</h3>
+        <p>
+          The ASTM F3269 text is not available to this project. The whole role mapping is marked
+          <strong>[REVIEW]</strong> and has never been checked against the licensed standard by
+          someone holding it.
+        </p>
+        <div class="need"><b>You need:</b> Legitimate access to ASTM F3269, and an hour.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">AC-48</span><span class="pill info">space</span></div>
+        <h3>Orbital dynamics for the arbiter</h3>
+        <p>
+          A Basilisk ↔ ROS 2 setup that lets the existing decision core face real orbital dynamics
+          instead of an analytic predictor. This is the bridge the whole space thread is waiting on.
+        </p>
+        <div class="need"><b>You need:</b> Basilisk, spacecraft dynamics, ROS 2 integration.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill no">RS-1</span><span class="pill info">space</span></div>
+        <h3>Review the safe-mode specification</h3>
+        <p>
+          The space recovery function does not exist in F´ and must be written. A safe mode with no
+          flight heritage is the largest weakness in the orbital thread, and the project would much
+          rather have it attacked now than discovered later.
+        </p>
+        <div class="need"><b>You need:</b> To have actually flown a spacecraft safe mode.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">RQ6b</span><span class="pill info">LLM security</span></div>
+        <h3>A jailbreak corpus for the mission compiler</h3>
+        <p>
+          The adversarial corpus exists but is small. The interesting question is not whether a model
+          can be talked into something — RoboPAIR settled that — but whether anything it produces
+          under attack survives the closed schema and the named checks.
+        </p>
+        <div class="need"><b>You need:</b> Red-teaming instincts and a text editor. This one is genuinely approachable.</div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:1.8rem">
+      <span class="tag">Also always useful</span>
+      <p>
+        An honest report from a setup that is <em>not</em> the author&rsquo;s: a different airframe, a
+        different distro, a different model behind the intent compiler. The evaluation harness ships
+        a <code>mock</code> provider that needs no key and no network, so reproducing the pipeline
+        costs you nothing but time.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ RULES ============ -->
+  <section id="rules">
+    <h2>2 · The five rules a reviewer will block on</h2>
+    <p>
+      These are not style preferences. Everything else — formatting, naming, structure — is
+      negotiable in review; these are not.
+    </p>
+
+    <div class="panel">
+      <div class="rule">
+        <span class="n">1</span>
+        <div>
+          <h3>No number without a run</h3>
+          <p>
+            Performance figures come only from <code>results/</code> via <code>scripts/aggregate.py</code>,
+            and the reviewable part is published under <code>docs/evidence/</code>. Never write a
+            measurement you did not produce. A contribution that quietly widens a claim is the one
+            kind of change that damages this project.
+          </p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="n">2</span>
+        <div>
+          <h3>No API from memory</h3>
+          <p>
+            Every behavioural claim about PX4, ROS 2, F´, Ogma, Copilot, DAIDALUS or FRET cites
+            <code>repo@commit:file:line</code> in <code>GROUNDING.md</code>, against shallow clones
+            pinned in <code>third_party/VERSIONS.md</code>. If your change touches an API, add the
+            <code>GROUNDING.md</code> row <strong>first</strong>.
+          </p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="n">3</span>
+        <div>
+          <h3>Every safety function has a test that fails before the implementation</h3>
+          <p>
+            Write the failing test, watch it fail, then implement. For a compiler check
+            specifically, the test must construct a case where your check is the <em>only</em>
+            failing one.
+          </p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="n">4</span>
+        <div>
+          <h3>The decision path allocates nothing and has bounded time</h3>
+          <p>
+            <code>DecisionCore</code> and everything it calls per tick.
+            <code>test_decision_core_no_alloc.cpp</code> and
+            <code>test_decision_core_timing.cpp</code> enforce it, so this is checked rather than
+            trusted.
+          </p>
+        </div>
+      </div>
+      <div class="rule">
+        <span class="n">5</span>
+        <div>
+          <h3>A new flight operation gets its document before it gets code</h3>
+          <p>
+            One document per operation, air and space, under <code>docs/operations/</code>, with its
+            checks, channels, recovery function and evidence.
+            <a href="integrate.html#operation">The template is here.</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top:1.2rem">
+      Mechanics: C++17 with colcon/ament, gtest and launch_testing. Granular commits, one logical
+      change each, messages as <code>type(scope): imperative summary</code>. Every new source file
+      starts with <code>SPDX-License-Identifier: Apache-2.0</code>. Nothing under the NASA Open
+      Source Agreement may live outside <code>nosa/</code>, and no GPL-2.0-only dependency may enter
+      the tree at all — both are enforced by a script, not by convention. By contributing you agree
+      your contribution is licensed under Apache-2.0.
+    </p>
+  </section>
+
+  <!-- ============ CHALLENGE ============ -->
+  <section id="challenge">
+    <h2>3 · Challenge a claim</h2>
+    <p>
+      There is a dedicated issue template for this, and it is the contribution the project values
+      most highly: <strong>&ldquo;claim challenge&rdquo;</strong>. If a number on this site, in the
+      README or in the SPEC does not follow from the evidence directory it cites, that is a defect
+      of the same severity as a crash.
+    </p>
+    <div class="grid g3">
+      <div class="panel">
+        <h3>Claim challenge</h3>
+        <p class="small muted" style="margin:0">A stated claim is not supported by its evidence, or the evidence does not say what the text says it says.</p>
+      </div>
+      <div class="panel">
+        <h3>Bug report</h3>
+        <p class="small muted" style="margin:0">Something is wrong in the code. Include the seed and the run directory — a defect without a reproducible run is much weaker.</p>
+      </div>
+      <div class="panel">
+        <h3>Operation or capability</h3>
+        <p class="small muted" style="margin:0">You want a new flight operation or capability pack. This template asks for the document&rsquo;s content before any code.</p>
+      </div>
+    </div>
+    <div class="note limit" style="margin-top:1.4rem">
+      <span class="tag">Security</span>
+      <p>
+        Do not open a public issue for a vulnerability. <code>SECURITY.md</code> has the private
+        disclosure address, the accepted limitations of this phase — FM-12, unauthenticated DDS,
+        above all — and what does count as a physical-authority escape.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ START ============ -->
+  <section id="start">
+    <h2>4 · Getting set up</h2>
+    <p>
+      The trusted mission layer is pure Python and needs no container. This is enough to work on the
+      compiler, the corpus, the plan executor and the space keep-out predictor:
+    </p>
+    <div class="code-head"><span>no container required</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">pip install -r requirements-dev.txt
+python3 -m pytest scripts/tests -q
+python3 -m mission.compiler --intent mission/intents/survey_north_3.json</code></pre>
+
+    <p>Everything else runs in Docker with the repository mounted at <code>/work</code>:</p>
+    <div class="code-head"><span>the full bench</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">docker pull ghcr.io/aton-of-data/guara-dev:m1
+export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
+
+./scripts/fetch_third_party.sh
+./scripts/dev.sh colcon build --symlink-install
+./scripts/dev.sh colcon test --packages-select guara_rta guara_geofence guara_monitors
+./scripts/sitl_run.sh --scenario hover --seed 42 --headless</code></pre>
+
+    <p class="small muted">
+      The formal-methods image is deliberately <strong>not</strong> published: it embeds FRET, which
+      is under the NASA Open Source Agreement, and distributing a container that embeds NOSA code
+      needs a legal review that is tracked as an open risk. Build it locally with
+      <code>./scripts/fm.sh</code>.
+    </p>
+  </section>
+
+  <!-- ============ FUND ============ -->
+  <section id="fund">
+    <h2>5 · Funding</h2>
+    <p class="lede">
+      Guará is Apache-2.0 and independent. Most of it is work that only costs time — but the parts
+      that stand between a research prototype and something an operator could trust are physical,
+      and they cost money.
+    </p>
+
+    <div class="grid g2" style="margin-top:1.8rem">
+      <div class="panel fund">
+        <span class="amt">Hardware</span>
+        <h3>A hardware-in-the-loop bench</h3>
+        <p class="small muted" style="margin:0">
+          Every latency number on this site is software-in-the-loop on one machine. Re-measuring
+          <code>δ_lat</code> on a real companion computer, over a real link, against a real FMU is
+          the single change that would most improve what this project is allowed to claim.
+        </p>
+      </div>
+      <div class="panel fund">
+        <span class="amt">Hardware</span>
+        <h3>A reference airframe and a flight campaign</h3>
+        <p class="small muted" style="margin:0">
+          SITL does not transfer, and the project says so on every page. A first real flight
+          campaign — with an airframe, a site, insurance and a licensed pilot — is what turns
+          &ldquo;measured in simulation&rdquo; into evidence.
+        </p>
+      </div>
+      <div class="panel fund">
+        <span class="amt">Access</span>
+        <h3>Licensed standards</h3>
+        <p class="small muted" style="margin:0">
+          The ASTM F3269 text is not available to this project, which is why its own central role
+          mapping carries a <strong>[REVIEW]</strong> marker. Standards access is unglamorous and it
+          unblocks a risk immediately.
+        </p>
+      </div>
+      <div class="panel fund">
+        <span class="amt">People</span>
+        <h3>Review time from people who have certified avionics</h3>
+        <p class="small muted" style="margin:0">
+          The failure modes, the safe-mode specification and the switching properties all benefit
+          far more from an experienced reader than from more code. Funded review hours buy exactly
+          that.
+        </p>
+      </div>
+    </div>
+
+    <div class="note ok" style="margin-top:1.8rem">
+      <span class="tag">What a sponsor gets, stated plainly</span>
+      <p>
+        Nothing is sold, nothing is gated, and no feature is held back for funders — it is
+        Apache-2.0 and it stays that way. What funding buys is <em>rate</em>: the measurements happen
+        sooner, on better hardware, reviewed by more people. If that is not worth it to you, the
+        code is free either way.
+      </p>
+    </div>
+
+    <p style="margin-top:1.6rem">
+      Sponsorship, grants, institutional collaboration and student projects:
+      <a href="mailto:dornfeld.in@gmail.com"><strong>dornfeld.in@gmail.com</strong></a>.
+      Aton Bertini Dornfeld.
+    </p>
+  </section>
+
+  <!-- ============ SCOPE ============ -->
+  <section id="scope">
+    <h2>6 · Scope and conduct</h2>
+    <div class="note limit">
+      <span class="tag">Not negotiable, regardless of framing</span>
+      <p>
+        Civil flight safety only. Contributions implementing weapons or any payload intended to
+        harm, target selection, tracking or identification of specific people for enforcement or
+        harassment, covert surveillance, or the defeat of geofences, remote ID or failsafes will not
+        be accepted.
+      </p>
+    </div>
+    <p>
+      The <code>CODE_OF_CONDUCT.md</code> applies to every space this project occupies. In review,
+      the project&rsquo;s own bias runs toward the person who says a number is wrong — see
+      <a href="evidence.html#review">the review that invalidated twelve of its own rows</a>.
+    </p>
+  </section>
+
+  <!-- ============ CITE ============ -->
+  <section id="cite">
+    <h2>7 · Citing</h2>
+    <p>
+      There is no preprint yet. Cite the repository and the commit, via <code>CITATION.cff</code>.
+      Every quantitative claim should cite the run directory under <code>docs/evidence/</code> that
+      produced it — not this site, and not the README.
+    </p>
+    <div class="btn-row">
+      <a class="btn btn-primary" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Open the repository →</a>
+      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/CONTRIBUTING.md">Full CONTRIBUTING.md</a>
+      <a class="btn" href="mailto:dornfeld.in@gmail.com">Email the author</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p class="small" style="margin:0 0 .5rem">
+      Guará · Apache-2.0 · Copyright 2026 Aton Bertini Dornfeld and the Guará contributors.
+      Civil flight safety only.
+    </p>
+    <p class="small" style="margin:0">
+      <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
+      <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
