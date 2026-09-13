@@ -12,8 +12,12 @@ out of scope; if it is listed as *specified*, no run supports it yet.
 ## 1. Scopes
 
 Guará is one architecture (ASTM F3269 roles, `docs/SPEC.md` §2) instantiated in two domains,
-on two hosts, with two recovery functions. The threads are the ones in
-[`docs/PLAN-M8-M16.md`](../PLAN-M8-M16.md).
+on two hosts, with two recovery functions. The domain threads are the ones in
+[`docs/PLAN-M8-M16.md`](../PLAN-M8-M16.md); two further threads cut across both domains rather
+than belonging to either — **S** setup and reproducibility, and **K** the kernel and its delivery
+([`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md)) — and **M**, monitors and the specification, owns
+the signals both domains switch on. The six are listed together in
+[`docs/milestones/STATUS.md`](../milestones/STATUS.md).
 
 | Scope | Domain | Host | Recovery function | Thread | Maturity |
 |---|---|---|---|---|---|
