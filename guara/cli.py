@@ -6,6 +6,7 @@ import argparse
 import sys
 
 from . import doctor
+from . import params
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -13,6 +14,8 @@ def main(argv: list[str] | None = None) -> int:
     if argv[:1] == ["compile"]:
         from mission.compiler.__main__ import main as compile_main
         return compile_main(argv[1:])
+    if argv[:1] == ["params"]:
+        return params.run(argv[1:])
 
     parser = argparse.ArgumentParser(
         prog="guara",
@@ -25,6 +28,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "compile",
         help="compile a Mission Intent, or match the model-free stop grammar",
+    )
+    sub.add_parser(
+        "params",
+        help="schema-check an arbiter parameter file and print the core digest",
     )
     args = parser.parse_args(argv)
     if args.cmd == "doctor":

@@ -117,6 +117,7 @@ void write_le64(std::uint8_t * d, std::uint64_t v) noexcept
 
 void feed_f64(std::uint64_t & h, double x) noexcept
 {
+  /* Canonical encoding: IEEE-754 bit pattern as 8 little-endian bytes. */
   std::uint64_t bits = 0;
   static_assert(sizeof(double) == 8, "IEEE-754 double");
   std::memcpy(&bits, &x, 8);

@@ -48,6 +48,7 @@ jobs:
           test "$(guara compile --stop 'land now')" = land_now
           test "$(guara compile --stop 'pouse agora')" = land_now
           python3 -m mission.compiler --stop 'land now' | grep -x land_now
+          guara params check config/rta_params.yaml config/rta_params_flight.yaml
 
   core:
     name: host-free kernel

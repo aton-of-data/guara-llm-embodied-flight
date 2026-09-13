@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/aton-of-data/guara/config/rta_params.schema.json",
+  "title": "Guara arbiter parameter file (ROS 2 YAML)",
+  "description": "Host-side schema for rta_params.yaml (G-K8 / M18). The kernel never parses YAML; it consumes the canonical C fields and records an FNV-1a digest over them. additionalProperties is allowed because the host stores gateway, geofence and input channels next to the core set. Range constraints mirror guara_rta::validate.",
+  "type": "object",
+  "required": ["guara_rta"],
+  "additionalProperties": true,
+  "properties": {
+    "guara_rta": {
+      "type": "object",
+      "required": ["ros__parameters"],
+      "additionalProperties": true,
+      "properties": {
+        "ros__parameters": { "$ref": "#/$defs/ros_parameters" }
+      }
+    }
+  },
+  "$defs": {
+    "nonneg": { "type": "number", "minimum": 0, "maximum": 1.0e9 },
+    "pos": { "type": "number", "exclusiveMinimum": 0, "maximum": 1.0e9 },
+    "ros_parameters": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "core.tau_daa_s",
+        "core.tau_gf_s",
+        "core.h_daa_s",
+        "core.h_gf_s",
+        "core.dwell_s",
+        "core.n_max",
+        "core.window_s",
+        "core.return_enabled",
+        "core.escalation_enabled",
+        "core.escalation_s"
+      ],
+      "properties": {
+        "core.tau_daa_s": { "$ref": "#/$defs/nonneg" },
+        "core.tau_gf_s": { "$ref": "#/$defs/nonneg" },
+        "core.h_daa_s": { "$ref": "#/$defs/nonneg" },
+        "core.h_gf_s": { "$ref": "#/$defs/nonneg" },
+        "core.dwell_s": { "$ref": "#/$defs/nonneg" },
+        "core.n_max": { "type": "integer", "minimum": 1, "maximum": 32 },
+        "core.window_s": { "$ref": "#/$defs/pos" },
+        "core.return_enabled": { "type": "boolean" },
+        "core.escalation_enabled": { "type": "boolean" },
+        "core.escalation_s": { "$ref": "#/$defs/pos" }
+      }
+    }
+  }
+}

@@ -58,8 +58,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-51 | S | M17 | in progress | `guara doctor` (tier 0); not PASS until Linux, macOS and Windows/WSL are all recorded |
 | AC-52 | S | M17 | in progress | pin-drift check and hash-pinned `requirements.lock` (CPython 3.10); second-machine byte-identity unrecorded |
 | AC-55 | S | M17 | in progress | `core` job in `.github/workflows/checks.yml`; matrix evidence not yet recorded |
-| AC-57 | K | M18 | in progress | `core/` CMake library and C ABI; consumer example present |
-| AC-61 | K | M18 | in progress | `scripts/check_abi.py --baseline core/abi_symbols.txt`; tag-to-tag gate unrecorded |
+| AC-57 | K | M18 | in progress | `core/` CMake library and C ABI; `guara params check` against `config/rta_params.schema.json`; ROS node does not yet publish the digest |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan on ABI tests; clang-tidy; vector-suite coverage unmeasured |
 
 ## Planned criteria

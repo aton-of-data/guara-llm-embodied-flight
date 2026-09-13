@@ -28,6 +28,11 @@ int main(void)
   guara_params_digest(&p, b);
   CHECK(memcmp(a, b, GUARA_PARAM_DIGEST_LEN) == 0);
 
+  /* Locked against guara.params.DEFAULT_DIGEST_HEX (G-K8). */
+  static const uint8_t kDefaultDigest[GUARA_PARAM_DIGEST_LEN] = {
+      0xc9, 0xf8, 0x2e, 0x52, 0xea, 0x1d, 0x44, 0x69};
+  CHECK(memcmp(a, kDefaultDigest, GUARA_PARAM_DIGEST_LEN) == 0);
+
   p.n_max = 4;
   guara_params_digest(&p, b);
   CHECK(memcmp(a, b, GUARA_PARAM_DIGEST_LEN) != 0);
