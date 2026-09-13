@@ -12,7 +12,7 @@ Local process. Not an ADR, not a contribution rule, nothing here is merged.
 | # | Stage | Model | Skill | Artifact |
 |---|---|---|---|---|
 | 1 | Scope | Opus 5 (this session) | `guara-scope` | `.claude/pipeline/<ID>/packet.md` |
-| 2 | Execute | Cursor / Grok | `guara-execute` | `.claude/pipeline/<ID>/log.md` |
+| 2 | Execute | Cursor / Grok, on a `/loop 5m` timer | `guara-execute` | `.claude/pipeline/<ID>/log.md` |
 | 3 | Review | Opus 5, fresh session | `guara-review` | `.claude/pipeline/<ID>/review.md` |
 
 `<ID>` = `YYYYMMDD-<kebab-slug>`. One packet = one falsifiable claim + its gates.

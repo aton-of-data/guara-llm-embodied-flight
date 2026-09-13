@@ -11,15 +11,37 @@ Input: `.claude/pipeline/<ID>/packet.md`. Output: `.claude/pipeline/<ID>/log.md`
 
 ## Loop, per task, in packet order
 
+Run on a timer (`/loop 5m`). One iteration = one task = six steps, then stop.
+
 ```
-read T<k> → edit ONLY the files T<k> lists → run its Gate verbatim → read the output
-  green  → append the log row, next task
-  red    → fix and rerun; attempt 2; attempt 3
-  3 reds → STOP T<k>: mark BLOCKED, paste the last command and its output verbatim,
-           continue only with tasks that do not Depend on T<k>
+iteration: first task not DONE/BLOCKED, in packet order
+  1 TEST      write or extend its test and watch it FAIL first
+  2 IMPLEMENT edit ONLY the files T<k> lists; open ONLY the packet Read-set
+  3 VALIDATE  run its Gate verbatim
+                green → step 4
+                red   → fix and rerun; attempt 2; attempt 3
+                3 reds → mark T<k> BLOCKED, paste the last command and output verbatim,
+                         continue only with tasks that do not Depend on T<k>
+  4 DOCUMENT  the document the task names, nothing else
+  5 COMMIT    this task alone: type(scope): imperative summary
+  6 HAND OFF  append the log row, then rewrite the log's "Next agent" section
 ```
 
 Do not look ahead. Do not batch tasks. One commit per task.
+
+**The next iteration may be a cold session.** Assume it remembers nothing. The log's "Next
+agent" section is the entire handover: next task, its gate, whether the tree is clean, the
+last gate run and its result, what not to touch, and what bit you this iteration. Write it so
+a stranger continues without asking a question. Leaving it stale is worse than leaving the
+task undone.
+
+## Read-set — the context bound
+
+The packet's `Read-set` is every file you may open. The packet plus that set is your whole
+context: do not grep the tree, do not read a neighbour "for orientation", do not open a file
+because a task's diff would be easier with it. A task that genuinely needs a path outside the
+set is malformed — log the path you wanted, mark the task BLOCKED, and continue with tasks
+that do not depend on it. Widening your own scope is a CHANGES verdict by construction.
 
 ## Stop and report — never improvise
 

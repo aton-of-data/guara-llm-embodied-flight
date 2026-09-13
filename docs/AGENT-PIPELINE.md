@@ -15,7 +15,7 @@ with one job, and each stage hands the next a written artifact rather than a con
 | # | Stage | Where | Job | Artifact |
 |---|---|---|---|---|
 | 1 | Scope | a large model, one session per packet | Turn a request into a falsifiable claim with tasks, gates and acceptance | `packet.md` |
-| 2 | Execute | a fast model in an editor loop | Implement one task at a time against its gate | `log.md` |
+| 2 | Execute | a fast model in an editor, on a 5-minute timer | Implement one task at a time against its gate | `log.md` |
 | 3 | Review | a large model, fresh session | Re-run the gates, attack the claim, return a verdict | `review.md` |
 
 The separation is the point. A scoper that writes code defends its own plan; an executor that
@@ -27,6 +27,21 @@ not contain goes back to stage 1.
 A review returns `ACCEPT`, `CHANGES` or `REJECT`. `CHANGES` appends to the packet and returns
 to stage 2, at most twice; after that the packet is re-scoped. `REJECT` means the claim was
 refuted or the approach was wrong, which is an outcome, not a failure.
+
+### Stage 2 runs on a timer
+
+The executor is started as `/loop 5m` with the rendered prompt, and **one iteration takes one
+task through six steps and then stops**: write the test and watch it fail, implement only the
+files the task lists, run the gate verbatim, update the document the task names, commit that task
+alone, hand off. Three red attempts mark the task `BLOCKED` rather than starting a fourth.
+
+The cadence is not about speed. Bounding an iteration to one task means a red gate costs one
+iteration instead of a session, and a wrong turn is visible in a commit rather than buried in a
+large diff. It also forces the property that makes the loop safe to leave alone: **the next
+iteration may be a cold session with no memory of the last**, so each iteration ends by rewriting
+the log's *Next agent* section — the next task, its gate, whether the tree is clean, the last gate
+run and its result, what not to touch, and what bit the previous iteration. A stale hand-off is a
+worse outcome than an unfinished task, because the next session cannot tell that it is stale.
 
 ## Stage 1 is the scientific part
 
@@ -43,6 +58,9 @@ keeps the rest honest:
   a task; it is never guessed.
 - **Acceptance** rows each carry the command that verifies them, and reuse an AC id from
   [`docs/milestones/STATUS.md`](milestones/STATUS.md) when one exists.
+- A **read-set** lists every file the executor may open. It is the loop's context bound and its
+  cost control: the executor reads the packet and that set, never the tree. A task needing a path
+  outside the set is malformed and goes back to the scoper rather than being improvised around.
 
 This is the same discipline the repository already applies to its results — no number without a
 run, no API from memory — moved one step earlier, to the point where the work is defined.
