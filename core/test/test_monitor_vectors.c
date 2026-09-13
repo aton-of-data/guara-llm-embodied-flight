@@ -477,8 +477,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 9) {
-    fprintf(stderr, "FAIL expected at least 9 monitor vectors, got %d\n", nvec);
+  if (nvec < 10) {
+    fprintf(stderr, "FAIL expected at least 10 monitor vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_monitor_table vectors=%d\n", nvec);
