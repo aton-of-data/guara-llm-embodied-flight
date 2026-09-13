@@ -106,6 +106,12 @@ if(GUARA_CORE_STANDALONE)
   target_link_libraries(test_abi_monitor PRIVATE guara_core)
   add_test(NAME abi_monitor COMMAND test_abi_monitor)
 
+  add_executable(test_monitor_vectors test/test_monitor_vectors.c)
+  target_link_libraries(test_monitor_vectors PRIVATE guara_core)
+  target_compile_definitions(test_monitor_vectors PRIVATE
+    "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
+  add_test(NAME conformance_monitor_table COMMAND test_monitor_vectors)
+
   # gcov's runtime writes .gcda files (and may allocate); those probes are
   # for the unsanitized, uninstrumented kernel only.
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE
