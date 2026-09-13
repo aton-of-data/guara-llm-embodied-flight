@@ -35,6 +35,8 @@ int main(void)
   unsigned char buf[1024];
   CHECK(sizeof buf >= guara_core_storage_size());
   CHECK(guara_core_init(buf, sizeof buf, &p) == GUARA_ERR_PARAMS);
+  CHECK(strcmp(guara_params_error(&p), "n_max must be >= 1") == 0);
+  CHECK(guara_params_error(NULL) != NULL);
 
   guara_params_default(&p);
   CHECK(guara_core_init(buf, guara_core_storage_size(), &p) == GUARA_OK);

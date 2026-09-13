@@ -133,6 +133,14 @@ void guara_params_default(guara_params * params)
   params->escalation_s = d.escalation_s;
 }
 
+const char * guara_params_error(const guara_params * params)
+{
+  if (params == nullptr) {
+    return "params is null";
+  }
+  return guara_rta::validate(from_c(*params));
+}
+
 void guara_params_digest(const guara_params * params, uint8_t out[GUARA_PARAM_DIGEST_LEN])
 {
   static_assert(GUARA_PARAM_DIGEST_LEN == guara_rta::kParamDigestLen, "digest length");

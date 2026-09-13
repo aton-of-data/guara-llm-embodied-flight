@@ -1,0 +1,61 @@
+[
+  {
+    "id": "default_core_params_are_valid",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "expect": {"params_error": null}}]
+  },
+  {
+    "id": "tau_daa_s_must_be_finite_non_negative",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"tau_daa_s": -1.0},
+               "expect": {"params_error": "tau_daa_s must be finite and >= 0"}}]
+  },
+  {
+    "id": "tau_gf_s_must_be_finite_non_negative",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"tau_gf_s": -1.0},
+               "expect": {"params_error": "tau_gf_s must be finite and >= 0"}}]
+  },
+  {
+    "id": "h_daa_s_must_be_finite_non_negative",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"h_daa_s": -1.0},
+               "expect": {"params_error": "h_daa_s must be finite and >= 0"}}]
+  },
+  {
+    "id": "h_gf_s_must_be_finite_non_negative",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"h_gf_s": -1.0},
+               "expect": {"params_error": "h_gf_s must be finite and >= 0"}}]
+  },
+  {
+    "id": "dwell_s_must_be_finite_non_negative",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"dwell_s": -1.0},
+               "expect": {"params_error": "dwell_s must be finite and >= 0"}}]
+  },
+  {
+    "id": "window_s_must_be_finite_positive",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"window_s": 0.0},
+               "expect": {"params_error": "window_s must be finite and > 0"}}]
+  },
+  {
+    "id": "n_max_must_be_at_least_one",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"n_max": 0},
+               "expect": {"params_error": "n_max must be >= 1"}}]
+  },
+  {
+    "id": "n_max_must_not_exceed_history",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"n_max": 33},
+               "expect": {"params_error": "n_max exceeds kSwitchHistoryCapacity"}}]
+  },
+  {
+    "id": "escalation_s_must_be_finite_positive",
+    "spec": ["AC-59"],
+    "steps": [{"op": "check_core_params", "params": {"escalation_s": 0.0},
+               "expect": {"params_error": "escalation_s must be finite and > 0"}}]
+  }
+]

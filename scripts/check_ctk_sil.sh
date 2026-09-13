@@ -37,6 +37,7 @@ fi
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/adr0010_gateway.json"
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/monitor_table.json"
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/geofence.json"
+"${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/core_params.json"
 bench="${TMPDIR:-/tmp}/guara-ctk-bench"
 "${py}" -m guara ctk bench --port sil --report "${bench}"
 "${py}" "${root}/scripts/check_ac.py" AC-60 "${bench}"

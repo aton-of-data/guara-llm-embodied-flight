@@ -46,6 +46,31 @@ class Params:
     escalation_s: float = 30.0
 
 
+def validate_params(p: Params) -> str | None:
+    def finite_non_negative(v: float) -> bool:
+        return math.isfinite(v) and v >= 0.0
+
+    if not finite_non_negative(p.tau_daa_s):
+        return "tau_daa_s must be finite and >= 0"
+    if not finite_non_negative(p.tau_gf_s):
+        return "tau_gf_s must be finite and >= 0"
+    if not finite_non_negative(p.h_daa_s):
+        return "h_daa_s must be finite and >= 0"
+    if not finite_non_negative(p.h_gf_s):
+        return "h_gf_s must be finite and >= 0"
+    if not finite_non_negative(p.dwell_s):
+        return "dwell_s must be finite and >= 0"
+    if not (math.isfinite(p.window_s) and p.window_s > 0.0):
+        return "window_s must be finite and > 0"
+    if int(p.n_max) == 0:
+        return "n_max must be >= 1"
+    if int(p.n_max) > SWITCH_HISTORY_CAPACITY:
+        return "n_max exceeds kSwitchHistoryCapacity"
+    if not (math.isfinite(p.escalation_s) and p.escalation_s > 0.0):
+        return "escalation_s must be finite and > 0"
+    return None
+
+
 @dataclass
 class Inputs:
     t_s: float = 0.0
@@ -83,6 +108,9 @@ class ReferenceCore:
     clear_since_s: float = math.nan
     unsafe_since_s: float = math.nan
     switch_times: list[float] = field(default_factory=list)
+
+    def params_error(self, params: Params) -> str | None:
+        return validate_params(params)
 
     def _switches(self, t_s: float) -> int:
         w = self.params.window_s

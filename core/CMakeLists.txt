@@ -98,6 +98,12 @@ if(GUARA_CORE_STANDALONE)
     "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
   add_test(NAME conformance_spec_s3 COMMAND test_conformance)
 
+  add_executable(test_core_params_vectors test/test_core_params_vectors.c)
+  target_link_libraries(test_core_params_vectors PRIVATE guara_core)
+  target_compile_definitions(test_core_params_vectors PRIVATE
+    "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
+  add_test(NAME conformance_core_params COMMAND test_core_params_vectors)
+
   add_executable(test_gateway_vectors test/test_gateway_vectors.c)
   target_link_libraries(test_gateway_vectors PRIVATE guara_core)
   target_compile_definitions(test_gateway_vectors PRIVATE

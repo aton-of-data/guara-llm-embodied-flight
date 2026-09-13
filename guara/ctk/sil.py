@@ -171,6 +171,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_core_version.restype = c_char_p
     lib.guara_abi_version.restype = c_char_p
     lib.guara_params_default.argtypes = [POINTER(CParams)]
+    lib.guara_params_error.argtypes = [POINTER(CParams)]
+    lib.guara_params_error.restype = c_char_p
     lib.guara_core_init.argtypes = [c_void_p, c_size_t, POINTER(CParams)]
     lib.guara_core_init.restype = c_int
     lib.guara_core_step.argtypes = [c_void_p, POINTER(CInputs), POINTER(COutput)]
@@ -310,6 +312,10 @@ class SilCore:
         rc = lib.guara_core_init(self._buf.addr, size, ctypes.byref(_c_params(params)))
         if rc != GUARA_OK:
             raise OSError(f"guara_core_init returned {rc}")
+
+    def params_error(self, params: Params) -> str | None:
+        raw = self._lib.guara_params_error(ctypes.byref(_c_params(params)))
+        return None if raw is None else raw.decode("utf-8")
 
     def step(self, inp: Inputs) -> Output:
         out = COutput()

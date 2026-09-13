@@ -80,5 +80,19 @@ def test_geofence_vectors_cover_ac8_and_uncertainty_band():
     assert "too_many_vertices" in ids
     assert "default_predictor_params_are_valid" in ids
     assert "a_brake_h_must_be_positive" in ids
+
+
+def test_core_params_vectors_cover_every_validate_branch():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/core_params.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "default_core_params_are_valid" in ids
+    assert "n_max_must_be_at_least_one" in ids
+    assert "n_max_must_not_exceed_history" in ids
+    assert "window_s_must_be_finite_positive" in ids
+    cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
+    assert "conformance_core_params" in cmake
+    assert "test_core_params_vectors.c" in cmake
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_geofence" in cmake
