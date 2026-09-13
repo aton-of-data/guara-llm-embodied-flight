@@ -39,6 +39,13 @@ int main(void)
   CHECK(fabs(out.exit_distance_m - 50.0) < 1e-6);
   CHECK(fabs(out.t_gf_s - 9.0) < 0.05);
   CHECK(guara_gf_predict(NULL, 4, 0.0, 30.0, &p, &s, &out) == GUARA_ERR_NULL);
+  {
+    double north = 0.0;
+    double east = 1.0;
+    CHECK(guara_gf_project_to_local(-22.001, -47.89, -22.0, -47.89, &north, &east) == GUARA_OK);
+    CHECK(fabs(north + 111.195) < 0.01);
+    CHECK(fabs(east) < 1e-6);
+  }
   printf("PASS abi_geofence\n");
   return 0;
 }

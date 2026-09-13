@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.4.0-provisional"
+#define GUARA_ABI_VERSION "0.5.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -196,6 +196,8 @@ GUARA_API void guara_gf_params_default(guara_gf_params * p);
 GUARA_API int guara_gf_predict(const double * vertices_ne, size_t n_vertices, double alt_min_m,
   double alt_max_m, const guara_gf_params * params, const guara_gf_state * state,
   guara_gf_prediction * out);
+GUARA_API int guara_gf_project_to_local(double lat_deg, double lon_deg, double ref_lat_deg,
+  double ref_lon_deg, double * north_m, double * east_m);
 
 #ifdef __cplusplus
 }

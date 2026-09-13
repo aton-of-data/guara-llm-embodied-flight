@@ -292,12 +292,45 @@ static int check_expect(const char *id, int step_i, Cursor *c, const guara_gf_pr
   }
 }
 
+static int check_project(const char *id, int step_i, Cursor *c, double north, double east)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    double want = 0.0;
+    int ok = parse_number(c, &want);
+    const double got = strcmp(key, "north_m") == 0 ? north : east;
+    const double tol = fabs(want) < 1e-9 ? DIST_TOL : 0.01;
+    ok = ok && fabs(got - want) <= tol;
+    if (!ok) {
+      fprintf(stderr, "FAIL %s step %d %s got %g want %g\n", id, step_i, key, got, want);
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
 static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min,
                     double alt_max, const guara_gf_params *params, const char *id,
                     int step_i)
 {
   guara_gf_state st;
   memset(&st, 0, sizeof st);
+  double lat_deg = 0.0;
+  double lon_deg = 0.0;
+  double ref_lat_deg = 0.0;
+  double ref_lon_deg = 0.0;
   int has_expect = 0;
   Cursor expect_at;
   memset(&expect_at, 0, sizeof expect_at);
@@ -341,6 +374,18 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
     } else if (strcmp(key, "epv_m") == 0) {
       ok = parse_number(c, &v);
       st.epv_m = v;
+    } else if (strcmp(key, "lat_deg") == 0) {
+      ok = parse_number(c, &v);
+      lat_deg = v;
+    } else if (strcmp(key, "lon_deg") == 0) {
+      ok = parse_number(c, &v);
+      lon_deg = v;
+    } else if (strcmp(key, "ref_lat_deg") == 0) {
+      ok = parse_number(c, &v);
+      ref_lat_deg = v;
+    } else if (strcmp(key, "ref_lon_deg") == 0) {
+      ok = parse_number(c, &v);
+      ref_lon_deg = v;
     } else if (strcmp(key, "expect") == 0) {
       expect_at = *c;
       ok = skip_value(c);
@@ -359,6 +404,22 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
       return 0;
     }
     break;
+  }
+  if (strcmp(op, "project") == 0) {
+    double north = 0.0;
+    double east = 0.0;
+    if (guara_gf_project_to_local(lat_deg, lon_deg, ref_lat_deg, ref_lon_deg,
+                                  &north, &east) != GUARA_OK) {
+      fprintf(stderr, "FAIL %s step %d: project rejected\n", id, step_i);
+      return 0;
+    }
+    if (has_expect) {
+      Cursor ec = expect_at;
+      if (!check_project(id, step_i, &ec, north, east)) {
+        return 0;
+      }
+    }
+    return 1;
   }
   if (strcmp(op, "predict") != 0) {
     fprintf(stderr, "FAIL %s step %d: unknown op %s\n", id, step_i, op);
@@ -439,7 +500,7 @@ static int run_vector(Cursor *c)
     }
     break;
   }
-  if (!has_steps || nflat < 6U || (nflat % 2U) != 0U) {
+  if (!has_steps || (nflat != 0U && (nflat < 6U || (nflat % 2U) != 0U))) {
     fprintf(stderr, "FAIL %s: missing vertices or steps\n", id);
     return 0;
   }
@@ -533,8 +594,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 18) {
-    fprintf(stderr, "FAIL expected at least 18 geofence vectors, got %d\n", nvec);
+  if (nvec < 19) {
+    fprintf(stderr, "FAIL expected at least 19 geofence vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_geofence vectors=%d\n", nvec);

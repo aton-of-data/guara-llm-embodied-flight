@@ -11,6 +11,8 @@ from dataclasses import dataclass
 MAX_VERTICES = 64
 GEOM_EPS = 1e-9
 INF = math.inf
+EARTH_RADIUS_M = 6371000.0
+PI = 3.14159265358979323846
 
 
 @dataclass
@@ -187,3 +189,27 @@ class ReferenceGeofence:
                 return previous
             previous = s
         return previous if events else INF
+
+    def project(self, lat_deg: float, lon_deg: float, ref_lat_deg: float,
+                ref_lon_deg: float) -> Vec2:
+        return project_to_local(lat_deg, lon_deg, ref_lat_deg, ref_lon_deg)
+
+
+def project_to_local(lat_deg: float, lon_deg: float, ref_lat_deg: float,
+                     ref_lon_deg: float) -> Vec2:
+    deg2rad = PI / 180.0
+    lat = lat_deg * deg2rad
+    lon = lon_deg * deg2rad
+    ref_lat = ref_lat_deg * deg2rad
+    ref_lon = ref_lon_deg * deg2rad
+    sin_lat = math.sin(lat)
+    cos_lat = math.cos(lat)
+    cos_d_lon = math.cos(lon - ref_lon)
+    arg = min(1.0, max(-1.0, math.sin(ref_lat) * sin_lat +
+                       math.cos(ref_lat) * cos_lat * cos_d_lon))
+    c = math.acos(arg)
+    k = 1.0 if abs(c) <= 0.0 else c / math.sin(c)
+    return Vec2(
+        k * (math.cos(ref_lat) * sin_lat - math.sin(ref_lat) * cos_lat * cos_d_lon) * EARTH_RADIUS_M,
+        k * cos_lat * math.sin(lon - ref_lon) * EARTH_RADIUS_M,
+    )

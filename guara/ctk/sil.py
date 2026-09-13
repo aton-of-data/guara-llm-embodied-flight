@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ctypes
-import math
 import os
 import sys
 from ctypes import (
@@ -20,7 +19,7 @@ from ctypes import (
 )
 from pathlib import Path
 
-from .geofence import GfParams, GfPrediction, GfState
+from .geofence import GfParams, GfPrediction, GfState, Vec2
 from .gateway import GatewayLimits, GatewayOutput
 from .monitors import MonitorEval
 from .reference import Inputs, Output, Params
@@ -208,6 +207,9 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
         POINTER(c_double), c_size_t, c_double, c_double,
         POINTER(CGfParams), POINTER(CGfState), POINTER(CGfPrediction)]
     lib.guara_gf_predict.restype = c_int
+    lib.guara_gf_project_to_local.argtypes = [
+        c_double, c_double, c_double, c_double, POINTER(c_double), POINTER(c_double)]
+    lib.guara_gf_project_to_local.restype = c_int
     return lib
 
 
@@ -469,3 +471,15 @@ class SilGeofence:
             inside=int(out.inside),
             exit_distance_m=float(out.exit_distance_m),
         )
+
+    def project(self, lat_deg: float, lon_deg: float, ref_lat_deg: float,
+                ref_lon_deg: float):
+        north = c_double()
+        east = c_double()
+        rc = self._lib.guara_gf_project_to_local(
+            c_double(lat_deg), c_double(lon_deg),
+            c_double(ref_lat_deg), c_double(ref_lon_deg),
+            ctypes.byref(north), ctypes.byref(east))
+        if rc != GUARA_OK:
+            raise OSError(f"guara_gf_project_to_local returned {rc}")
+        return Vec2(float(north.value), float(east.value))

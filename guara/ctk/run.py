@@ -106,7 +106,7 @@ def _looks_like_geofence(data: list) -> bool:
     if not data:
         return False
     return "vertices" in data[0] or bool(
-        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict"}
+        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict", "project"}
     )
 
 
@@ -159,24 +159,44 @@ def _check_geofence(vec_id: str, step_i: int, expect: dict, got: GfPrediction) -
             raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
 
 
+def _check_project(vec_id: str, step_i: int, expect: dict, north_m: float, east_m: float) -> None:
+    mapping = {"north_m": north_m, "east_m": east_m}
+    for key, want in expect.items():
+        if key not in mapping:
+            continue
+        got_v = mapping[key]
+        tol = 1e-6 if abs(float(want)) < 1e-9 else 0.01
+        if abs(got_v - float(want)) > tol:
+            raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
+
+
 def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
     stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
     for vec in data:
         table = make_geofence()
-        table.configure(
-            [float(x) for x in vec["vertices"]],
-            float(vec.get("alt_min_m", 0.0)),
-            float(vec.get("alt_max_m", 1.0e9)),
-        )
+        if "vertices" in vec:
+            table.configure(
+                [float(x) for x in vec["vertices"]],
+                float(vec.get("alt_min_m", 0.0)),
+                float(vec.get("alt_max_m", 1.0e9)),
+            )
         params = _gf_params(vec.get("params"))
         vec_id = vec["id"]
         for i, step in enumerate(vec["steps"]):
-            if step.get("op") != "predict":
-                raise CtkError(f"{vec_id} step {i}: unknown op {step.get('op')}")
+            op = step.get("op")
             t0 = time.perf_counter_ns()
-            got = table.predict(params, _gf_state(step))
-            _mark(stats, t0)
-            _check_geofence(vec_id, i, step.get("expect") or {}, got)
+            if op == "predict":
+                got = table.predict(params, _gf_state(step))
+                _mark(stats, t0)
+                _check_geofence(vec_id, i, step.get("expect") or {}, got)
+            elif op == "project":
+                got = table.project(
+                    float(step["lat_deg"]), float(step["lon_deg"]),
+                    float(step["ref_lat_deg"]), float(step["ref_lon_deg"]))
+                _mark(stats, t0)
+                _check_project(vec_id, i, step.get("expect") or {}, got.x, got.y)
+            else:
+                raise CtkError(f"{vec_id} step {i}: unknown op {op}")
         stats.n_ok += 1
     return stats
 

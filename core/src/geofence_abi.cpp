@@ -66,4 +66,17 @@ int guara_gf_predict(const double * vertices_ne, size_t n_vertices, double alt_m
   return GUARA_OK;
 }
 
+int guara_gf_project_to_local(double lat_deg, double lon_deg, double ref_lat_deg,
+  double ref_lon_deg, double * north_m, double * east_m)
+{
+  if (north_m == nullptr || east_m == nullptr) {
+    return GUARA_ERR_NULL;
+  }
+  const guara_geofence::Vec2 p = guara_geofence::projectToLocal(
+    lat_deg, lon_deg, ref_lat_deg, ref_lon_deg);
+  *north_m = p.x;
+  *east_m = p.y;
+  return GUARA_OK;
+}
+
 }  // extern "C"

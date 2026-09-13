@@ -218,5 +218,15 @@
       {"op": "predict", "north_m": 49.9, "east_m": 0, "vn_m_s": 0, "ve_m_s": 0, "altitude_m": 10, "eph_m": 50.0,
        "expect": {"t_gf_s": "inf"}}
     ]
+  },
+  {
+    "id": "projection_small_distance",
+    "spec": ["AC-8"],
+    "steps": [
+      {"op": "project", "lat_deg": -22.001, "lon_deg": -47.89, "ref_lat_deg": -22.0, "ref_lon_deg": -47.89,
+       "expect": {"north_m": -111.195, "east_m": 0.0}},
+      {"op": "project", "lat_deg": -22.0, "lon_deg": -47.889, "ref_lat_deg": -22.0, "ref_lon_deg": -47.89,
+       "expect": {"east_m": 103.099}}
+    ]
   }
 ]
