@@ -25,7 +25,10 @@ batch milestones are complete ([`docs/PLAN-M8-M16.md`](PLAN-M8-M16.md) §1).
 |---|---|---|---|
 | M9 | A | LLM instruments against the labelled corpus; a compiled plan flown as the CF | AC-29, AC-30, AC-31 PASS; AC-27/AC-28 open ([M9](milestones/M9.md)) |
 | M13c | C | Attitude keep-out predictor and the closed space-intent vocabulary | AC-47 PASS; AC-48 needs a simulator ([M13c](milestones/M13c.md)) |
-| P5–P7 | core | Adversarial CF (RQ5), preprint and NFM submission, `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | next |
+| M17 | S | Hermetic setup: single pin source, hash-pinned lock, `guara doctor`, offline mode | AC-51, AC-52, AC-55, AC-56 in progress; AC-53, AC-54 planned |
+| M18 | K | `guara-core`: the host-free kernel and its C ABI, ABI symbol gate, parameter digest | AC-57..AC-62 in progress, none PASS |
+| M19 | K | `guara-ctk`: published vectors, the Python reference port, the SIL port through the C ABI | AC-63..AC-66 in progress; ROS 2 and F´ ports absent |
+| P5–P7 | core | Adversarial CF (RQ5), preprint and NFM submission, `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | not started; displaced by M17–M19 |
 
 ## Planned
 
@@ -47,22 +50,32 @@ the simulator. Its packaging decision is [ADR 0014](adr/0014-delivery-model.md) 
 safety kernel, a conformance kit, two host packages and a companion image, rather than a
 single SDK.
 
+M17, M18 and M19 have started and are listed under *In progress* above; what follows is the part
+of the plan with no code.
+
 | Milestone | Track | Content | Gate |
 |---|---|---|---|
-| M17 | S | Hermetic setup: single pin source, hash-pinned lock, `guara doctor`, multi-arch image, four install tiers | AC-51..AC-56 |
-| M18 | K | `guara-core`: host-free kernel with a C ABI; absorbs M13's extraction and precedes it | AC-57..AC-62 |
-| M19 | K | `guara-ctk`: golden vectors, a portable runner, an independent reimplementation | AC-63..AC-66 |
 | M20 | K | Published artifacts: ROS 2 packages, F´ library, wheel, companion image, SBOM, Jazzy | AC-67..AC-71 |
 | M21–M23 | H | HITL, companion bring-up and on-target timing, flight instrumentation | AC-72..AC-83 |
 | M24–M25 | H | Operational safety dossier, then the bounded-LLM flight campaign | AC-84..AC-92 |
 | M26–M28 | Z | F´ on an OBC-class target, the space operational interface, the orbital campaign | AC-93..AC-101 |
 
+Ten further criteria, AC-102..AC-111, were added on 2026-09-13 from
+[`docs/reviews/2026-09-13-roadmap-docs-site-review.md`](reviews/2026-09-13-roadmap-docs-site-review.md)
+and are specified in [`docs/PLAN-M17-M28.md`](PLAN-M17-M28.md) §9. They belong to milestones that
+already exist — M2, M9b, M14, M16, M19, M26, M27 — and none of them needs hardware, a host, a
+simulator or a network. They are the space gate of [ADR 0015](adr/0015-space-untrusted-function-contract.md),
+its published vectors, the safe-mode entry logic and its keep-out sweep, a space adversarial
+corpus, model-side runtime discipline, corpus coverage, monitor non-vacuity, and the core semantics
+the SPEC does not state.
+
 Full acceptance-criteria inventory, executed and planned:
 [`docs/milestones/STATUS.md`](milestones/STATUS.md).
 
-Blocking risks, tracked in [`docs/SPEC.md` §9](SPEC.md) and
-[`docs/research/SPACE-AUTONOMY.md`](research/SPACE-AUTONOMY.md) §8: CopilotVerifier
+Blocking risks. The four families — `R-*`, `RP-*`, `RS-*`, `RH-*` — are indexed in
+[`docs/SPEC.md` §9](SPEC.md), which names the document defining each: CopilotVerifier
 toolchain availability (R-11, blocks RQ4), DO-365B thresholds unsuited to small UAS (R-5), Hold
 as a DAA recovery against converging traffic (R-6), traffic injection in SITL never exercised
 (R-7), the unavailable ASTM F3269 text (R-8), and the space thread's own RS-1…RS-6 — of which
-RS-1, the safe mode with no heritage, is the one a reviewer should attack first.
+RS-1, the safe mode with no heritage, is the one a reviewer should attack first — and AC-109 now
+measures one half of it without waiting for a host.

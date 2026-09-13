@@ -451,13 +451,28 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 
 ## 11 · Roadmap
 
-M1–M8 are done, M9 and M13c are in progress, and the F´ host and the orbital batch are planned.
-The milestone-by-milestone version with the gate on each is
-[**`docs/ROADMAP.md`**](docs/ROADMAP.md); the acceptance-criteria inventory is
-[`docs/milestones/STATUS.md`](docs/milestones/STATUS.md).
+Six threads, with the state of each taken from
+[`docs/milestones/STATUS.md`](docs/milestones/STATUS.md) rather than restated here:
 
-Blocking risks, tracked in [`docs/SPEC.md` §9](docs/SPEC.md) and
-[`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) §8: CopilotVerifier
+| Thread | What it is | Milestones | State |
+|---|---|---|---|
+| core | The PX4 RTA: arbiter, geofence, DAA, latency and batch | M1–M7, P4 | done and measured; P5–P7 not started |
+| A | Air and LLM embodiment | M8–M12, M9b | M8 done; M9 in progress; M9b onward planned |
+| B | The F´ host | M13–M15 | specified; no deployment has run |
+| C | The space domain | M13c, M16 | AC-47 PASS; AC-48 needs a simulator |
+| S | Setup and reproducibility | M17 | in progress — `guara doctor`, the hash-pinned lock, offline mode |
+| K | The kernel and its delivery | M18–M20 | in progress — the host-free kernel, its C ABI and the conformance kit; nothing published yet |
+
+No criterion of M17, M18 or M19 is PASS: code exists, and a criterion becomes PASS only with an
+executed command and an excerpt in a milestone report. The milestone-by-milestone version with the
+gate on each is [**`docs/ROADMAP.md`**](docs/ROADMAP.md); ten criteria added on 2026-09-13 —
+the space gate of [ADR 0015](docs/adr/0015-space-untrusted-function-contract.md), its published
+vectors, safe-mode entry logic and its keep-out sweep, a space adversarial corpus, model-side
+runtime discipline, corpus coverage, monitor non-vacuity, and the core semantics the SPEC does not
+state — are specified in [`docs/PLAN-M17-M28.md`](docs/PLAN-M17-M28.md) §9.
+
+Blocking risks. The four families — `R-*`, `RP-*`, `RS-*`, `RH-*` — are indexed in
+[`docs/SPEC.md` §9](docs/SPEC.md), which names the document defining each: CopilotVerifier
 toolchain availability (R-11, blocks RQ4), DO-365B thresholds unsuited to small UAS (R-5), Hold
 as a DAA recovery against converging traffic (R-6), traffic injection in SITL never exercised
 (R-7), the unavailable ASTM F3269 text (R-8), and the space thread's own RS-1…RS-6 — of which
