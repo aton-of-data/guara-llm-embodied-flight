@@ -16,8 +16,9 @@ It verifies four things:
   is loaded by nothing;
 * every repository path quoted in those documents resolves in the tree — a token holding a
   `<...>` placeholder is a pattern, not a reference, and is skipped;
-* every `scripts/*` command the quality bar names exists, so a gate cannot be cited after the
-  script behind it is gone.
+* every `scripts/*` command these documents name exists — inside a fenced gate block as well
+  as in prose, since that is where the gates themselves are written — so a gate cannot be
+  cited after the script behind it is gone.
 
 Usage: python3 scripts/check_pipeline.py [--root DIR]
 Exit status 0 when the surfaces agree with the tree, 1 otherwise.
@@ -39,6 +40,9 @@ FRONT_MATTER = re.compile(r"\A---\n(.*?)\n---\n", re.DOTALL)
 # repository uses or a first segment that is a real directory. `N/A` is a verdict, not a
 # path, and the second condition is what tells them apart.
 SUFFIXES = {".md", ".mdc", ".py", ".sh", ".cpp", ".hpp", ".yaml", ".yml", ".txt", ".json"}
+
+# Gate commands live in fenced blocks, which carry no backticks of their own.
+COMMAND = re.compile(r"\bscripts/[\w./-]+\.(?:py|sh)")
 
 
 def front_matter(text: str) -> dict[str, str] | None:
@@ -124,12 +128,14 @@ def check(root: pathlib.Path) -> tuple[list[str], int, int, int]:
             if not resolve(token, root, doc):
                 problems.append(f"{doc.relative_to(root)}: quoted path does not exist: {token}")
 
-    if quality_bar.is_file():
-        for token in quoted_tokens(quality_bar.read_text(encoding="utf-8")):
-            if token.startswith("scripts/") and not (root / token).exists():
-                problems.append(f"the quality bar names a missing gate script: {token}")
-    else:
+    if not quality_bar.is_file():
         problems.append("the quality bar is missing")
+
+    for doc in documents:
+        for command in set(COMMAND.findall(doc.read_text(encoding="utf-8"))):
+            checked += 1
+            if not (root / command).exists():
+                problems.append(f"{doc.relative_to(root)}: names a missing script: {command}")
 
     return problems, checked, len(skills), len(rules)
 
@@ -145,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
         for problem in problems:
             print(f"FAIL {problem}")
         return 1
-    print(f"PASS pipeline: {skills} skills, {rules} rules, {checked} quoted paths resolved")
+    print(f"PASS pipeline: {skills} skills, {rules} rules, {checked} references resolved")
     return 0
 
 

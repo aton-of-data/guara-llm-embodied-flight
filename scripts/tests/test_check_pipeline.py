@@ -25,6 +25,12 @@ alwaysApply: {always}
 ---
 
 # Rule
+
+Gate:
+
+```bash
+python3 scripts/check_pipeline.py
+```
 """
 
 
@@ -84,6 +90,14 @@ def test_a_quoted_path_that_moved_fails(tmp_path):
     r = run("--root", str(tmp_path))
     assert r.returncode == 1
     assert "quoted path does not exist: scripts/check_gone.py" in r.stdout
+
+
+def test_a_gate_script_named_inside_a_fence_is_checked(tmp_path):
+    tree(tmp_path)
+    (tmp_path / "scripts" / "check_pipeline.py").unlink()
+    r = run("--root", str(tmp_path))
+    assert r.returncode == 1
+    assert "names a missing script: scripts/check_pipeline.py" in r.stdout
 
 
 def test_a_verdict_is_not_read_as_a_path(tmp_path):
