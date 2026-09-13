@@ -62,12 +62,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - name: Configure, build and test guara-core (AC-55 / AC-57)
-        run: |
-          cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Release
-          cmake --build build/core --config Release
-          ctest --test-dir build/core -C Release --output-on-failure
+      - name: Configure, build, test and consume guara-core (AC-55 / AC-57)
+        run: ./scripts/check_core_consumer.sh
         shell: bash
+        env:
+          CMAKE_BUILD_TYPE: Release
 
   core-qa:
     name: kernel sanitizers

@@ -54,6 +54,7 @@ set_target_properties(guara_core PROPERTIES
   CXX_VISIBILITY_PRESET hidden
   VISIBILITY_INLINES_HIDDEN ON
   POSITION_INDEPENDENT_CODE ON
+  EXPORT_NAME core
 )
 
 if(GUARA_CORE_STANDALONE)
@@ -93,11 +94,27 @@ if(GUARA_CORE_STANDALONE)
     add_test(NAME abi_freestanding COMMAND test_abi_freestanding)
   endif()
 
+  include(GNUInstallDirs)
+  include(CMakePackageConfigHelpers)
   install(TARGETS guara_core EXPORT guara_coreTargets
-    ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
-  install(DIRECTORY include/ DESTINATION include)
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
   install(EXPORT guara_coreTargets
-    FILE guara_coreConfig.cmake
+    FILE guara_coreTargets.cmake
     NAMESPACE guara::
-    DESTINATION lib/cmake/guara_core)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/guara_core)
+  configure_package_config_file(
+    cmake/guara_coreConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/guara_coreConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/guara_core)
+  write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/guara_coreConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion)
+  install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/guara_coreConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/guara_coreConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/guara_core)
 endif()
