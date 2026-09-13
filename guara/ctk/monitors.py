@@ -46,6 +46,12 @@ def monitor_accept_name(code: int) -> str:
     return "UNKNOWN"
 
 
+def validate_max_age(max_age_s: float) -> str | None:
+    if not (max_age_s > 0.0):
+        return "max_age_s must be > 0"
+    return None
+
+
 @dataclass
 class MonitorEval:
     violation: int = 0
@@ -103,6 +109,9 @@ class ReferenceMonitor:
         slot.violated = bool(violated)
         slot.inputs_complete = bool(complete)
         return ACCEPTED
+
+    def max_age_error(self, max_age_s: float) -> str | None:
+        return validate_max_age(max_age_s)
 
     def evaluate(self, t_s: float) -> MonitorEval:
         out = MonitorEval(invalid=1 if self.overflow or self.malformed else 0)

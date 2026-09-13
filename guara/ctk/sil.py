@@ -222,6 +222,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_monitor_action_name.restype = c_char_p
     lib.guara_monitor_accept_name.argtypes = [c_int]
     lib.guara_monitor_accept_name.restype = c_char_p
+    lib.guara_monitor_max_age_error.argtypes = [c_double]
+    lib.guara_monitor_max_age_error.restype = c_char_p
     lib.guara_gf_params_default.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.restype = c_char_p
@@ -459,6 +461,10 @@ class SilMonitor:
         rc = lib.guara_monitor_init(self._buf.addr, size, c_double(max_age_s))
         if rc != GUARA_OK:
             raise OSError(f"guara_monitor_init returned {rc}")
+
+    def max_age_error(self, max_age_s: float) -> str | None:
+        raw = self._lib.guara_monitor_max_age_error(c_double(max_age_s))
+        return None if raw is None else raw.decode("utf-8")
 
     def expect(self, ident: str) -> int:
         rc = self._lib.guara_monitor_expect(self._buf.addr, ident.encode("utf-8"))

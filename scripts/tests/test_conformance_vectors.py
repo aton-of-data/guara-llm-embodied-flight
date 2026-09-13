@@ -76,6 +76,16 @@ def test_monitor_table_vectors_cover_stale_incomplete_and_hostile_fields():
     assert "test_monitor_vectors.c" in cmake
 
 
+def test_monitor_max_age_vectors_cover_init_reject():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/monitor_max_age.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "default_max_age_is_valid" in ids
+    assert "max_age_must_be_positive" in ids
+    assert "max_age_must_not_be_negative" in ids
+
+
 def test_geofence_vectors_cover_ac8_and_uncertainty_band():
     data = json.loads(
         (ROOT / "core/conformance/vectors/geofence.json").read_text(encoding="utf-8")

@@ -27,6 +27,8 @@ int main(void)
   CHECK(strcmp(guara_monitor_action_name(GUARA_MONITOR_ACTION_HOLD), "HOLD") == 0);
   CHECK(strcmp(guara_monitor_action_name(9), "UNKNOWN") == 0);
   CHECK(strcmp(guara_monitor_accept_name(GUARA_MONITOR_TABLE_FULL), "TABLE_FULL") == 0);
+  CHECK(guara_monitor_max_age_error(0.5) == NULL);
+  CHECK(strcmp(guara_monitor_max_age_error(0.0), "max_age_s must be > 0") == 0);
   CHECK(guara_monitor_init(buf, cap, 0.5) == GUARA_OK);
   CHECK(guara_monitor_expect(buf, "REQ-ALT-01") == GUARA_OK);
 

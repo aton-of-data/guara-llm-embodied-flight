@@ -66,6 +66,14 @@ size_t guara_monitor_storage_align(void)
   return alignof(MonStorage);
 }
 
+const char * guara_monitor_max_age_error(double max_age_s)
+{
+  if (!(max_age_s > 0.0)) {
+    return "max_age_s must be > 0";
+  }
+  return nullptr;
+}
+
 int guara_monitor_init(void * storage, size_t n, double max_age_s)
 {
   if (storage == nullptr) {
@@ -74,7 +82,7 @@ int guara_monitor_init(void * storage, size_t n, double max_age_s)
   if (n < sizeof(MonStorage)) {
     return GUARA_ERR_STORAGE;
   }
-  if (!(max_age_s > 0.0)) {
+  if (guara_monitor_max_age_error(max_age_s) != nullptr) {
     return GUARA_ERR_PARAMS;
   }
   MonStorage * s = as_mon(storage);

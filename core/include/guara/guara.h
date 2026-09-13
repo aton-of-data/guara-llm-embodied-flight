@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.14.0-provisional"
+#define GUARA_ABI_VERSION "0.15.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -170,6 +170,7 @@ typedef struct guara_monitor_eval {
 GUARA_API size_t guara_monitor_storage_size(void);
 GUARA_API size_t guara_monitor_storage_align(void);
 GUARA_API int guara_monitor_init(void * storage, size_t n, double max_age_s);
+GUARA_API const char * guara_monitor_max_age_error(double max_age_s);
 GUARA_API int guara_monitor_expect(void * storage, const char * id);
 GUARA_API int guara_monitor_observe(void * storage, const guara_monitor_sample * sample,
   double t_recv_s);

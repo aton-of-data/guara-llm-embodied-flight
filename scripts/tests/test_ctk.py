@@ -74,6 +74,19 @@ def test_python_port_passes_monitor_table_vectors():
     assert "monitor_table.json" in r.stdout
 
 
+def test_python_port_passes_monitor_max_age_vectors():
+    vectors = ROOT / "core/conformance/vectors/monitor_max_age.json"
+    n = len(json.loads(vectors.read_text()))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(vectors)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert "monitor_max_age.json" in r.stdout
+
+
 def test_python_port_passes_geofence_vectors():
     vectors = ROOT / "core/conformance/vectors/geofence.json"
     n = len(json.loads(vectors.read_text()))

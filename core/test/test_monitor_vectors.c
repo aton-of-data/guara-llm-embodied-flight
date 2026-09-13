@@ -331,6 +331,169 @@ static int run_step(Cursor *c, void *storage, const char *id, int step_i)
   return 0;
 }
 
+static int check_max_age_error(const char *id, int step_i, Cursor *c, const char *got)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "max_age_error") == 0) {
+      if (parse_null(c)) {
+        ok = got == NULL;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d max_age_error got %s want null\n",
+                  id, step_i, got ? got : "null");
+          return 0;
+        }
+      } else {
+        char want[40] = {0};
+        ok = parse_string(c, want, sizeof want) && got != NULL && strcmp(got, want) == 0;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d max_age_error got %s want %s\n",
+                  id, step_i, got ? got : "null", want);
+          return 0;
+        }
+      }
+    } else if (!skip_value(c)) {
+      ok = 0;
+    }
+    if (!ok) {
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
+static int run_age_step(Cursor *c, const char *id, int step_i)
+{
+  double max_age_s = 0.5;
+  int has_expect = 0;
+  Cursor expect_at;
+  memset(&expect_at, 0, sizeof expect_at);
+  char op[24] = {0};
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 0;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "op") == 0) {
+      ok = parse_string(c, op, sizeof op);
+    } else if (strcmp(key, "max_age_s") == 0) {
+      ok = parse_number(c, &max_age_s);
+    } else if (strcmp(key, "expect") == 0) {
+      expect_at = *c;
+      ok = skip_value(c);
+      has_expect = 1;
+    } else {
+      ok = skip_value(c);
+    }
+    if (!ok) {
+      fprintf(stderr, "FAIL %s step %d: bad field %s\n", id, step_i, key);
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    if (!take(c, '}')) {
+      return 0;
+    }
+    break;
+  }
+  if (strcmp(op, "check_max_age") != 0) {
+    fprintf(stderr, "FAIL %s step %d: unknown op %s\n", id, step_i, op);
+    return 0;
+  }
+  const char *err = guara_monitor_max_age_error(max_age_s);
+  if (has_expect) {
+    Cursor ec = expect_at;
+    if (!check_max_age_error(id, step_i, &ec, err)) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static int run_age_vector(Cursor *c)
+{
+  char id[80] = "unknown";
+  int has_steps = 0;
+  Cursor steps_at;
+  memset(&steps_at, 0, sizeof steps_at);
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 0;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    if (strcmp(key, "id") == 0) {
+      if (!parse_string(c, id, sizeof id)) {
+        return 0;
+      }
+    } else if (strcmp(key, "steps") == 0) {
+      steps_at = *c;
+      if (!skip_value(c)) {
+        return 0;
+      }
+      has_steps = 1;
+    } else if (!skip_value(c)) {
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    if (!take(c, '}')) {
+      return 0;
+    }
+    break;
+  }
+  if (!has_steps) {
+    fprintf(stderr, "FAIL %s: missing steps\n", id);
+    return 0;
+  }
+  Cursor sc = steps_at;
+  if (!take(&sc, '[')) {
+    return 0;
+  }
+  int step_i = 0;
+  if (take(&sc, ']')) {
+    fprintf(stderr, "FAIL %s: no steps\n", id);
+    return 0;
+  }
+  for (;;) {
+    if (!run_age_step(&sc, id, step_i)) {
+      return 0;
+    }
+    ++step_i;
+    if (take(&sc, ',')) {
+      continue;
+    }
+    return take(&sc, ']');
+  }
+}
+
 static int run_vector(Cursor *c)
 {
   char id[80] = "unknown";
@@ -482,5 +645,42 @@ int main(void)
     return 1;
   }
   printf("PASS conformance_monitor_table vectors=%d\n", nvec);
+
+  const char *age_path = GUARA_VECTORS_DIR "/monitor_max_age.json";
+  size_t an = 0;
+  char *age_text = read_file(age_path, &an);
+  CHECK(age_text != NULL);
+  Cursor ac = {age_text, an, 0};
+  CHECK(take(&ac, '['));
+  int nage = 0;
+  CHECK(!take(&ac, ']'));
+  for (;;) {
+    if (!run_age_vector(&ac)) {
+      free(age_text);
+      return 1;
+    }
+    ++nage;
+    if (take(&ac, ',')) {
+      continue;
+    }
+    if (!take(&ac, ']')) {
+      fprintf(stderr, "FAIL trailing JSON after max-age vectors\n");
+      free(age_text);
+      return 1;
+    }
+    break;
+  }
+  skip_ws(&ac);
+  if (ac.i != ac.n) {
+    fprintf(stderr, "FAIL trailing bytes after max-age JSON\n");
+    free(age_text);
+    return 1;
+  }
+  free(age_text);
+  if (nage < 3) {
+    fprintf(stderr, "FAIL expected at least 3 max-age vectors, got %d\n", nage);
+    return 1;
+  }
+  printf("PASS conformance_monitor_max_age vectors=%d\n", nage);
   return 0;
 }

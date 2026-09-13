@@ -231,6 +231,13 @@ def _looks_like_gateway_limits(data: list) -> bool:
     return "check_gateway_limits" in ops
 
 
+def _looks_like_monitor_max_age(data: list) -> bool:
+    if not data:
+        return False
+    ops = {step.get("op") for step in (data[0].get("steps") or [])}
+    return "check_max_age" in ops
+
+
 def _looks_like_monitor(data: list) -> bool:
     if not data:
         return False
@@ -469,6 +476,27 @@ def _run_monitor_vectors(data: list, make_monitor) -> VectorRun:
     return stats
 
 
+def _run_monitor_max_age_vectors(data: list, make_monitor) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
+    table = make_monitor(0.5)
+    for vec in data:
+        vec_id = vec["id"]
+        for i, step in enumerate(vec["steps"]):
+            op = step.get("op")
+            t0 = time.perf_counter_ns()
+            if op != "check_max_age":
+                raise CtkError(f"{vec_id} step {i}: unknown op {op}")
+            got = table.max_age_error(float(step["max_age_s"]))
+            _mark(stats, t0)
+            if "max_age_error" not in (step.get("expect") or {}):
+                raise CtkError(f"{vec_id} step {i}: check_max_age missing max_age_error")
+            want = step["expect"]["max_age_error"]
+            if got != want:
+                raise CtkError(f"{vec_id} step {i}: max_age_error got {got!r} want {want!r}")
+        stats.n_ok += 1
+    return stats
+
+
 def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None,
                 make_geofence=None) -> VectorRun:
     if make_core is None:
@@ -482,6 +510,8 @@ def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None
     data = json.loads(path.read_text(encoding="utf-8"))
     if _looks_like_geofence(data):
         return _run_geofence_vectors(data, make_geofence)
+    if _looks_like_monitor_max_age(data):
+        return _run_monitor_max_age_vectors(data, make_monitor)
     if _looks_like_monitor(data):
         return _run_monitor_vectors(data, make_monitor)
     if _looks_like_gateway_limits(data):

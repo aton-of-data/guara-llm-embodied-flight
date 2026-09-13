@@ -1,0 +1,19 @@
+[
+  {
+    "id": "default_max_age_is_valid",
+    "spec": ["H-4"],
+    "steps": [{"op": "check_max_age", "max_age_s": 0.5, "expect": {"max_age_error": null}}]
+  },
+  {
+    "id": "max_age_must_be_positive",
+    "spec": ["H-4"],
+    "steps": [{"op": "check_max_age", "max_age_s": 0.0,
+               "expect": {"max_age_error": "max_age_s must be > 0"}}]
+  },
+  {
+    "id": "max_age_must_not_be_negative",
+    "spec": ["H-4"],
+    "steps": [{"op": "check_max_age", "max_age_s": -0.1,
+               "expect": {"max_age_error": "max_age_s must be > 0"}}]
+  }
+]
