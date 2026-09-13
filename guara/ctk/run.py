@@ -176,7 +176,7 @@ def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
         table = make_geofence()
         if "vertices" in vec:
             table.configure(
-                [float(x) for x in vec["vertices"]],
+                [_num(x) for x in vec["vertices"]],
                 float(vec.get("alt_min_m", 0.0)),
                 float(vec.get("alt_max_m", 1.0e9)),
             )
@@ -197,7 +197,7 @@ def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
                 _check_project(vec_id, i, step.get("expect") or {}, got.x, got.y)
             elif op == "classify":
                 verts = step.get("vertices", vec.get("vertices") or [])
-                got = table.polygon_error([float(x) for x in verts])
+                got = table.polygon_error([_num(x) for x in verts])
                 _mark(stats, t0)
                 want = (step.get("expect") or {}).get("polygon_error")
                 if want is not None and got != want:

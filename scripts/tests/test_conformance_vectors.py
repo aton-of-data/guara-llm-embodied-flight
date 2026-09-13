@@ -90,6 +90,9 @@ def test_geofence_vectors_cover_ac8_and_uncertainty_band():
     assert "too_few_vertices" in ids
     assert "self_intersecting_bowtie" in ids
     assert "too_many_vertices" in ids
+    assert "zero_area_collinear" in ids
+    assert "non_finite_vertex" in ids
+    assert "non_finite_inf_vertex" in ids
     assert "default_predictor_params_are_valid" in ids
     assert "a_brake_h_must_be_positive" in ids
 

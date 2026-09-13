@@ -266,6 +266,18 @@
     "steps": [{"op": "classify", "expect": {"polygon_error": "zero_area"}}]
   },
   {
+    "id": "non_finite_vertex",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, "nan", 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "non_finite_vertex"}}]
+  },
+  {
+    "id": "non_finite_inf_vertex",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, "inf", 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "non_finite_vertex"}}]
+  },
+  {
     "id": "default_predictor_params_are_valid",
     "spec": ["AC-8"],
     "steps": [{"op": "check_params", "expect": {"params_error": null}}]

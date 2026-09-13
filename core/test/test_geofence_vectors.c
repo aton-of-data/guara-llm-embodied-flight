@@ -189,6 +189,27 @@ static int dist_ok(double got, double want)
   return fabs(got - want) <= DIST_TOL;
 }
 
+static int parse_double_token(Cursor *c, double *out)
+{
+  skip_ws(c);
+  if (peek(c) == '"') {
+    char tok[8];
+    if (!parse_string(c, tok, sizeof tok)) {
+      return 0;
+    }
+    if (strcmp(tok, "nan") == 0) {
+      *out = NAN;
+      return 1;
+    }
+    if (strcmp(tok, "inf") == 0) {
+      *out = INFINITY;
+      return 1;
+    }
+    return 0;
+  }
+  return parse_number(c, out);
+}
+
 static int parse_vertices(Cursor *c, double *out, size_t cap, size_t *n)
 {
   if (!take(c, '[')) {
@@ -202,7 +223,7 @@ static int parse_vertices(Cursor *c, double *out, size_t cap, size_t *n)
     if (*n >= cap) {
       return 0;
     }
-    if (!parse_number(c, &out[*n])) {
+    if (!parse_double_token(c, &out[*n])) {
       return 0;
     }
     ++*n;
@@ -703,8 +724,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 31) {
-    fprintf(stderr, "FAIL expected at least 31 geofence vectors, got %d\n", nvec);
+  if (nvec < 33) {
+    fprintf(stderr, "FAIL expected at least 33 geofence vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_geofence vectors=%d\n", nvec);
