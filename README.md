@@ -336,6 +336,26 @@ reasonable-sounding is refused by named, deterministic checks before anything fl
 `scripts/llm/eval.py`. Add `-r requirements-dev.txt` and `python3 -m pytest scripts/tests -q`
 runs the mission compiler, the corpus, the plan executor and the space keep-out tests.
 
+### The kernel on its own, with no ROS and no container
+
+The switching core is also a host-free CMake library with a C ABI, released together with the
+published conformance vectors ([ADR 0014](docs/adr/0014-delivery-model.md)). Building it needs a
+C++17 compiler and nothing else:
+
+```bash
+cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/core
+ctest --test-dir build/core --output-on-failure
+
+guara ctk run --port python   # the independent port, over the whole published set
+guara ctk run --port sil      # the same vectors through the C ABI
+```
+
+Both runs print a report naming the core version, the ABI version, the host, the architecture and
+the hash of the vector set, and stating in its own text that conformance is necessary and not
+sufficient. [`core/README.md`](core/README.md) is the integrator's page: the storage contract, the
+CMake consumption path, and what the kit does and does not demonstrate.
+
 ### Everything else
 
 Everything else runs in Docker with the repository mounted at `/work`. `scripts/dev.sh` builds
@@ -405,12 +425,13 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 | [`docs/SPEC.md`](docs/SPEC.md) | The engineering truth: scope, F3269 mapping, switching logic, latency budget, failure modes, acceptance criteria, limits, open risks |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | Founding document: gap, contributions C1–C4, research questions RQ1–RQ6, schedule, claim verification |
 | [`GROUNDING.md`](GROUNDING.md) | Every API fact, cited as `repo@commit:file:line`, with a confidence level |
-| [`docs/adr/`](docs/adr) | Thirteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
-| [`docs/milestones/`](docs/milestones) | M1–M5, M7–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-50 |
-| [`docs/reviews/`](docs/reviews) | Internal review of M1–M5 with its remediation record, and the public-readiness review |
+| [`core/`](core/README.md) | **`guara-core`: the host-free switching kernel with a C ABI, the CMake package, the published conformance vectors and their runners** |
+| [`docs/adr/`](docs/adr) | Fourteen decisions, including the untrusted-CF contract, F´ as second host, space-domain signals, and the LLM evaluation protocol |
+| [`docs/milestones/`](docs/milestones) | M1–M5, M7–M9 and M13c reports with executed commands, plus the [AC tracker](docs/milestones/STATUS.md) covering AC-1…AC-66 |
+| [`docs/reviews/`](docs/reviews) | Internal reviews with their remediation records: M1–M5, public readiness, and the M17–M19 kernel and conformance kit |
 | [`docs/research/LLM-EMBODIMENT.md`](docs/research/LLM-EMBODIMENT.md) | Limitations and design for the voice/LLM layer, with the civil use-case catalogue |
 | [`docs/research/SPACE-AUTONOMY.md`](docs/research/SPACE-AUTONOMY.md) | F´, Ogma's F´ backend, and where a Guará-class RTA fits in orbit |
-| [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) | Executable plan for LLM embodiment, the F´ port, and the space domain |
+| [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) · [`docs/PLAN-M17-M28.md`](docs/PLAN-M17-M28.md) | Executable plans: LLM embodiment, the F´ port and the space domain; then delivery, the gap register and the path to real hardware |
 | [`docs/evidence/`](docs/evidence) | Run contracts and metrics published verbatim from `results/` |
 | `mission/` | Mission Intent schema, site model, deterministic compiler, labelled corpus, trusted plan executor |
 | `space/` | Space intent schema, attitude keep-out predictor, demo-sat vehicle model |
