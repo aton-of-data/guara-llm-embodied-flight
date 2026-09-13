@@ -1,6 +1,6 @@
 # Guará — plan M17–M28: delivery, and the path to real hardware
 
-Version: 0.1 (2026-09-13) · Status: proposed; M17 started (pin-drift check, G-S2)
+Version: 0.1 (2026-09-13) · Status: proposed; M17 started (pin-drift check, hash lock, doctor)
 
 This plan continues `docs/PLAN-M8-M16.md` past the point where Guará stops being a
 repository you clone and becomes something a third party installs, and past the point where

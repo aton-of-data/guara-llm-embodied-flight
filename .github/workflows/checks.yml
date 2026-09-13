@@ -29,8 +29,10 @@ jobs:
         with:
           python-version: "3.10"
           cache: pip
+      - name: Install hash-pinned dependencies (AC-52)
+        run: pip install --require-hashes -r requirements.lock
       - name: Install the tier-0 package
-        run: pip install -e ".[dev]"
+        run: pip install -e . --no-deps
       - name: Single pin source (versions.env; AC-52 / G-S2)
         run: python3 scripts/check_reproducible.py --pins
       - name: Workstation preflight (AC-51 / G-S5)

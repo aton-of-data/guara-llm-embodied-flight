@@ -21,6 +21,7 @@ import pins  # noqa: E402
 PIN_FILES = (
     "versions.env",
     "pyproject.toml",
+    "requirements.lock",
     "docker/Dockerfile",
     "docker/Dockerfile.fm",
     "requirements.txt",
@@ -126,6 +127,32 @@ def test_pip_install_without_requirements_is_detected(tmp_path):
     dockerfile.write_text(text.replace(old, new, 1), encoding="utf-8")
     errors = pins.check(tree)
     assert any("without a requirements file" in e for e in errors), errors
+
+
+def test_a_lockfile_without_hashes_is_detected(tmp_path):
+    tree = clone_pin_tree(tmp_path)
+    lock = tree / "requirements.lock"
+    stripped = "\n".join(
+        ln for ln in lock.read_text(encoding="utf-8").splitlines()
+        if "--hash=" not in ln
+    )
+    lock.write_text(stripped + "\n", encoding="utf-8")
+    errors = pins.check(tree)
+    assert any("without hashes" in e for e in errors), errors
+
+
+def test_a_lockfile_below_the_floor_is_detected(tmp_path):
+    tree = clone_pin_tree(tmp_path)
+    rewrite(tree / "requirements.lock", "jsonschema==4.26.0", "jsonschema==3.0.0")
+    errors = pins.check(tree)
+    assert any("jsonschema==3.0.0" in e and "does not satisfy" in e for e in errors), errors
+
+
+def test_a_missing_lockfile_is_detected(tmp_path):
+    tree = clone_pin_tree(tmp_path)
+    (tree / "requirements.lock").unlink()
+    errors = pins.check(tree)
+    assert any("missing requirements.lock" in e for e in errors), errors
 
 
 def test_cli_pins_exits_zero_on_the_real_tree():

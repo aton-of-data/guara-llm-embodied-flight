@@ -51,6 +51,7 @@ REQUIRED_KEYS = (
     "GHC_VERSION",
     "CABAL_VERSION",
     "NODE_MAJOR",
+    "PYTHON_VERSION",
     "PY_PYYAML",
     "PY_JSONSCHEMA",
     "PY_PYTEST",
@@ -171,6 +172,59 @@ def toml_quoted_array(text: str, marker: str) -> list[str] | None:
     if lb < 0 or rb < 0:
         return None
     return re.findall(r'"([^"]+)"', text[lb:rb])
+
+
+SPEC_RE = re.compile(r"^([A-Za-z0-9._-]+)(>=|==)(.+)$")
+LOCK_PKG_RE = re.compile(r"^([A-Za-z0-9._-]+)==(\S+)")
+DIRECT_PY = ("PY_PYYAML", "PY_JSONSCHEMA", "PY_PYTEST", "PY_PYULOG")
+LOCKFILE = "requirements.lock"
+
+
+def pep503(name: str) -> str:
+    return re.sub(r"[-_.]+", "-", name).lower()
+
+
+def version_tuple(v: str) -> tuple[int, ...]:
+    parts: list[int] = []
+    for piece in v.split("."):
+        match = re.match(r"(\d+)", piece)
+        parts.append(int(match.group(1)) if match else 0)
+    return tuple(parts)
+
+
+def spec_satisfied(locked: str, op: str, floor: str) -> bool:
+    lv, fv = version_tuple(locked), version_tuple(floor)
+    n = max(len(lv), len(fv))
+    lv += (0,) * (n - len(lv))
+    fv += (0,) * (n - len(fv))
+    if op == ">=":
+        return lv >= fv
+    if op == "==":
+        return lv == fv
+    return False
+
+
+def parse_lock(path: pathlib.Path) -> dict[str, tuple[str, int]]:
+    """Map PEP 503 name to (version, hash_count)."""
+    found: dict[str, tuple[str, int]] = {}
+    current: str | None = None
+    version = ""
+    hashes = 0
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip().rstrip("\\").strip()
+        pkg = LOCK_PKG_RE.match(line)
+        if pkg:
+            if current is not None:
+                found[current] = (version, hashes)
+            current = pep503(pkg.group(1))
+            version = pkg.group(2)
+            hashes = 0
+            continue
+        if current is not None and "--hash=" in line:
+            hashes += line.count("--hash=")
+    if current is not None:
+        found[current] = (version, hashes)
+    return found
 
 
 def versions_md_rows(path: pathlib.Path) -> dict[str, tuple[str, str, str]]:
@@ -315,5 +369,46 @@ def check(root: pathlib.Path) -> list[str]:
                  if re.search(r"\bpip3?\s+install\b", ln)]
     if pip_lines and not any("requirements" in ln for ln in pip_lines):
         errors.append("docker/Dockerfile installs Python packages without a requirements file")
+
+    workflow = root / ".github" / "workflows" / "checks.yml"
+    if workflow.is_file():
+        text = workflow.read_text(encoding="utf-8")
+        needle = f'python-version: "{pins["PYTHON_VERSION"]}"'
+        if needle not in text:
+            errors.append(f".github/workflows/checks.yml does not pin {needle}")
+        if "requirements.lock" not in text:
+            errors.append(".github/workflows/checks.yml does not install from requirements.lock")
+
+    lock_path = root / LOCKFILE
+    if not lock_path.is_file():
+        errors.append(f"missing {LOCKFILE}; run scripts/lock_python.sh")
+        return errors
+
+    lock_text = lock_path.read_text(encoding="utf-8")
+    if f"Python {pins['PYTHON_VERSION']}" not in lock_text:
+        errors.append(
+            f"{LOCKFILE} was not generated with Python {pins['PYTHON_VERSION']}; "
+            "run scripts/lock_python.sh"
+        )
+    locked = parse_lock(lock_path)
+    if not locked:
+        errors.append(f"{LOCKFILE} contains no packages")
+    unhashed = sorted(name for name, (_, n) in locked.items() if n < 1)
+    if unhashed:
+        errors.append(f"{LOCKFILE} packages without hashes: {', '.join(unhashed)}")
+    for key in DIRECT_PY:
+        spec = pins[key]
+        match = SPEC_RE.match(spec)
+        if not match:
+            errors.append(f"versions.env {key}={spec!r} is not a supported pin")
+            continue
+        name, op, floor = match.group(1), match.group(2), match.group(3)
+        entry = locked.get(pep503(name))
+        if entry is None:
+            errors.append(f"{LOCKFILE} missing direct dependency {name} ({spec})")
+            continue
+        ver, _ = entry
+        if not spec_satisfied(ver, op, floor):
+            errors.append(f"{LOCKFILE} {name}=={ver} does not satisfy {spec}")
 
     return errors

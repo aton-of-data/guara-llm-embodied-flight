@@ -308,9 +308,11 @@ expected answer was, so adding one cannot change a result.
 
 The trusted layer between a model and the aircraft is pure Python. `pip install -e .`
 installs it as the `guara` package (G-S3); `guara doctor` is the workstation preflight
-(AC-51). `pip install -r requirements.txt` still works if you do not want a package
-install. This runs the deterministic compiler directly — no ROS 2, no PX4 build, no
-model, no key:
+(AC-51). The hermetic path (AC-52) is `pip install --require-hashes -r requirements.lock`
+then `pip install -e . --no-deps`; the lock is generated on CPython 3.10 by
+`scripts/lock_python.sh`. `pip install -r requirements.txt` still works if you do not
+want a package install. This runs the deterministic compiler directly — no ROS 2, no
+PX4 build, no model, no key:
 
 ```bash
 pip install -e .

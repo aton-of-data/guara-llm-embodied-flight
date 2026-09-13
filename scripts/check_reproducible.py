@@ -32,7 +32,7 @@ def check_pins() -> int:
         print(f"FAIL pins: {len(errors)} drift(s) from versions.env")
         return 1
     print("PASS pins: versions.env matches Dockerfiles, requirements, "
-          "third_party/VERSIONS.md and fetch_third_party.sh")
+          "requirements.lock, third_party/VERSIONS.md and fetch_third_party.sh")
     return 0
 
 

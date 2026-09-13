@@ -56,7 +56,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-31 | A | M9 | PASS | pair on=0.000 m off=47.178 m (`docs/evidence/20260912T134907Z_llm_survey_outside_s42_pair/`); nominal member also PASS |
 | AC-47 | C | M13c | PASS | `docs/milestones/M13c.md` (analytic cases, ±0.05 s, clean tree at `696c4ed`) |
 | AC-51 | S | M17 | in progress | `guara doctor` (tier 0); not PASS until Linux, macOS and Windows/WSL are all recorded |
-| AC-52 | S | M17 | in progress | pin-drift check (`scripts/check_reproducible.py --pins`); hash lock (G-S1) still open |
+| AC-52 | S | M17 | in progress | pin-drift check and hash-pinned `requirements.lock` (CPython 3.10); second-machine byte-identity unrecorded |
 
 ## Planned criteria
 
