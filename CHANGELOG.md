@@ -28,6 +28,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
   scope / execute / review stages, `.claude/skills/guara-*` and `.cursor/rules/guara-*.mdc`
   carry the invariants to the two surfaces that load them, and `scripts/check_pipeline.py`
   refuses a surface that has drifted from the tree.
+- **The host-free safety kernel and its C ABI** ([ADR 0014](docs/adr/0014-delivery-model.md),
+  M18): `core/` builds with plain CMake and no ament, ROS, PX4 or Eigen; `guara/guara.h`
+  exposes caller-supplied storage so the kernel allocates nothing and owns no clock;
+  `scripts/check_abi.py` gates the exported symbol set and `scripts/core_qa.sh` runs ASan,
+  UBSan and clang-tidy. Serves AC-57..AC-62, all `in progress`.
+- **The conformance kit** (M19): published decision vectors under `core/conformance/vectors/`
+  covering the SPEC §3 transitions, the ADR 0010 gateway rules, the monitor table and the
+  geofence channel; a Python reference port written from the SPEC alone and a SIL port through
+  the C ABI, both run by `guara ctk run`; `scripts/ctk_mutation.sh` requires the set to detect
+  an injected behavioural change. Each report states in its own text that conformance is
+  necessary and not sufficient. Serves AC-63..AC-66, all `in progress`.
+- **Hermetic setup** (M17): `versions.env` as the single source of every pin, read by the
+  Dockerfiles, the lockfile generator and `scripts/check_reproducible.py --pins`; a hash-pinned
+  `requirements.lock`; `pyproject.toml` and the `guara` CLI, so the tier-0 path no longer needs
+  a clone; `guara doctor` as the workstation preflight; `GUARA_OFFLINE=1`. Serves AC-51, AC-52,
+  AC-55, AC-56, all `in progress`.
+- **The space untrusted-function contract**
+  ([ADR 0015](docs/adr/0015-space-untrusted-function-contract.md)): ADR 0010's seven rules
+  instantiated on F´ signals, plus the declared command origin ADR 0010 left open. Grounded in
+  `GROUNDING.md` D.9–D.11 against `fprime@7d8f579` — F´ ships an SDLS uplink stage whose default
+  decryptor performs no authentication, nothing in the command path authorises a command, and
+  `Svc::CmdSplitter` supplies the port shapes for a gate that refuses instead of routing.
+- Ten ground-side acceptance criteria, AC-102..AC-111
+  ([`docs/PLAN-M17-M28.md`](docs/PLAN-M17-M28.md) §9), and the gap rows that own them: G-Z9..G-Z13
+  and a new G-M group for monitors and the specification. None needs hardware, a host, a simulator
+  or a network.
+
+### Changed
+- The gap register re-owns G-H11, G-H12 and G-H13 from M25 to M9b: none needs hardware, and each
+  silently weakens an AC-28 result while open.
+- `docs/ROADMAP.md`, `README.md` §11, `docs/milestones/STATUS.md` and
+  `docs/operations/README.md` now agree with each other on which milestones are in flight; the
+  six threads are listed in one place.
+- `docs/SPEC.md` §9 indexes the four risk families (`R-*`, `RP-*`, `RS-*`, `RH-*`) and names the
+  document that defines each. Previously the README and the roadmap pointed at two of the four.
+- `docs/site` carries a roadmap page: the four tracks, the ordering, Rule O / Rule D / Rule H and
+  the gap register, which until now existed only in the repository.
 
 ### Changed
 - The README is split: related work, architecture, roadmap and licensing move to `docs/`.

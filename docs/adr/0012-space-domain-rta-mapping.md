@@ -2,7 +2,9 @@
 
 - Status: Accepted (2026-09-11); implementation M13–M16 (`docs/PLAN-M8-M16.md`)
 - Related: ADR 0003 (DAIDALUS isolation), ADR 0004 (geofence prediction), ADR 0005 (return
-  to CF), ADR 0011 (F´ as second host); SPEC §3.1, §7.2; `docs/research/SPACE-AUTONOMY.md` §5, §6
+  to CF), ADR 0011 (F´ as second host), ADR 0015 (the untrusted-function contract for this
+  domain — the gate this ADR does not specify); SPEC §3.1, §7.2;
+  `docs/research/SPACE-AUTONOMY.md` §5, §6
 
 ## Context
 
@@ -87,3 +89,8 @@ recovery function, and a gate that stops the untrusted function from acting.
   all, so the ADR 0003 investment does not amortise across hosts.
 - (−) Basilisk fidelity bounds every space claim (risk RS-4); analytic cases must pass
   before any Basilisk number is reported.
+- This ADR maps the channels and the recovery function. It does not specify the gate between an
+  untrusted proposer and the trusted disposer: that is
+  [ADR 0015](0015-space-untrusted-function-contract.md), which also names the space analogue of
+  FM-12 — a default F´ uplink is an unauthenticated command path
+  (`GROUNDING.md` D.9).

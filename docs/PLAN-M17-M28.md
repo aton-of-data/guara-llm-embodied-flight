@@ -1,6 +1,9 @@
 # Guará — plan M17–M28: delivery, and the path to real hardware
 
-Version: 0.1 (2026-09-13) · Status: proposed; M17 started (pin-drift check, hash lock, doctor)
+Version: 0.2 (2026-09-13) · Status: proposed for M20 onward. M17 started (pin-drift check, hash
+lock, `guara doctor`, offline mode); M18 landed the host-free kernel and its C ABI; M19 landed the
+conformance vectors, the Python reference port and the SIL port. Sixteen criteria are in progress
+and none is PASS — `docs/milestones/STATUS.md` is the inventory.
 
 This plan continues `docs/PLAN-M8-M16.md` past the point where Guará stops being a
 repository you clone and becomes something a third party installs, and past the point where
@@ -13,7 +16,9 @@ Conventions are SPEC's: **[HYPOTHESIS]**, **[REVIEW]**, **[UNKNOWN]**, **[PARAME
 An acceptance criterion is PASS only with an executed command and an output excerpt in a
 milestone report. Numbers come only from `results/` via `scripts/aggregate.py` (CLAUDE.md).
 
-Acceptance criteria continue the single project sequence: AC-51 onward.
+Acceptance criteria continue the single project sequence: AC-51 onward. §9 adds the ground-side
+criteria AC-102..AC-111, which belong to earlier milestones and are collected there because they
+were scoped after those milestones were written.
 
 ---
 
@@ -62,9 +67,22 @@ to "cover all gaps": the list is the contract, the milestones are the schedule.
 | G-H8 | The override matrix (RC loss, GCS loss, companion loss, kill switch, pilot mode change, low battery) is untested on hardware | M23 |
 | G-H9 | No operational safety dossier: no ConOps, no system-level FHA/FMEA folding in the FM-\* set, no SORA/OSO mapping, no ANAC RBAC-E 94 or EASA position, no explicit DO-178C/ARP4754A **non**-claim map | M24 |
 | G-H10 | The hardware run has no evidence contract: aircraft, pilot, site, weather, battery, waiver and firmware hash are not required fields anywhere | M23, M25 |
-| G-H11 | Transport authentication (M9b, AC-32/AC-33) is open, and it is a hard precondition for any LLM-driven CF on a real vehicle | M25 |
-| G-H12 | No model-side runtime discipline on target: no request budget, no timeout, no watchdog on the model process, no defined degraded mode when it is unreachable | M25 |
-| G-H13 | The adversarial corpus was written by the author of the compiler (RP-1) and has never been externally reviewed or coverage-measured | M25 |
+| G-H11 | Transport authentication (AC-32/AC-33) is open, and it is a hard precondition for any LLM-driven CF on a real vehicle. M25 *gates* on it; M9b owns it | M9b |
+| G-H12 | No model-side runtime discipline: no request budget, no timeout, no watchdog on the model process, no defined degraded mode when it is unreachable. AC-106 is the ground-side half, AC-90 the on-target half | M9b |
+| G-H13 | The adversarial corpus was written by the author of the compiler (RP-1) and has never been externally reviewed or coverage-measured. AC-105 is the coverage measure, AC-92 the external review | M9b |
+
+G-H11, G-H12 and G-H13 sit in thread A rather than at M25 for one reason: none of them needs
+hardware, and each one silently weakens an AC-28 result for as long as it stays open. A criterion
+whose exposure is unmeasured is not evidence, whatever the campaign around it looks like.
+
+### G-M · monitors, requirements and the specification
+
+The signals the whole architecture switches on, and the document two hosts have to agree through.
+
+| # | Gap | Owner |
+|---|---|---|
+| G-M1 | No standing check that a deployed monitor is non-vacuous, although the defect has already occurred: the 2026-09-11 review found `REQ-ALT-01` violated in 1728/1728 verdicts, including on the ground, with a checker that accepted any `true`. That requirement and that checker were fixed; the class was not (AC-110) | M2 |
+| G-M2 | `docs/SPEC.md` §3 does not state semantics the decision core has: the recovery rank never falls inside `RF` or `LATCHED`, and T5 applies from `RF(HOLD)` only. Both are safe and neither is written, so an independent implementation can get them wrong — the exact risk AC-65 exists to find (AC-111) | M19 |
 
 ### G-Z · space, real hardware
 
@@ -78,6 +96,11 @@ to "cover all gaps": the list is the contract, the milestones are the schedule.
 | G-Z6 | No orbital simulator is pinned in `third_party/VERSIONS.md`, so AC-48 has nothing to run against | M27 |
 | G-Z7 | Only the analytic keep-out channel exists; `power_margin`, `momentum`, `inputs_valid`, `requirements` (ADR 0012) have no implementation | M26 |
 | G-Z8 | No ECSS-E-ST-40C / Q-ST-80C non-claim map, the space sibling of G-H9 | M27 |
+| G-Z9 | The adversarial corpus is air-only — fields, spraying, GSD, ceiling, geofence — so AC-50's "RQ6b corpus re-run against the space intent schema" has nothing to run: every air case dies at the space schema, for the wrong reason, and the run looks like a pass | M16 |
+| G-Z10 | No authenticated origin for a space intent or a sequence. G-Z3 covers only the safe-mode *release*; the command path that reaches the sequencer is unconstrained, and a default F´ uplink authenticates nothing (`GROUNDING.md` D.9, D.10) | M27 |
+| G-Z11 | ADR 0010's gateway rules are air-shaped and had no space instantiation: no freshness source, no envelope clamp on commanded rates, no shadow keep-out check on a proposed slew, no rule for what the gate does while the arbiter state is not CF. [ADR 0015](adr/0015-space-untrusted-function-contract.md) now decides it; the implementation is open | M26 |
+| G-Z12 | The space decision rules are not published as conformance vectors, so an F´ port would be *trusted* to match the reference rather than *checked* against it (AC-107) | M19 |
+| G-Z13 | Whether safe-mode entry can itself violate a keep-out is an open item of [`operations/space/safe-mode.md`](operations/space/safe-mode.md) §6 and is unmeasured. A star tracker's cone is declared around the blinding body, so a direct slew to a sun-pointing recovery attitude may sweep the cone it must avoid. It gates M14 (AC-109) | M14 |
 
 ---
 
@@ -311,6 +334,50 @@ criteria; the existing two are re-run and re-reported with the target named.
 | Track | Gap rows | Milestones | ACs | ADRs |
 |---|---|---|---|---|
 | S — setup | G-S1..G-S8 | M17 | AC-51..AC-56 | 0014 |
-| K — kernel and delivery | G-K1..G-K8 | M18, M19, M20 | AC-57..AC-71 | 0014, 0011, 0003 |
-| H — air hardware | G-H1..G-H13 | M21..M25 | AC-72..AC-92 | 0001, 0004, 0009, 0010, 0013 |
-| Z — space hardware | G-Z1..G-Z8 | M26..M28 | AC-93..AC-101 | 0011, 0012 |
+| K — kernel and delivery | G-K1..G-K8, G-M2, G-Z12 | M18, M19, M20 | AC-57..AC-71, AC-107, AC-111 | 0014, 0011, 0003, 0015 |
+| H — air hardware | G-H1..G-H10 | M21..M25 | AC-72..AC-92 | 0001, 0004, 0009, 0010, 0013 |
+| A — air, ground-side | G-H11, G-H12, G-H13 | M9b | AC-32, AC-33, AC-105, AC-106 | 0008, 0010, 0013 |
+| M — monitors and the spec | G-M1, G-M2 | M2, M19 | AC-110, AC-111 | 0002 |
+| Z — space hardware | G-Z1..G-Z8, G-Z10 | M26..M28 | AC-93..AC-101 | 0011, 0012, 0015 |
+| Z — space, ground-side | G-Z9, G-Z11, G-Z12, G-Z13 | M14, M16, M19, M26 | AC-102..AC-104, AC-107..AC-109 | 0012, 0015 |
+
+---
+
+## 9. Ground-side criteria added 2026-09-13 (AC-102..AC-111)
+
+Ten criteria scoped after §3–§6 were written, from
+[`docs/reviews/2026-09-13-roadmap-docs-site-review.md`](reviews/2026-09-13-roadmap-docs-site-review.md).
+Each belongs to a milestone that already exists, and **none needs hardware, a host, a simulator or
+a network** — which is the reason they are worth doing before the tracks that do. Each is the
+ground-side sibling of an on-target criterion, so nothing here is duplicated later: the hardware
+criterion re-runs the same claim on the target it is named against.
+
+| AC | Milestone | Gap | Criterion (passes if…) | Verification command |
+|---|---|---|---|---|
+| AC-102 | M26 | G-Z11 | Each of [ADR 0015](adr/0015-space-untrusted-function-contract.md) rules 2–6 refuses a proposal violating only that rule and admits the same proposal with the violation removed; one test per rule | `python3 -m pytest scripts/tests/test_space_gateway.py -q` |
+| AC-103 | M27 | G-Z10 | A space run declares its SDLS security-association index and its decryptor; a run asserting an authenticated command origin the declaration does not support fails the contract check (`GROUNDING.md` D.9) | `python3 scripts/check_run_contract.py --profile space <run>` |
+| AC-104 | M16 | G-Z9 | Zero adversarial *space* utterances produce a proposal admitted by the schema, the compiler and the gate; every refusal names its check; the schema is not the only sole refuser. The ground-side half of AC-50 | `python3 scripts/check_ac.py AC-104 results/latest_llm_space` |
+| AC-105 | M9b | G-H13 | Every named check in the air and space compilers and in both gateway rule sets is the sole refuser of at least one corpus case; the coverage report is published with corpus size and commit | `python3 scripts/check_ac.py AC-105 results/latest_coverage` |
+| AC-106 | M9b | G-H12 | The model client has a request budget, a hard timeout, a watchdog and a declared degraded mode; exceeding any of them yields a refusal, never a stale plan, and the run records the event. The ground-side half of AC-90 | `python3 scripts/check_ac.py AC-106 results/latest_llm` |
+| AC-107 | M19 | G-Z12 | Every ADR 0015 rule has at least one published vector; the space set runs green on the space port with its own hash, distinct from the air set's; one injected mutation is rejected | `guara ctk run --port space --vectors space/conformance/vectors --report results/latest_ctk_space` |
+| AC-108 | M14 | G-Z1 | The safe-mode entry predicate produces the four specified effects in order, latches, is idempotent with exactly one entry event, and is released only by the declared ground command — verified by published vectors. AC-42..AC-44 remain M14 on a host | `python3 scripts/check_ac.py AC-108 results/latest_ctk_space` |
+| AC-109 | M14 | G-Z13 | The entry manoeuvre's keep-out exposure is measured over a declared grid and seed: the fraction of initial attitudes whose direct slew to the survivable attitude violates a cone, and the worst-case predicted margin, are recorded | `python3 scripts/safe_mode_sweep.py --grid default --seed 42 && python3 scripts/check_ac.py AC-109 results/latest_safe_mode_sweep` |
+| AC-110 | M2 | G-M1 | Every monitor the flight profile loads has both a clear and a violated verdict from a non-stale sample in the published evidence, or is recorded as unexercisable with its reason | `python3 scripts/monitor_coverage.py --params config/rta_params_flight.yaml --runs docs/evidence` |
+| AC-111 | M19 | G-M2 | Simultaneous cause composition, rank monotonicity inside `RF` and `LATCHED`, and the `RF(HOLD)`-only return are each pinned by a published vector, agreed by the SIL and Python ports, and detected by an injected mutation | `guara ctk run --port sil --vectors core/conformance/vectors/spec_s3.json && guara ctk run --port python --vectors core/conformance/vectors/spec_s3.json` |
+
+Two ordering constraints follow from the kit rather than from the schedule, and they are
+constraints on *any* execution order, not preferences:
+
+- **AC-107 must not add a file to `core/conformance/vectors/`.** That directory's hash is what an
+  installed air kit reports (AC-66, AC-67); coupling it to unreleased space work would invalidate
+  every air conformance report on every space commit. The space set is separately hashed.
+- **AC-111 does move the air set's hash**, because new air rules belong in the air set. It runs
+  after AC-107 has frozen that hash as a control, and re-records the count and hash everywhere
+  `docs/milestones/STATUS.md` cites them. After M20 publishes an artifact, a change of this kind
+  is a version bump under AC-61 instead.
+
+Three of these criteria are expected to *find* something rather than confirm it, and are worth
+watching for that reason: AC-109 predicts that the specified safe mode is unsafe for a measurable
+fraction of initial attitudes; AC-110 predicts at least one monitor whose verdict never changes;
+AC-111 predicts that the independently written Python port disagrees with the C core on a rule the
+SPEC never stated. A prediction of that shape is cheap to test now and expensive to discover later.

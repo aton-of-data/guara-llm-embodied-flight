@@ -26,6 +26,14 @@ Opened: <YYYY-MM-DD>
 
 - <what this packet must not touch>
 
+## Read-set
+
+The only files the executor opens. A path outside this list is a finding for the log.
+
+```
+<paths, one per line>
+```
+
 ## Tasks
 
 ```

@@ -39,6 +39,7 @@
       <a href="architecture.html">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html">Evidence</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html" aria-current="page">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
@@ -63,7 +64,7 @@
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-05</dd></div>
     <div><dt>Title</dt><dd>Contribution and support</dd></div>
-    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
     <div><dt>Status</dt><dd>Open to contribution</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
@@ -179,6 +180,77 @@
         </p>
         <div class="need"><b>You need:</b> Red-teaming instincts and a text editor. This one is genuinely approachable.</div>
       </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">G-K6</span><span class="pill info">specification</span></div>
+        <h3>Write the switching core from the specification alone</h3>
+        <p>
+          A second implementation of the decision core, written from <code>docs/SPEC.md</code> and
+          the header by a path independent of the existing code, to find out what the specification
+          fails to say. Two ambiguities are already known and more are expected. The C ABI stays
+          provisional until an independent port passes the conformance kit, so this work gates the
+          interface everyone else would build against.
+        </p>
+        <div class="need"><b>You need:</b> A language of your choice and the discipline not to read <code>core/</code>. No hardware, no container, no ROS.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">G-Z9</span><span class="pill info">space</span></div>
+        <h3>A jailbreak corpus for the orbital vocabulary</h3>
+        <p>
+          The adversarial corpus is air-only: fields, spraying, ground sample distance, geofence.
+          None of it can attack the space boundary. What is wanted is a slew whose endpoints are both
+          legal and whose path crosses a keep-out, a request to release the safe-mode latch, a
+          sequence whose members are individually valid and whose aggregate exhausts momentum.
+        </p>
+        <div class="need"><b>You need:</b> A text editor and an adversarial imagination. The most approachable item in the whole space thread.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">G-Z13</span><span class="pill info">space</span></div>
+        <h3>Measure whether safe-mode entry violates its own keep-out</h3>
+        <p>
+          A star tracker&rsquo;s keep-out cone is declared around the body that blinds it, so a
+          direct slew to a sun-pointing recovery attitude may sweep the very cone it must avoid.
+          Sweep initial attitudes, count how many direct slews violate a cone, report the fraction
+          and the worst margin. If it is above zero, the specified safe mode is unsafe for that
+          fraction and the plan changes before any flight code is written.
+        </p>
+        <div class="need"><b>You need:</b> The analytic predictor that already ships, and a grid. No simulator, no F´ host.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">G-K4</span><span class="pill info">G-H2</span><span class="pill info">hardware</span></div>
+        <h3>First timing numbers that are not x86</h3>
+        <p>
+          Every latency figure this project publishes is software-in-the-loop on one x86 machine.
+          Anyone with a small arm board can produce the first on-target measurements the kernel has
+          ever had, through the conformance kit&rsquo;s own benchmark. The result would be a measured
+          worst observed time on real silicon — still not a bound, and a great deal better than
+          nothing.
+        </p>
+        <div class="need"><b>You need:</b> A Raspberry Pi 5, a Jetson Orin Nano or similar, and a C++17 toolchain.</div>
+      </div>
+
+      <div class="panel gap-card">
+        <div class="meta"><span class="pill info">G-S8</span><span class="pill info">RH-1</span><span class="pill info">packaging</span></div>
+        <h3>Port the packages ahead of the distribution&rsquo;s end of life</h3>
+        <p>
+          ROS 2 Humble reaches end of life in May 2027, inside this programme&rsquo;s horizon, while
+          the pinned autopilot release recommends it. Making the packages build and pass the
+          conformance kit on the next distribution retires the risk instead of accepting it.
+        </p>
+        <div class="need"><b>You need:</b> ROS 2 packaging experience and patience with build systems.</div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:1.8rem">
+      <span class="tag">Where these come from</span>
+      <p>
+        Each card names a row of the gap register, which lists every known absence in this project
+        with the milestone that owns it. The whole register, grouped by track, is on the
+        <a href="roadmap.html#register">roadmap page</a>.
+      </p>
     </div>
 
     <div class="note" style="margin-top:1.8rem">
@@ -318,7 +390,9 @@ python3 -m mission.compiler --intent mission/intents/survey_north_3.json</code><
 
     <p>Everything else runs in Docker with the repository mounted at <code>/work</code>:</p>
     <div class="code-head"><span>the full bench</span><button class="copy" data-label="copy" type="button">copy</button></div>
-<pre><code class="language-bash">docker pull ghcr.io/aton-of-data/guara-dev:m1
+<pre><code class="language-bash"># amd64 only, published by hand, and possibly behind the tree (gap G-S4).
+# If the pull fails or the image is stale, build locally instead: ./scripts/dev.sh --build
+docker pull ghcr.io/aton-of-data/guara-dev:m1
 export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
 
 ./scripts/fetch_third_party.sh
@@ -444,6 +518,7 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
     <p class="small" style="margin:0">
       <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
       <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a> ·
+      <a href="roadmap.html">Roadmap</a> ·
       <a href="nomenclature.html">Nomenclature</a>
     </p>
   </div>

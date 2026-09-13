@@ -338,6 +338,24 @@ Scripts and scenarios cited are deliverables of the indicated milestones; they d
 
 ## 9. Open risks (end of P1)
 
+### 9.0 The four risk families, and where each is defined
+
+Risks are numbered in four families across four documents. This table is the index; none of the
+individual risks is restated here.
+
+| Family | Covers | Defined in |
+|---|---|---|
+| `R-1`..`R-14` | The PX4 RTA core: environment, toolchain, thresholds, pins | §9.1 below |
+| `RP-1`..`RP-3` | The LLM-embodiment programme: who wrote the corpus, what the corpus size bounds | [`PLAN-M8-M16.md`](PLAN-M8-M16.md) §6 |
+| `RS-1`..`RS-6` | The space thread: the safe mode with no heritage, the pre-release sequencer, simulator fidelity | [`research/SPACE-AUTONOMY.md`](research/SPACE-AUTONOMY.md) §8 |
+| `RH-1`..`RH-9` | Delivery and real hardware: EOL distros, publishing posture, vendor capture, measured-versus-proven timing | [`PLAN-M17-M28.md`](PLAN-M17-M28.md) §7 |
+
+Failure modes are a separate numbering: `FM-1`..`FM-12` in §5 of this document. Gap rows —
+`G-S`, `G-K`, `G-H`, `G-M`, `G-Z` — are not risks but known absences, and live in
+[`PLAN-M17-M28.md`](PLAN-M17-M28.md) §1.
+
+### 9.1 Core risks
+
 | # | Risk | Impact | Action / where resolved |
 |---|---|---|---|
 | R-1 | PX4 controller behavior in the ~1.2 s window without setpoints after arbiter crash (FM-1) is [UNKNOWN] | Vehicle drift before RTL | AC-15 in M3; if unacceptable, revisit ADR 0001 |

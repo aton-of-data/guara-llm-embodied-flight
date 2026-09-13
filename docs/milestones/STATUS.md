@@ -6,8 +6,9 @@ milestone report. This table is a tracker, not a substitute for those reports.
 Threads (`docs/PLAN-M8-M16.md` §1, `docs/PLAN-M17-M28.md` §7): **core** = the PX4 RTA of
 M1–M7 · **A** = air / LLM embodiment · **B** = the F´ host · **C** = the space domain ·
 **S** = setup and reproducibility (G-S1..G-S8) · **K** = the kernel and its delivery
-(G-K1..G-K8). Statuses are `PASS`, `in progress` (code exists, the criterion is not met
-yet) and `planned` (specified, no code). Every `planned` row is a promise in the plan, not
+(G-K1..G-K8, G-M2, G-Z12) · **M** = monitors and the specification (G-M1, G-M2).
+Statuses are `PASS`, `in progress` (code exists, the criterion is not met yet) and
+`planned` (specified, no code). Every `planned` row is a promise in the plan, not
 work in flight.
 
 The review `docs/reviews/2026-09-11-m1-m5-review.md` invalidated part of the evidence behind this
@@ -98,8 +99,22 @@ place as the evidence for it.
 | AC-50 | C | M16 | Zero adversarial utterances produce a sequence that passes both sequencer validation and the gate | the intent → sequence compiler |
 | AC-53 | S | M17 | Multi-arch `guara-dev` pull; a scenario runs from the digest with no PX4 source build | GHCR publish of linux/amd64 and linux/arm64 |
 | AC-54 | S | M17 | Cold clone → first green SITL measured on a declared reference machine | `scripts/bench_setup.sh` |
+| AC-102 | C | M26 | ADR 0015 rules 2–6 each refuse a proposal violating only that rule | `space/gateway.py` and its rule-isolation tests |
+| AC-103 | C | M27 | A space run declares its SDLS SA index and decryptor; an unsupported claim of authenticated origin fails | the space run-contract profile |
+| AC-104 | C | M16 | Zero adversarial *space* utterances admitted; every refusal names its check. Ground-side half of AC-50 | a space adversarial corpus (G-Z9) |
+| AC-105 | A | M9b | Every named compiler and gateway check is the sole refuser of at least one corpus case | `scripts/corpus_coverage.py` |
+| AC-106 | A | M9b | Model request budget, hard timeout, watchdog and declared degraded mode; no stale plan after a failure. Ground-side half of AC-90 | the provider policy object |
+| AC-107 | K | M19 | Every ADR 0015 rule has a published vector; the space set runs green with its own hash; a mutation is rejected | AC-102, and a space port in the kit |
+| AC-108 | C | M14 | Safe-mode entry: four effects in order, latched, idempotent, released only by the declared ground command. AC-42..AC-44 remain M14 on a host | `space/safe_mode.py` and its vectors |
+| AC-109 | C | M14 | The entry manoeuvre's keep-out exposure measured over a declared grid and seed: violating fraction and worst-case margin | AC-108; `scripts/safe_mode_sweep.py` |
+| AC-110 | M | M2 | Every monitor the flight profile loads has a clear **and** a violated verdict from a non-stale sample, or is recorded as unexercisable | `scripts/monitor_coverage.py` |
+| AC-111 | K | M19 | Cause composition, rank monotonicity in `RF`/`LATCHED` and the `RF(HOLD)`-only return pinned by vectors, agreed by both ports, mutation-detected | AC-107 (it freezes the air hash first) |
 
-M18–M28 (AC-57..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §3–§6 and are not yet inventoried here as in-progress work.
+M20–M28 (AC-67..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §3–§6 and
+are not yet inventoried here as in-progress work; AC-57..AC-66 are in the executed table above,
+all `in progress`. The ten criteria AC-102..AC-111, added 2026-09-13, are specified in
+[`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §9: they belong to milestones that already exist and
+none of them needs hardware, a host, a simulator or a network.
 
 Operation-level view of the same scope: [`docs/operations/`](../operations/README.md).
 Findings against the M17–M19 code, and their remediation:

@@ -26,23 +26,38 @@ Change one, change the other in the same edit.
 ## Handoff
 
 1. Verify the packet: every task has Files, Gate, Done-when; no placeholder left in Gates;
-   no `UNKNOWN` grounding row a task depends on. A failing check returns to `guara-scope`.
-2. Render `templates/cursor-prompt.md` with the packet inlined and give it to Cursor. The
-   prompt names the two rule files; it does not restate them.
+   no `UNKNOWN` grounding row a task depends on; every path in a task's `Files` also appears in
+   the packet's `Read-set`. A failing check returns to `guara-scope`.
+2. Render `templates/cursor-prompt.md` with the packet inlined and give it to Cursor. It opens
+   with `/loop 5m`, names the two rule files and does not restate them.
 3. Set the packet `State: RUNNING`.
 
 ## The loop, per task
 
+Driven on a timer, not by hand: `/loop 5m` with the rendered prompt. One iteration takes one
+task through six steps and then stops, so a red gate costs one iteration rather than a session.
+
 ```
-read T<k> → implement only Files listed → run Gate → read output
-  green  → append log row, State DONE, next task
-  red    → fix, rerun; attempt 2, attempt 3
-  3 reds → STOP. log the last command and output verbatim. State BLOCKED. Next task only if it does not Depend on T<k>.
+per iteration: first task not DONE/BLOCKED
+  1 test       write the failing test, watch it fail (zero tests = red)
+  2 implement  only the files the task lists; only the Read-set may be opened
+  3 validate   run the Gate verbatim; 3 reds → BLOCKED, stop touching it
+  4 document   the document the task names, nothing else
+  5 commit     one commit for this task alone
+  6 hand off   log row + rewrite §"Next agent" for a cold session
 ```
+
+The hand-off step is what makes the cadence safe: each iteration may be a different session
+with no memory of the last, so the log's "Next agent" section — next task, its gate, tree
+state, what to avoid, what bit the previous iteration — has to be true when the iteration
+ends, not approximately true.
 
 ## Executor rules — enforced by `guara-executor.mdc`, restated here for review
 
 - Touch only the files the task lists. Anything else is a finding for the log, not an edit.
+- Open only the files the packet's `Read-set` lists. The packet plus that set is the whole
+  context: no exploratory grep, no neighbouring file for orientation. A task needing a path
+  outside the set is malformed — log the path, mark the task `BLOCKED`, do not widen scope.
 - Never weaken a test, threshold or acceptance criterion to pass a gate.
 - Never write a number you did not produce with a command in this loop.
 - Never state an upstream API from memory; read it under `third_party/` and cite

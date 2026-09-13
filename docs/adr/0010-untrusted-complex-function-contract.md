@@ -74,3 +74,8 @@ Every CF setpoint is treated as hostile input. The gateway (`guara_rta::GatewayL
   (SROS2 on `/guara/cf/*` and `fmu/in/*`, FM-12) is still open and is a precondition for any
   networked or LLM-driven CF; see the remediation note in
   `docs/reviews/2026-09-11-m1-m5-remediation.md`.
+- Every rule above is written against `guara_rta::GatewayLogic`, `CfSetpoint` and PX4 parameters, so
+  it states the *air* instantiation of the gateway and nothing else. The space instantiation on F´ —
+  the same seven rules against F´ signals, plus the declared command origin this ADR leaves open —
+  is [ADR 0015](0015-space-untrusted-function-contract.md). This ADR is not edited to carry a second
+  host: which rules were tested on which host has to stay legible.

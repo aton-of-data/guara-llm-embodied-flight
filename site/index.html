@@ -70,6 +70,7 @@
       <a href="architecture.html">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html">Evidence</a>
+      <a href="roadmap.html">Roadmap</a>
       <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
@@ -141,7 +142,7 @@
     <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-00</dd></div>
     <div><dt>Title</dt><dd>Overview</dd></div>
-    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
     <div><dt>Status</dt><dd>Research prototype — SITL only</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
@@ -328,7 +329,9 @@
         <h2>Verification without a container</h2>
         <p>
           You do not need ROS 2, a PX4 build, a container, a GPU, a model or an API key to see the
-          boundary work. Two packages and one command.
+          boundary work. One install and one command. <code>guara doctor</code> is the workstation
+          preflight: it prints the resolved pins, the platform and the tier it reached, so a setup
+          that cannot work says so before a run fails halfway.
         </p>
         <p>
           The refusal case is the load-bearing one: an intent that is well-formed, schema-valid
@@ -348,18 +351,19 @@
         <div class="code-head"><span>shell</span><button class="copy" data-label="copy" type="button">copy</button></div>
 <pre><code class="language-bash">git clone https://github.com/aton-of-data/guara-llm-embodied-flight
 cd guara-llm-embodied-flight
-pip install -r requirements.txt
+pip install -e .
+guara doctor
 
 # an intent inside the envelope -> a flyable plan (exit 0)
-python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+guara compile --intent mission/intents/survey_north_3.json
 
 # the same survey at 40 cm/px -> refused, with the checks named (exit 2)
-python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+guara compile --intent mission/intents/survey_north_3_out_of_envelope.json
 # refused (checks): gsd_bounds, altitude_ceiling, energy
 
 # the stop path, which never reaches a model at all
-python3 -m mission.compiler --stop "land now"     # -> land_now
-python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
+guara compile --stop "land now"     # -> land_now
+guara compile --stop "pouse agora"  # -> land_now</code></pre>
         <p class="small muted">
           The last two lines are the same grammar in two languages. <code>abort</code>,
           <code>land_now</code> and <code>return_home</code> are exact-match patterns plus a
@@ -574,7 +578,23 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
         <p class="muted">Someone who has actually flown a spacecraft safe mode, reading the specification for what it gets wrong. This is the risk a reviewer should attack first.</p>
         <span class="pill info">risk RS-1</span>
       </div>
+      <div class="panel ask">
+        <h3>Write the core from the spec alone</h3>
+        <p class="muted">A second implementation of the decision core, by a path independent of the existing one, to find out what the specification fails to say. No hardware, no container, no ROS — and the C ABI stays provisional until it exists.</p>
+        <span class="pill warn">gap G-K6</span>
+      </div>
+      <div class="panel ask">
+        <h3>Attack the orbital boundary</h3>
+        <p class="muted">The adversarial corpus is air-only, so the orbital jailbreak criterion has nothing to run. A slew whose endpoints are both legal and whose path crosses a keep-out is the shape of the missing case.</p>
+        <span class="pill warn">gap G-Z9</span>
+      </div>
     </div>
+
+    <p class="small muted" style="margin-top:1.2rem">
+      Every item above names a row of the gap register — the full list of what this project knows it
+      is missing, each with the milestone that owns it. It is on the
+      <a href="roadmap.html#register">roadmap page</a>.
+    </p>
 
     <div class="split" style="margin-top:3rem">
       <div>
@@ -623,6 +643,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
         <li><a href="architecture.html">Architecture</a></li>
         <li><a href="integrate.html">Integration guide</a></li>
         <li><a href="evidence.html">Evidence &amp; limits</a></li>
+        <li><a href="roadmap.html">Roadmap &amp; gap register</a></li>
         <li><a href="nomenclature.html">Nomenclature &amp; references</a></li>
         <li><a href="contribute.html">Contributing</a></li>
       </ul>
