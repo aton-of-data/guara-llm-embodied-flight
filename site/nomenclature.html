@@ -1,0 +1,313 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nomenclature and references — Guará</title>
+<meta name="description" content="Symbols, acronyms, identifier schemes and external references used across the Guará documentation set.">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  :root { --figpfx: "N-"; }
+  .page-head { padding-block: 3.2rem 1rem; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html">Evidence</a>
+      <a href="nomenclature.html" aria-current="page">Nomenclature</a>
+      <a href="contribute.html">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap page-head">
+  <p class="eyebrow">Reference</p>
+  <h1>Nomenclature and references</h1>
+  <p class="lede">
+    Symbols, acronyms and identifier schemes used across this documentation set, collected so that
+    a page reached directly from a citation does not depend on having read the others. Definitions
+    here are normative for the site; where the site and the repository specification differ, the
+    specification governs.
+  </p>
+  <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-04</dd></div>
+    <div><dt>Title</dt><dd>Nomenclature and references</dd></div>
+    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>Normative for this site</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+  </dl>
+</div>
+
+<div class="wrap doc">
+  <aside class="toc">
+    <h4>On this page</h4>
+    <a href="#symbols">1 Symbols</a>
+    <a href="#states">2 States and signals</a>
+    <a href="#stages">3 Latency stages</a>
+    <a href="#identifiers">4 Identifier schemes</a>
+    <a href="#acronyms">5 Acronyms</a>
+    <a href="#refs">6 References</a>
+  </aside>
+
+  <main class="doc-body">
+
+  <section id="symbols">
+    <h2>1 · Symbols</h2>
+    <p>
+      Parameters are configuration values. Signals are evaluated once per decision tick.
+      Measurements are quantities obtained from a recorded run and are not configurable.
+    </p>
+    <p class="tbl-cap">Symbols used in the switching rule and the latency budget.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Symbol</th><th>Unit</th><th>Kind</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td>δ_lat</td><td>s</td><td>measurement</td>
+              <td>End-to-end switch latency: from the input sample that makes <code>U(k)</code> true to the recovery mode being effective. Reported as a p99 over a batch.</td></tr>
+          <tr><td>τ_gf</td><td>s</td><td>parameter</td>
+              <td>Geofence trigger threshold. The switch is commanded when the predicted time to keep-in violation falls to this value.</td></tr>
+          <tr><td>τ_daa</td><td>s</td><td>parameter</td>
+              <td>Detect-and-avoid trigger threshold, against the time to the corrective well-clear volume.</td></tr>
+          <tr><td>τ_rec</td><td>s</td><td>measurement</td>
+              <td>Recovery settling time: from entry into the recovery mode until the vehicle reaches the recovered condition. For Hold, until horizontal speed falls below 0.5 m/s.</td></tr>
+          <tr><td>τ_rec,daa</td><td>s</td><td>measurement</td>
+              <td>The value of τ_rec applicable to the recovery selected for a detect-and-avoid trigger.</td></tr>
+          <tr><td>T_gf</td><td>s</td><td>signal</td>
+              <td>Predicted time to keep-in geofence violation, including the braking model and position uncertainty. Positive infinity when no violation is predicted.</td></tr>
+          <tr><td>T_daa</td><td>s</td><td>signal</td>
+              <td>Minimum over intruders of the time until the ownship enters the corrective-level well-clear volume. Positive infinity when no intruder is predicted to enter it within the lookahead time.</td></tr>
+          <tr><td>h_gf, h_daa</td><td>s</td><td>parameter</td>
+              <td>Additive hysteresis applied to the corresponding threshold on the return path only. They never delay the switch away from the complex function.</td></tr>
+          <tr><td>T_d</td><td>s</td><td>parameter</td>
+              <td>Dwell time. Both the minimum time spent in a recovery function and the minimum continuous duration for which <code>C(k)</code> must hold before a return is permitted.</td></tr>
+          <tr><td>T_s</td><td>s</td><td>parameter</td>
+              <td>Decision period. The switching logic is evaluated once per tick of this period.</td></tr>
+          <tr><td>T_esc</td><td>s</td><td>parameter</td>
+              <td>Persistence escalation time. Disabled by default.</td></tr>
+          <tr><td>N_max</td><td>—</td><td>parameter</td>
+              <td>Switch budget. After this many complex-function-to-recovery switches within the window <code>W</code>, the recovery latches.</td></tr>
+          <tr><td>W</td><td>s</td><td>parameter</td>
+              <td>The sliding window over which the switch budget is counted.</td></tr>
+          <tr><td>S(k)</td><td>—</td><td>signal</td>
+              <td>Number of switches recorded within the window <code>W</code> at tick <code>k</code>.</td></tr>
+          <tr><td>Cdur(k)</td><td>s</td><td>signal</td>
+              <td>Duration for which the clear condition <code>C</code> has held continuously up to tick <code>k</code>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="tag">Design obligation O-1</span>
+      <p>
+        The switching rule is meaningful only where <code>τ_gf ≥ δ_lat</code> and
+        <code>τ_daa ≥ τ_rec,daa + δ_lat</code>. A trigger threshold shorter than the measured time
+        to act is a threshold that does not act in time. Evaluated against the published batch in
+        <a href="evidence.html#latency">Evidence §1</a>.
+      </p>
+    </div>
+  </section>
+
+  <section id="states">
+    <h2>2 · States and signals</h2>
+    <p class="tbl-cap">States of the switching logic.</p>
+    <div class="table-scroll" style="margin-bottom:1.6rem">
+      <table class="nomen">
+        <thead><tr><th>State</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>INACTIVE</td><td>Guará holds no authority. Entered on any remote-pilot or ground-station mode change and on any platform failsafe.</td></tr>
+          <tr><td>CF</td><td>The complex function has the vehicle, through the gateway, subject to the envelope clamp.</td></tr>
+          <tr><td>RF(r)</td><td>A recovery function is active, where r is one of HOLD, RTL or LAND.</td></tr>
+          <tr><td>LATCHED(r)</td><td>The recovery is held and no return is permitted. Entered on exhaustion of the switch budget or on actuation failure.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="tbl-cap">Boolean signals evaluated at each decision tick.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Signal</th><th>Source</th><th>Definition</th></tr></thead>
+        <tbody>
+          <tr><td>U(k)</td><td>derived</td><td>Unsafe predicate. Commands a switch to the recovery function within the same tick.</td></tr>
+          <tr><td>C(k)</td><td>derived</td><td>Clear predicate. A necessary but not sufficient condition for return; see <code>T_d</code>.</td></tr>
+          <tr><td>M(k)</td><td>monitors</td><td>True when any switch-class runtime monitor reports its property violated.</td></tr>
+          <tr><td>V(k)</td><td>input manager</td><td>Input-invalid flag. True when any enabled channel is stale, absent or malformed. Enabled channels fail closed.</td></tr>
+          <tr><td>IC(k)</td><td>platform</td><td>In-charge flag. True when Guará holds the authority it believes it holds.</td></tr>
+          <tr><td>cf_intent_unsafe</td><td>gateway</td><td>Shadow check: true when the setpoint the complex function is currently proposing would itself violate the fence. Withholds return; never by itself a reason to leave CF.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="stages">
+    <h2>3 · Latency stages</h2>
+    <p>
+      <code>δ_lat</code> is reported as a sum of named stages, each measured on a clock validated
+      for that stage. Stating the decomposition is what makes it possible to say which stage is
+      excluded, and why.
+    </p>
+    <p class="tbl-cap">Stages of the end-to-end latency budget.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Stage</th><th>Clock</th><th>Interval</th></tr></thead>
+        <tbody>
+          <tr><td>L0</td><td>platform</td><td>Sensor sample to platform publication.</td></tr>
+          <tr><td>L1</td><td>mixed</td><td>Platform to ROS 2 transport. <strong>Excluded</strong> from δ_lat while clock alignment exceeds its limit.</td></tr>
+          <tr><td>L2</td><td>monitor</td><td>Monitor input reception to verdict publication.</td></tr>
+          <tr><td>L3</td><td>ROS</td><td>Verdict timestamp to arbiter reception.</td></tr>
+          <tr><td>L4</td><td>steady</td><td>Arbiter reception to the decision tick that sets U(k).</td></tr>
+          <tr><td>L5</td><td>steady</td><td>Decision to command publication.</td></tr>
+          <tr><td>L6</td><td>steady</td><td>Command to recovery mode effective.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="identifiers">
+    <h2>4 · Identifier schemes</h2>
+    <p>
+      Claims in this documentation set are traceable by identifier. Each scheme has a single
+      authority in the repository, which governs where the site and the repository differ.
+    </p>
+    <p class="tbl-cap">Identifier prefixes and their governing documents.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Prefix</th><th>Meaning</th><th>Authority</th></tr></thead>
+        <tbody>
+          <tr><td>AC-n</td><td>Acceptance criterion. PASS requires an executed command and an excerpt of its output.</td><td><code>docs/milestones/STATUS.md</code></td></tr>
+          <tr><td>FM-n</td><td>Failure mode of the runtime assurance implementation.</td><td><code>docs/SPEC.md</code> §8</td></tr>
+          <tr><td>R-n</td><td>Open risk, air thread.</td><td><code>docs/SPEC.md</code> §9</td></tr>
+          <tr><td>RS-n</td><td>Open risk, space thread.</td><td><code>docs/research/SPACE-AUTONOMY.md</code> §8</td></tr>
+          <tr><td>O-n</td><td>Design obligation that a parameter choice must satisfy.</td><td><code>docs/SPEC.md</code> §3</td></tr>
+          <tr><td>P-n</td><td>Required property of the switching logic.</td><td><code>docs/SPEC.md</code> §3</td></tr>
+          <tr><td>T-n</td><td>Transition of the switching state machine.</td><td><code>docs/SPEC.md</code> §3.5</td></tr>
+          <tr><td>G-n</td><td>Gap observation motivating the project, with a verification status.</td><td><code>docs/PROPOSAL.md</code> §11</td></tr>
+          <tr><td>RQ-n</td><td>Research question.</td><td><code>docs/PROPOSAL.md</code> §6</td></tr>
+          <tr><td>M-n</td><td>Milestone.</td><td><code>docs/ROADMAP.md</code></td></tr>
+          <tr><td>ADR n</td><td>Architecture decision record.</td><td><code>docs/adr/</code></td></tr>
+          <tr><td>L-n</td><td>Stage of the latency budget.</td><td><code>docs/SPEC.md</code> §4.1</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="tbl-cap">Status markers used in the repository and reproduced on this site.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Marker</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>[HYPOTHESIS]</td><td>A value adopted for analysis that has not been measured.</td></tr>
+          <tr><td>[PARAMETER TBD]</td><td>A value that must be determined before the surrounding claim is usable.</td></tr>
+          <tr><td>[REVIEW]</td><td>A statement awaiting check against an authority the project does not hold.</td></tr>
+          <tr><td>[UNKNOWN]</td><td>Behaviour that has not been characterised. Recorded as unknown rather than assumed.</td></tr>
+          <tr><td>VERIFIED-SRC</td><td>Verified against pinned third-party source at a recorded commit.</td></tr>
+          <tr><td>VERIFIED-WEB</td><td>Verified against a published document.</td></tr>
+          <tr><td>SECONDARY</td><td>Reported from a secondary source and not independently verified.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="acronyms">
+    <h2>5 · Acronyms</h2>
+    <p class="tbl-cap">Acronyms used across the documentation set.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Acronym</th><th>Expansion</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>AGL</td><td>Above ground level</td><td>Altitude reference used by the mission compiler.</td></tr>
+          <tr><td>CF</td><td>Complex function</td><td>The unassured component bounded by the architecture.</td></tr>
+          <tr><td>DAA</td><td>Detect and avoid</td><td>Air thread only. No orbital analogue is implemented or planned.</td></tr>
+          <tr><td>DDS</td><td>Data Distribution Service</td><td>The ROS 2 transport. Unauthenticated in this phase.</td></tr>
+          <tr><td>FMU</td><td>Flight management unit</td><td>The autopilot hardware. Guará runs outside it.</td></tr>
+          <tr><td>FPP</td><td>F´ Prime Prime</td><td>The F´ modelling language.</td></tr>
+          <tr><td>GSD</td><td>Ground sample distance</td><td>Survey resolution, in centimetres per pixel.</td></tr>
+          <tr><td>NED</td><td>North, east, down</td><td>The local frame of the setpoint contract.</td></tr>
+          <tr><td>NOSA</td><td>NASA Open Source Agreement</td><td>Licence of DAIDALUS and FRET; isolated to <code>nosa/</code>.</td></tr>
+          <tr><td>RF</td><td>Recovery function</td><td>The assured behaviour authority is handed to.</td></tr>
+          <tr><td>RTA</td><td>Runtime assurance</td><td>The architecture class defined by ASTM F3269.</td></tr>
+          <tr><td>RTL</td><td>Return to launch</td><td>One of the three air recovery functions.</td></tr>
+          <tr><td>SITL</td><td>Software in the loop</td><td>The simulation regime of every published result.</td></tr>
+          <tr><td>SIH</td><td>Simulation in hardware</td><td>The PX4 simulator configuration used for the batch.</td></tr>
+          <tr><td>SROS2</td><td>Secure ROS 2</td><td>The transport authentication not yet applied. See FM-12.</td></tr>
+          <tr><td>VLOS</td><td>Visual line of sight</td><td>Compiler check against the recorded pilot position.</td></tr>
+          <tr><td>WCET</td><td>Worst-case execution time</td><td>Not analysed. Decision time is measured, not proven.</td></tr>
+          <tr><td>uXRCE-DDS</td><td>Micro XRCE-DDS</td><td>The bridge exposing platform topics to ROS 2.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="refs">
+    <h2>6 · References</h2>
+    <p>
+      External works cited on this site. Upstream software is cited at the commit pinned in
+      <code>third_party/VERSIONS.md</code>; the repository re-derives every API fact from that
+      pinned source rather than from documentation.
+    </p>
+
+    <h3>Standards and regulation</h3>
+    <ol class="refs">
+      <li id="r1">ASTM F3269, <em>Standard Practice for Methods to Safely Bound Flight Behavior of Unmanned Aircraft Systems Containing Complex Functions</em>. ASTM International. <strong>Not held by this project</strong>; the role mapping is marked [REVIEW] and is an open ask (R-8).</li>
+      <li id="r2">RTCA DO-365 and DO-365B, <em>Minimum Operational Performance Standards for Detect and Avoid Systems</em>. RTCA. Source of the well-clear definitions; thresholds are written for larger aircraft than the reference airframe (R-5).</li>
+      <li id="r3">ANAC RBAC 100, Brazilian civil regulation for unmanned aircraft, in force from 2026-06-16. Marked [REVIEW] throughout the repository.</li>
+    </ol>
+
+    <h3>Upstream software</h3>
+    <ol class="refs">
+      <li id="r4">PX4 Autopilot v1.17.0, and the Auterion <code>px4-ros2-interface-lib</code>, release/1.17. The arbiter is realised as a mode executor against this interface.</li>
+      <li id="r5">ROS 2 Humble Hawksbill. Companion-side runtime for every node outside the autopilot.</li>
+      <li id="r6">NASA FRET v3.1.0, formal requirements elicitation tool. NOSA-licensed; used for generation only.</li>
+      <li id="r7">NASA Ogma v1.15.0, monitor generation. Targets cFS, ROS 2, F´ and standalone; no PX4 target, which is gap G2.</li>
+      <li id="r8">Copilot v4.8.1, stream-based runtime verification producing verified C99.</li>
+      <li id="r9">NASA DAIDALUS v2.0.3a, detect-and-avoid reference implementation. NOSA-licensed and isolated to <code>nosa/</code>.</li>
+      <li id="r10">NASA F´ v4.3.0, flight software framework. Second host for the switching core; provides no safe mode, which is risk RS-1.</li>
+      <li id="r11">NASA ICAROUS, integrated safe-drone stack, final release V-2.2.6, January 2022. Gap G1.</li>
+    </ol>
+
+    <h3>Literature</h3>
+    <ol class="refs">
+      <li id="r12">A. Robey et al., <em>Jailbreaking LLM-Controlled Robots</em> (RoboPAIR), 2024. Reports a 100% jailbreak rate against three LLM-controlled robots. <a href="https://arxiv.org/abs/2410.13691">arXiv:2410.13691</a>. Motivates a boundary independent of the model.</li>
+      <li id="r13">Runtime monitoring work reported at CAV 2024 (Volocopter/DLR) and Platum at NFM 2026, both of which leave automatic contingency triggering as future work. Gap G4.</li>
+      <li id="r14">Natural-language drone control prior art surveyed in <code>docs/RELATED-WORK.md</code>: ChatGPT for Robotics, TypeFly, EchoPilot, MAVLinkMCP, AerialClaw. The shared safety pattern is prompt engineering, tool restriction and human override.</li>
+    </ol>
+
+    <div class="note">
+      <span class="tag">Citation practice</span>
+      <p>
+        No preprint exists. Cite the repository and the commit, via <code>CITATION.cff</code>. A
+        quantitative claim should cite the run directory under <code>docs/evidence/</code> that
+        produced it, not this site.
+      </p>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p class="small" style="margin:0 0 .5rem">
+      Guará · Apache-2.0 · Copyright 2026 Aton Bertini Dornfeld and the Guará contributors.
+    </p>
+    <p class="small" style="margin:0">
+      <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
+      <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a> ·
+      <a href="contribute.html">Contribute</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
