@@ -57,6 +57,8 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-47 | C | M13c | PASS | `docs/milestones/M13c.md` (analytic cases, ±0.05 s, clean tree at `696c4ed`) |
 | AC-51 | S | M17 | in progress | `guara doctor` (tier 0); not PASS until Linux, macOS and Windows/WSL are all recorded |
 | AC-52 | S | M17 | in progress | pin-drift check and hash-pinned `requirements.lock` (CPython 3.10); second-machine byte-identity unrecorded |
+| AC-55 | S | M17 | in progress | `core` job in `.github/workflows/checks.yml`; matrix evidence not yet recorded |
+| AC-57 | K | M18 | in progress | `core/` CMake library and C ABI; consumer example present |
 
 ## Planned criteria
 
@@ -85,7 +87,6 @@ place as the evidence for it.
 | AC-50 | C | M16 | Zero adversarial utterances produce a sequence that passes both sequencer validation and the gate | the intent → sequence compiler |
 | AC-53 | S | M17 | Multi-arch `guara-dev` pull; a scenario runs from the digest with no PX4 source build | GHCR publish of linux/amd64 and linux/arm64 |
 | AC-54 | S | M17 | Cold clone → first green SITL measured on a declared reference machine | `scripts/bench_setup.sh` |
-| AC-55 | S | M17 | CI builds and unit-tests `guara-core` with no ROS, PX4 or Docker | M18 `core/` extraction |
 | AC-56 | S | M17 | Tier-2 path runs with the network disabled when the image and clones are cached | `GUARA_OFFLINE=1` |
 
 M18–M28 (AC-57..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §3–§6 and are not yet inventoried here as in-progress work.

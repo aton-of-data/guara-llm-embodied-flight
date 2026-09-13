@@ -12,19 +12,16 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-# ROS-independent switching logic (SPEC §3). Linked by the arbiter node and by the unit tests.
-add_library(guara_rta_core
-  src/types.cpp
-  src/decision_core.cpp
-)
-target_include_directories(guara_rta_core PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+# Host-free switching kernel (ADR 0014 / M18). The C++ API path
+# guara_rta/decision_core.hpp is unchanged so the existing unit tests need
+# no edits (AC-58).
+set(GUARA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../core")
+add_subdirectory("${GUARA_CORE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/guara_core")
 
-install(DIRECTORY include/ DESTINATION include)
-install(TARGETS guara_rta_core EXPORT export_guara_rta
+install(TARGETS guara_core EXPORT export_guara_rta
   ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+install(DIRECTORY "${GUARA_CORE_DIR}/include/" DESTINATION include)
+install(DIRECTORY include/ DESTINATION include)
 
 # Arbiter process: ModeExecutor + owned CF gateway (SPEC §2, ADR 0001).
 option(GUARA_SIM_FAULT_INJECTION "Enable SITL-only fault injection parameters (FM-4/FM-5/FM-6)" OFF)
@@ -42,7 +39,7 @@ target_include_directories(guara_rta_node PRIVATE
 # Plain (non-keyword) target_link_libraries so ament_target_dependencies can
 # append Humble rosidl import libraries without mixing signature styles.
 target_link_libraries(guara_rta_node
-  guara_rta_core
+  guara_core
   guara_geofence::guara_geofence
   Eigen3::Eigen
   px4_ros2_cpp::px4_ros2_cpp
@@ -61,33 +58,33 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   # Test names are the ctest selectors used by the acceptance criteria of SPEC §6.
   ament_add_gtest(decision_core_truth_table test/test_decision_core_truth_table.cpp)
-  target_link_libraries(decision_core_truth_table guara_rta_core)
+  target_link_libraries(decision_core_truth_table guara_core)
   ament_add_gtest(decision_core_no_alloc test/test_decision_core_no_alloc.cpp)
-  target_link_libraries(decision_core_no_alloc guara_rta_core)
+  target_link_libraries(decision_core_no_alloc guara_core)
   ament_add_gtest(decision_core_timing test/test_decision_core_timing.cpp TIMEOUT 300)
-  target_link_libraries(decision_core_timing guara_rta_core)
+  target_link_libraries(decision_core_timing guara_core)
   target_compile_options(decision_core_timing PRIVATE -O2)
   ament_add_gtest(hysteresis_dwell test/test_hysteresis_dwell.cpp)
-  target_link_libraries(hysteresis_dwell guara_rta_core)
+  target_link_libraries(hysteresis_dwell guara_core)
   ament_add_gtest(latch_policy test/test_latch_policy.cpp TIMEOUT 300)
-  target_link_libraries(latch_policy guara_rta_core)
+  target_link_libraries(latch_policy guara_core)
   ament_add_gtest(gateway_blocks_cf test/test_gateway_blocks_cf.cpp)
-  target_link_libraries(gateway_blocks_cf guara_rta_core)
+  target_link_libraries(gateway_blocks_cf guara_core)
   # Review remediation of 2026-09-11: gateway envelope (H-1, H-2), monitor aggregation (H-4, H-6),
   # channel gating and safety profile (H-3, H-5), mode-effect confirmation and return policy.
   ament_add_gtest(gateway_envelope test/test_gateway_envelope.cpp)
-  target_link_libraries(gateway_envelope guara_rta_core)
+  target_link_libraries(gateway_envelope guara_core)
   ament_add_gtest(monitor_table test/test_monitor_table.cpp)
-  target_link_libraries(monitor_table guara_rta_core)
+  target_link_libraries(monitor_table guara_core)
   ament_add_gtest(channel_gating test/test_channel_gating.cpp)
-  target_link_libraries(channel_gating guara_rta_core)
+  target_link_libraries(channel_gating guara_core)
   ament_add_gtest(actuator_confirmation test/test_actuator_confirmation.cpp)
-  target_link_libraries(actuator_confirmation guara_rta_core)
+  target_link_libraries(actuator_confirmation guara_core)
   ament_add_gtest(return_policy test/test_return_policy.cpp)
-  target_link_libraries(return_policy guara_rta_core)
+  target_link_libraries(return_policy guara_core)
   # RQ5: property test of the gateway against an adversarial CF (ADR 0010).
   ament_add_gtest(gateway_fuzz test/test_gateway_fuzz.cpp TIMEOUT 300)
-  target_link_libraries(gateway_fuzz guara_rta_core)
+  target_link_libraries(gateway_fuzz guara_core)
   target_compile_options(gateway_fuzz PRIVATE -O2)
 endif()
 
