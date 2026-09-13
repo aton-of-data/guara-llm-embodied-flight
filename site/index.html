@@ -13,6 +13,7 @@
 <link rel="icon" href="assets/guara-mascot.png">
 <link rel="stylesheet" href="assets/style.css">
 <style>
+  :root { --figpfx: "O-"; }
   /* ---- hero ---- */
   .hero { padding-block: 4.5rem 4rem; position: relative; overflow: hidden; }
   .hero::before {
@@ -72,6 +73,7 @@
       <a href="architecture.html">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html">Evidence</a>
+      <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
@@ -87,10 +89,11 @@
         <p class="eyebrow">Runtime assurance · ASTM F3269 · Apache-2.0</p>
         <h1>The model proposes.<br>The arbiter <span class="hl">disposes</span>.</h1>
         <p class="lede">
-          Guará is an open, measured safety boundary between an untrusted flight brain — a language
-          model, a neural policy, a classical planner — and a real vehicle. The brain never touches
-          the actuators. It asks, through a gateway that clamps it, while formal monitors watch the
-          physics. When the next seconds are unsafe, authority is taken away and handed to the
+          Guará is an open, measured safety boundary between an unassured complex function — a
+          language model, a neural policy or a classical planner — and a real vehicle. The complex
+          function never reaches the actuators. It proposes, through a gateway that clamps what it
+          may ask for, while runtime monitors evaluate the physical state. When the next seconds
+          are predicted unsafe, authority is withdrawn and the vehicle is handed to the
           platform&rsquo;s own assured recovery mode.
         </p>
         <p class="lede">
@@ -133,6 +136,14 @@
       Nothing on this site is a claim about certified or real flight — see
       <a href="#limits">the limits</a>.
     </p>
+    <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-00</dd></div>
+    <div><dt>Title</dt><dd>Overview</dd></div>
+    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>Research prototype — SITL only</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+    </dl>
   </div>
 </section>
 
@@ -142,7 +153,7 @@
     <p class="eyebrow">Why this exists</p>
     <div class="split">
       <div>
-        <h2>Today, &ldquo;safe&rdquo; LLM flight means a well-written prompt</h2>
+        <h2>Current practice treats the prompt as the safety boundary</h2>
         <p>
           Talking to a drone is a crowded field — ChatGPT for Robotics, TypeFly, EchoPilot,
           MAVLinkMCP, AerialClaw. Survey them and the safety story is uniform:
@@ -318,8 +329,8 @@
           boundary work. Two packages and one command.
         </p>
         <p>
-          The second command is the whole point: an intent that is well-formed, schema-valid and
-          completely reasonable-sounding is refused by <strong>named, deterministic checks</strong>
+          The refusal case is the load-bearing one: an intent that is well-formed, schema-valid
+          and entirely plausible is rejected by <strong>named, deterministic checks</strong>
           before anything flies. It asks for 40&nbsp;cm/px, which would put the aircraft above the
           regulatory ceiling with not enough battery to finish.
         </p>
@@ -387,12 +398,13 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
         </div>
         <figcaption>
           The same plan, the same seed, the arbiter enabled and disabled. This is the paired run
-          behind AC-31 — the LLM-compiled survey deliberately aimed outside the fence.
+          behind AC-31 — the LLM-compiled survey aimed outside the fence.
         </figcaption>
       </figure>
     </div>
 
-    <div class="table-scroll" style="margin-top:1rem">
+    <p class="tbl-cap">Principal measured quantities from the 30-run latency batch.</p>
+<div class="table-scroll" style="margin-top:1rem">
       <table>
         <thead><tr><th>Quantity</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
         <tbody>
@@ -424,7 +436,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
       </p>
     </div>
     <p class="small muted">
-      The acceptance-criteria tracker is also honest about its own history: an internal review on
+      The acceptance-criteria tracker is also explicit about its own history: an internal review on
       2026-09-11 invalidated one false PASS and eleven rows produced by a checker that had stopped
       running. The latency batch above was discarded and re-measured from scratch on the corrected
       build. <a href="evidence.html">Full evidence, criteria and re-run commands →</a>
@@ -436,7 +448,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
 <section id="domains">
   <div class="wrap">
     <p class="eyebrow">One switching core, two hosts</p>
-    <h2>Air is flying. Space is specified — and honest about it.</h2>
+    <h2>Air is flying. Space is specified, and stated as such.</h2>
     <p class="lede">
       The space thread is a <em>rewrite</em> of the signals, not a port. An orbiting body cannot
       stop, so the braking model behind the air geofence does not transfer, and detect-and-avoid
@@ -522,7 +534,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
 <section id="involve">
   <div class="wrap">
     <p class="eyebrow">Where you come in</p>
-    <h2>The boundary is built. The hard, specific gaps are open.</h2>
+    <h2>The boundary is implemented. The remaining gaps are specific.</h2>
     <p class="lede">
       These are not &ldquo;good first issue&rdquo; placeholders. Each one blocks a named risk or a
       research question, and each is a self-contained contribution someone with the right
@@ -579,7 +591,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
       <div>
         <h3>Use it, and say what broke</h3>
         <p>
-          The most valuable early contribution is an honest report from a setup that is not the
+          The most valuable early contribution is a report from a setup that is not the
           author&rsquo;s: a different airframe, a different distro, a different model behind the
           intent compiler. The evaluation harness ships four providers, including a
           <code>mock</code> that needs no key and no network.
@@ -609,6 +621,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
         <li><a href="architecture.html">Architecture</a></li>
         <li><a href="integrate.html">Integration guide</a></li>
         <li><a href="evidence.html">Evidence &amp; limits</a></li>
+        <li><a href="nomenclature.html">Nomenclature &amp; references</a></li>
         <li><a href="contribute.html">Contributing</a></li>
       </ul>
     </div>

@@ -9,6 +9,7 @@
 <link rel="icon" href="assets/guara-mascot.png">
 <link rel="stylesheet" href="assets/style.css">
 <style>
+  :root { --figpfx: "A-"; }
   .page-head { padding-block: 3.2rem 1rem; }
   .eq {
     font-family: var(--mono); font-size: .93rem; line-height: 2.1;
@@ -56,6 +57,7 @@
       <a href="architecture.html" aria-current="page">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html">Evidence</a>
+      <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
@@ -67,11 +69,19 @@
   <p class="eyebrow">Reference</p>
   <h1>Architecture</h1>
   <p class="lede">
-    How authority actually moves between an untrusted planner and an assured autopilot: the role
-    mapping, the switching predicates, the gateway contract, the latency budget and the message
-    types. Everything below is read off the source in the repository, not paraphrased from a
-    design document.
+    The transfer of authority between an unassured complex function and an assured autopilot: the
+    ASTM F3269 role mapping, the switching predicates, the gateway contract, the latency budget and
+    the message contracts. Excerpts are quoted from the repository source at the commit recorded
+    below, not paraphrased from a design document.
   </p>
+  <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-01</dd></div>
+    <div><dt>Title</dt><dd>Architecture</dd></div>
+    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>Air implemented; space specified</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+  </dl>
 </div>
 
 <div class="wrap doc">
@@ -93,18 +103,19 @@
   <section id="roles">
     <h2>1 · ASTM F3269 roles → Guará components</h2>
     <p>
-      F3269 is the standard written to bound unassured functions — AI and ML explicitly included.
-      Guará implements its roles as separate processes so that the trusted part stays small enough
-      to reason about.
+      ASTM F3269 is the practice defined for bounding unassured functions, artificial intelligence
+      and machine learning included. Guará realises its roles as separate processes so that the
+      assured portion remains small enough to review.
     </p>
     <div class="note limit">
-      <span class="tag">Honest caveat</span>
+      <span class="tag">Caveat</span>
       <p>
         The ASTM F3269 text is not available to this project. The mapping below uses the published
         component names and is marked <strong>[REVIEW]</strong> until someone checks it against
         the licensed standard — that review is <a href="contribute.html#asks">an open ask</a>.
       </p>
     </div>
+    <p class="tbl-cap">ASTM F3269 roles and their realisation in Guará. Marked [REVIEW] pending check against the licensed standard.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>F3269 role</th><th>Guará realisation</th><th>Package</th></tr></thead>
@@ -125,14 +136,14 @@
               <td>Age and validity checks on every input; the gateway that blocks the CF outside state <code>CF</code></td>
               <td><code>guara_rta</code></td></tr>
           <tr><td><strong>Final layer</strong></td>
-              <td>PX4 internal failsafes and geofence, deliberately left enabled</td>
+              <td>PX4 internal failsafes and geofence, left enabled</td>
               <td>PX4</td></tr>
         </tbody>
       </table>
     </div>
     <p class="small muted">
-      That last row matters more than it looks. Guará is not the last line of defence and does not
-      try to be: PX4&rsquo;s own failsafes stay on underneath it, and Guará never defers one.
+      The final row is significant. Guará is not the last line of defence and is not designed to
+      be: the platform failsafes remain enabled beneath it, and Guará never defers one.
     </p>
   </section>
 
@@ -159,7 +170,7 @@
       That asymmetry is a design obligation, not an accident.
     </p>
 
-    <h3>The obligation that makes the rule mean something</h3>
+    <h3>2.2 · Design obligation O-1</h3>
     <div class="eq">
 <span class="c">O-1</span>   τ_gf  ≥ δ_lat
       τ_daa ≥ τ_rec,daa + δ_lat
@@ -172,7 +183,7 @@
       <a href="evidence.html">δ_lat is measured at 61 ms</a> against τ_gf = 1000 ms.
     </p>
 
-    <h3>Why the core is a plain struct-in, struct-out function</h3>
+    <h3>2.3 · Properties of the core</h3>
     <p>
       No ROS, no allocation after construction, and a bounded number of operations per tick — the
       only loop iterates a fixed-capacity history of switch instants. Those three properties are
@@ -213,15 +224,14 @@ public:
 };</code></pre>
 
     <p>
-      Note <code>cf_intent_unsafe</code>. It is the subtlest field in the struct and the one that
-      matters most against a model: a planner that has just been cut off may immediately re-propose
+      <code>cf_intent_unsafe</code> is the field that bears on an adversarial complex function: one that has just been cut off may immediately re-propose
       the same unsafe motion. The shadow check runs the geofence predictor on the velocity the CF
       is <em>proposing</em>, and withholds the return until the planner&rsquo;s own intent is clear.
-      It is deliberately never sufficient on its own to leave <code>CF</code>, because inside
-      <code>CF</code> the gateway is already filtering.
+      It is never sufficient on its own to leave <code>CF</code>, because inside <code>CF</code>
+      the gateway already filters the setpoint.
     </p>
 
-    <h3>Parameters, and what they are honest about</h3>
+    <h3>2.4 · Parameters and their status</h3>
     <div class="code-head"><span>guara_rta::Parameters — defaults</span><button class="copy" data-label="copy" type="button">copy</button></div>
 <pre><code class="language-cpp">struct Parameters
 {
@@ -317,7 +327,7 @@ public:
         <p class="small muted" style="margin:0">
           A planner that trips the boundary three times in two minutes is not having bad luck. After
           <code>N_max</code> switches in the window <code>W</code>, the recovery latches and the
-          planner does not get the aircraft back. The switch history deliberately survives
+          planner does not get the aircraft back. The switch history survives
           deactivation, so toggling modes cannot reset the budget.
         </p>
       </div>
@@ -341,6 +351,7 @@ public:
       actually contained, and every row below has a test that fails without it.
     </p>
 
+    <p class="tbl-cap">Gateway enforcement against an unassured complex function, with the test exercising each case.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Threat from an untrusted planner</th><th>Enforcement</th><th>Test</th></tr></thead>
@@ -364,16 +375,16 @@ public:
               <td>Enabled channels fail closed; undeclared omissions refused at startup</td>
               <td><code>test_channel_gating.cpp</code></td></tr>
           <tr><td>Structurally malformed or extreme input</td>
-              <td>Property test against a deliberately adversarial CF</td>
+              <td>Property test against an adversarial complex function</td>
               <td><code>test_gateway_fuzz.cpp</code></td></tr>
         </tbody>
       </table>
     </div>
 
     <p style="margin-top:1.2rem">
-      Freshness being measured <strong>on the receiver&rsquo;s clock</strong> rather than from the
-      sender&rsquo;s stamp is the detail people get wrong. A compromised or confused planner
-      controls its own timestamps; it does not control when packets arrive.
+      Freshness is measured <strong>on the receiver&rsquo;s clock</strong> rather than from the
+      sender&rsquo;s stamp. A compromised or malfunctioning complex function controls its own
+      timestamps; it does not control when packets arrive.
     </p>
 
     <div class="note limit">
@@ -396,6 +407,7 @@ public:
       safety profile refuses to start with an omission that was not declared.
     </p>
 
+    <p class="tbl-cap">Safety-evidence channels, their signals, their producers and their domains.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Channel</th><th>Signal</th><th>Produced by</th><th>Domain</th></tr></thead>
@@ -433,7 +445,8 @@ float64 processing_s    # verdict latency, stage L2 of the budget</code></pre>
     <p class="small muted">
       <code>inputs_complete</code> is what stops a monitor from being quietly useless at startup: a
       monitor that has not yet observed every one of its inputs reports <code>violated = false</code>
-      <em>and</em> says so, so the Input Manager can tell "no violation" apart from "no opinion yet".
+      <em>and</em> reports the distinction, so the Input Manager can separate &ldquo;no violation&rdquo;
+      from &ldquo;no opinion yet&rdquo;.
     </p>
   </section>
 
@@ -461,8 +474,7 @@ float64 processing_s    # verdict latency, stage L2 of the budget</code></pre>
       <p>
         L2 is zero because the <code>latency_hold</code> scenario <em>injects</em> the monitor
         verdict, so no Copilot evaluation happens on that path. <code>δ_lat</code> is therefore
-        <strong>optimistic by construction</strong>, and the project says so rather than letting
-        the number travel alone. L1 is excluded because the PX4 and ROS clocks differ by seconds
+        <strong>optimistic by construction</strong>, and the project records the qualification alongside the value. L1 is excluded because the PX4 and ROS clocks differ by seconds
         on this SIH/uXRCE setup — a criterion (AC-19) gates any cross-process number until
         alignment is under 10 ms.
       </p>
@@ -484,8 +496,7 @@ float64 l2_s                # last monitor processing_s
 float64 l3_s                # arbiter ROS recv - verdict stamp</code></pre>
     <p class="small muted">
       Both a steady-clock and a ROS-clock instant are recorded for the same event. That redundancy
-      is what surfaced the 4.9 s clock misalignment instead of hiding it inside a plausible-looking
-      total. <a href="evidence.html#latency">The full batch and how to re-run it →</a>
+      surfaced the 4.9 s clock misalignment rather than absorbing it into a plausible total. <a href="evidence.html#latency">The full batch and how to re-run it →</a>
     </p>
   </section>
 
@@ -497,6 +508,7 @@ float64 l3_s                # arbiter ROS recv - verdict stamp</code></pre>
       writing a complex function, you need exactly one of them.
     </p>
 
+    <p class="tbl-cap">The five message contracts forming the public interface of Guará.</p>
     <div class="table-scroll" style="margin-bottom:1.4rem">
       <table>
         <thead><tr><th>Type</th><th>Direction</th><th>Purpose</th></tr></thead>
@@ -632,7 +644,8 @@ TOL_S = 0.05  # AC-47 tolerance; documented here so tests and callers share it.<
     </p>
     <p class="small" style="margin:0">
       <a href="index.html">Overview</a> · <a href="integrate.html">Integrate</a> ·
-      <a href="evidence.html">Evidence</a> · <a href="contribute.html">Contribute</a>
+      <a href="evidence.html">Evidence</a> ·
+      <a href="nomenclature.html">Nomenclature</a> · <a href="contribute.html">Contribute</a>
     </p>
   </div>
 </footer>

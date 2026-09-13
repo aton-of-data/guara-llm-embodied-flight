@@ -9,6 +9,7 @@
 <link rel="icon" href="assets/guara-mascot.png">
 <link rel="stylesheet" href="assets/style.css">
 <style>
+  :root { --figpfx: "E-"; }
   .page-head { padding-block: 3.2rem 1rem; }
   .obars { display: grid; gap: .55rem; margin: 1.5rem 0; }
   .obar { display: grid; grid-template-columns: 8.5rem 1fr 5.5rem; gap: .8rem; align-items: center; font-size: .88rem; }
@@ -39,6 +40,7 @@
       <a href="architecture.html">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html" aria-current="page">Evidence</a>
+      <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
@@ -50,11 +52,19 @@
   <p class="eyebrow">Evidence</p>
   <h1>What has actually been measured</h1>
   <p class="lede">
-    No number without a run. Performance figures come only from <code>results/</code> via an
-    aggregation script, the reviewable part of each run is published verbatim, and a milestone is
-    not complete without an executed command and its output. This page is the short version; every
-    row links to the directory it came from.
+    Performance figures are obtained only from <code>results/</code> via the aggregation script;
+    the reviewable portion of each run is published verbatim; and no milestone is recorded complete
+    without an executed command and an excerpt of its output. This page summarises that record.
+    Each quantity cites the run directory that produced it.
   </p>
+  <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-03</dd></div>
+    <div><dt>Title</dt><dd>Evidence and limits</dd></div>
+    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>35 AC PASS · 2 in progress · 18 planned</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+  </dl>
 </div>
 
 <div class="wrap doc">
@@ -121,6 +131,7 @@
       the geofence one is a factor of 16, the DAA one a factor of 17.
     </p>
 
+    <p class="tbl-cap">Latency batch results over 30 runs, seeds 1–30. Stage L1 is excluded; see §1.2.</p>
     <div class="table-scroll" style="margin-top:1.4rem">
       <table>
         <thead><tr><th>Quantity</th><th>n</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
@@ -138,9 +149,9 @@
       </table>
     </div>
 
-    <h3 style="margin-top:1.8rem">Three things this number is not</h3>
+    <h3 style="margin-top:1.8rem">1.2 · Qualifications</h3>
     <div class="note limit">
-      <span class="tag">Read before citing</span>
+      <span class="tag">Qualifications on δ_lat</span>
       <p>
         <strong>1. It is optimistic by construction.</strong> The <code>latency_hold</code> scenario
         injects the monitor verdict, so stage L2 — Copilot processing — is zero on this path. A real
@@ -162,10 +173,11 @@
 
   <!-- ============ PAIR ============ -->
   <section id="pair">
-    <h2>2 · The boundary doing something</h2>
+    <h2>2 · Effect of the boundary</h2>
     <p>
-      A latency number proves the switch is fast. It does not prove the switch matters. The paired
-      run does: the same plan, the same seed, the arbiter enabled and then disabled.
+      A latency measurement establishes that the switch is fast. It does not establish that the
+      switch changes the outcome. The paired run does: the same plan, the same seed, the arbiter
+      enabled and then disabled.
     </p>
 
     <figure>
@@ -182,12 +194,13 @@
     <p>
       The version of this pair that matters most for the LLM thread is
       <code>llm_survey_outside</code>: a survey plan produced through the full
-      utterance → model → intent → compiler chain, deliberately aimed outside the fence, flown as
+      utterance → model → intent → compiler chain, aimed outside the fence, flown as
       the complex function. The plan executor does not re-check the compiler&rsquo;s static
       constraints — in flight the RTA is the independent layer, and a fixture plan that aims outside
       the fence is a legitimate test of exactly that.
     </p>
 
+    <p class="tbl-cap">Published run directories and the behaviour each demonstrates.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Published run</th><th>What it demonstrates</th></tr></thead>
@@ -208,7 +221,7 @@
     <p class="small muted">
       All of the above are under
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/tree/main/docs/evidence"><code>docs/evidence/</code></a>,
-      published verbatim from <code>results/</code>. They are deliberately exempt from the
+      published verbatim from <code>results/</code>. They are exempt from the
       repository&rsquo;s own header checks, because editing a run artefact would break the contract
       that an evidence directory is a copy of what a run produced.
     </p>
@@ -216,7 +229,7 @@
 
   <!-- ============ RERUN ============ -->
   <section id="rerun">
-    <h2>3 · Re-derive every number yourself</h2>
+    <h2>3 · Re-derivation</h2>
     <p>
       Every run writes <code>results/{run_id}/</code> containing the scenario hash, the seed, the
       Guará SHA, the PX4 build commit, the pinned third-party commits, and the PX4 parameters
@@ -247,8 +260,8 @@ python3 scripts/check_spdx.py                  # every tracked source file carri
 python3 scripts/check_links.py                 # every relative document link resolves</code></pre>
 
     <p class="small muted">
-      The SITL scenarios, the latency batch and the monitor generation are deliberately
-      <em>outside</em> continuous integration: they build PX4 from source, and their results belong
+      The SITL scenarios, the latency batch and the monitor generation are excluded from
+      continuous integration: they build PX4 from source, and their results belong
       in a run directory with a recorded seed and commit, not in a job log. Nothing CI produces is
       a number that may be cited.
     </p>
@@ -291,7 +304,7 @@ python3 scripts/check_links.py                 # every relative document link re
 
   <!-- ============ REVIEW ============ -->
   <section id="review">
-    <h2>5 · The review that failed, and what happened next</h2>
+    <h2>5 · Internal review and remediation</h2>
     <div class="note limit">
       <span class="tag">2026-09-11 internal review of M1–M5</span>
       <p>
@@ -302,9 +315,9 @@ python3 scripts/check_links.py                 # every relative document link re
       </p>
     </div>
     <p>
-      This is on the project&rsquo;s own site for a reason. A safety-assurance repository whose
-      evidence tracker has never caught itself being wrong is either very young or not being
-      checked. The findings, the fixes and the exact re-run commands are published:
+      The finding is recorded here because an evidence tracker that has never detected its own
+      error provides no assurance that it would. The findings, the corrections and the re-run
+      commands are published in full:
     </p>
     <ul class="clean">
       <li><code>docs/reviews/2026-09-11-m1-m5-review.md</code> — what was found</li>
@@ -312,15 +325,15 @@ python3 scripts/check_links.py                 # every relative document link re
       <li>A separate public-readiness review, with its own findings</li>
     </ul>
     <p>
-      The structural fix is the one worth copying: the <code>cf_intent_unsafe</code> shadow check
-      and several <code>RtaState</code> counters exist <em>because</em> of that review, and the
-      message file says so in a comment dated to it.
+      The remediation was structural rather than clerical: the <code>cf_intent_unsafe</code> shadow
+      check and several <code>RtaState</code> counters were introduced as a result of the review,
+      and the message definition records that origin in a dated comment.
     </p>
   </section>
 
   <!-- ============ FAILURE MODES ============ -->
   <section id="failures">
-    <h2>6 · Failure modes that are known and not fixed</h2>
+    <h2>6 · Known failure modes</h2>
     <p>
       These are catalogued in the SPEC with identifiers, so they can be cited, tested against and
       argued with. The ones below are the load-bearing ones.
@@ -354,6 +367,7 @@ python3 scripts/check_links.py                 # every relative document link re
     </div>
 
     <h3 style="margin-top:1.8rem">Blocking risks</h3>
+    <p class="tbl-cap">Blocking risks and the work each prevents.</p>
     <div class="table-scroll">
       <table>
         <thead><tr><th>Risk</th><th>What it blocks</th></tr></thead>
@@ -414,7 +428,8 @@ python3 scripts/check_links.py                 # every relative document link re
     </p>
     <p class="small" style="margin:0">
       <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
-      <a href="integrate.html">Integrate</a> · <a href="contribute.html">Contribute</a>
+      <a href="integrate.html">Integrate</a> ·
+      <a href="nomenclature.html">Nomenclature</a> · <a href="contribute.html">Contribute</a>
     </p>
   </div>
 </footer>

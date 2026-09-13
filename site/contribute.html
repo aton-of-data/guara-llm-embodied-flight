@@ -9,6 +9,7 @@
 <link rel="icon" href="assets/guara-mascot.png">
 <link rel="stylesheet" href="assets/style.css">
 <style>
+  :root { --figpfx: "C-"; }
   .page-head { padding-block: 3.2rem 1rem; }
   .gap-card { display: flex; flex-direction: column; height: 100%; border-top: 2px solid var(--accent); }
   .gap-card .meta { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .7rem; }
@@ -38,6 +39,7 @@
       <a href="architecture.html">Architecture</a>
       <a href="integrate.html">Integrate</a>
       <a href="evidence.html">Evidence</a>
+      <a href="nomenclature.html">Nomenclature</a>
       <a href="contribute.html" aria-current="page">Contribute</a>
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
       <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
@@ -47,25 +49,32 @@
 
 <div class="wrap page-head">
   <p class="eyebrow">Get involved</p>
-  <h1>The gaps are named, and they are specific</h1>
+  <h1>Contribution and support</h1>
   <p class="lede">
-    Guará is one person&rsquo;s research prototype with an unusually strict evidence discipline.
-    That discipline is why the open problems below can be stated precisely instead of vaguely — and
-    why a contribution that closes one is worth something concrete rather than being absorbed into
-    a backlog.
+    Guará is a single-author research prototype operating under a strict evidence discipline.
+    That discipline is what allows the open work items below to be stated as specific, bounded
+    problems, each tied to a numbered risk or research question, rather than as a general backlog.
   </p>
   <div class="btn-row">
-    <a class="btn btn-primary" href="#asks">See the open gaps</a>
-    <a class="btn" href="#rules">Read the five rules first</a>
+    <a class="btn btn-primary" href="#asks">Open work items</a>
+    <a class="btn" href="#rules">Review criteria</a>
     <a class="btn" href="#fund">Fund the work</a>
   </div>
+  <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-05</dd></div>
+    <div><dt>Title</dt><dd>Contribution and support</dd></div>
+    <div><dt>Describes commit</dt><dd>75f5760</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>Open to contribution</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+  </dl>
 </div>
 
 <div class="wrap doc">
   <aside class="toc">
     <h4>On this page</h4>
-    <a href="#asks">The open gaps</a>
-    <a href="#rules">Five rules</a>
+    <a href="#asks">1 Open work items</a>
+    <a href="#rules">2 Review criteria</a>
     <a href="#challenge">Challenge a claim</a>
     <a href="#start">Getting set up</a>
     <a href="#fund">Funding</a>
@@ -77,10 +86,10 @@
 
   <!-- ============ ASKS ============ -->
   <section id="asks">
-    <h2>1 · The open gaps</h2>
+    <h2>1 · Open work items</h2>
     <p>
-      Each of these blocks a named risk or research question. None is a placeholder issue, and none
-      is padding — if you finish one, a claim on this site changes.
+      Each item blocks a numbered risk or research question. Completion of any one of them changes
+      a claim made elsewhere in this documentation set.
     </p>
 
     <div class="grid g2" style="margin-top:1.8rem">
@@ -123,7 +132,7 @@
         <p>
           An SROS2 profile for the complex-function and FMU topics. Until it exists, any node on the
           DDS domain can publish setpoints, and that is stated as an accepted limitation of this
-          phase rather than pretended away.
+          phase rather than omitted.
         </p>
         <div class="need"><b>You need:</b> SROS2, DDS security, ROS 2 Humble.</div>
       </div>
@@ -175,7 +184,7 @@
     <div class="note" style="margin-top:1.8rem">
       <span class="tag">Also always useful</span>
       <p>
-        An honest report from a setup that is <em>not</em> the author&rsquo;s: a different airframe, a
+        A report from a setup that is <em>not</em> the author&rsquo;s: a different airframe, a
         different distro, a different model behind the intent compiler. The evaluation harness ships
         a <code>mock</code> provider that needs no key and no network, so reproducing the pipeline
         costs you nothing but time.
@@ -185,10 +194,10 @@
 
   <!-- ============ RULES ============ -->
   <section id="rules">
-    <h2>2 · The five rules a reviewer will block on</h2>
+    <h2>2 · Mandatory review criteria</h2>
     <p>
-      These are not style preferences. Everything else — formatting, naming, structure — is
-      negotiable in review; these are not.
+      These five are conditions of acceptance rather than style preferences. Formatting, naming and
+      structure are negotiable in review; these are not.
     </p>
 
     <div class="panel">
@@ -318,7 +327,7 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
 ./scripts/sitl_run.sh --scenario hover --seed 42 --headless</code></pre>
 
     <p class="small muted">
-      The formal-methods image is deliberately <strong>not</strong> published: it embeds FRET, which
+      The formal-methods image is <strong>not</strong> published: it embeds FRET, which
       is under the NASA Open Source Agreement, and distributing a container that embeds NOSA code
       needs a legal review that is tracked as an open risk. Build it locally with
       <code>./scripts/fm.sh</code>.
@@ -348,7 +357,7 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
         <span class="amt">Hardware</span>
         <h3>A reference airframe and a flight campaign</h3>
         <p class="small muted" style="margin:0">
-          SITL does not transfer, and the project says so on every page. A first real flight
+          SITL does not transfer, and this is stated on every page. A first real flight
           campaign — with an airframe, a site, insurance and a licensed pilot — is what turns
           &ldquo;measured in simulation&rdquo; into evidence.
         </p>
@@ -374,12 +383,11 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
     </div>
 
     <div class="note ok" style="margin-top:1.8rem">
-      <span class="tag">What a sponsor gets, stated plainly</span>
+      <span class="tag">Terms</span>
       <p>
-        Nothing is sold, nothing is gated, and no feature is held back for funders — it is
-        Apache-2.0 and it stays that way. What funding buys is <em>rate</em>: the measurements happen
-        sooner, on better hardware, reviewed by more people. If that is not worth it to you, the
-        code is free either way.
+        No component is sold, gated, or withheld from the public tree for funders; the licence is
+        Apache-2.0 and remains so. Funding affects rate rather than access: measurements are made
+        sooner, on better hardware, and reviewed by more people.
       </p>
     </div>
 
@@ -394,7 +402,7 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
   <section id="scope">
     <h2>6 · Scope and conduct</h2>
     <div class="note limit">
-      <span class="tag">Not negotiable, regardless of framing</span>
+      <span class="tag">Exclusions — not subject to negotiation</span>
       <p>
         Civil flight safety only. Contributions implementing weapons or any payload intended to
         harm, target selection, tracking or identification of specific people for enforcement or
@@ -435,7 +443,8 @@ export GUARA_IMAGE=ghcr.io/aton-of-data/guara-dev:m1
     </p>
     <p class="small" style="margin:0">
       <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
-      <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a>
+      <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a> ·
+      <a href="nomenclature.html">Nomenclature</a>
     </p>
   </div>
 </footer>
