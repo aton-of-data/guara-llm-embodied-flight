@@ -23,6 +23,12 @@ int main(void)
   guara_params_default(&p);
   CHECK(guara_core_init(buf, sizeof buf, &p) == GUARA_OK);
 
+  unsigned char gwbuf[1024];
+  guara_gateway_limits lim;
+  guara_gateway_limits_default(&lim);
+  CHECK(guara_gateway_init(gwbuf, sizeof gwbuf, &lim) == GUARA_OK);
+  CHECK(guara_gateway_on_core_state(gwbuf, 1, 0.0) == GUARA_OK);
+
   guara_inputs in;
   memset(&in, 0, sizeof in);
   in.in_charge = 1;
@@ -36,6 +42,12 @@ int main(void)
     in.t_s = (double)k * 0.05;
     in.t_gf_s = (k % 17 == 0) ? 0.1 : INFINITY;
     CHECK(guara_core_step(buf, &in, &out) == GUARA_OK);
+    {
+      const float v[3] = {1.0F, 0.0F, 0.0F};
+      CHECK(guara_gateway_on_cf_setpoint(gwbuf, in.t_s, in.t_s, v, 0.0F) == GUARA_OK);
+      guara_gateway_output gout;
+      CHECK(guara_gateway_compute(gwbuf, in.t_s, &gout) == GUARA_OK);
+    }
     if (k % 1000 == 0) {
       CHECK(guara_core_latch_on_actuation_failure(buf, in.t_s, &out) == GUARA_OK);
     }

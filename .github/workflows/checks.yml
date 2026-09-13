@@ -51,6 +51,7 @@ jobs:
           guara params check config/rta_params.yaml config/rta_params_flight.yaml
           guara ctk run --port python --report /tmp/guara-ctk-report
           python3 scripts/check_ac.py AC-66 /tmp/guara-ctk-report
+          guara ctk run --port python --vectors core/conformance/vectors/adr0010_gateway.json
           ./scripts/ctk_mutation.sh
 
   core:

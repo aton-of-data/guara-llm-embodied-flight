@@ -32,6 +32,19 @@ def test_python_port_passes_spec_s3_vectors():
     assert "nothing about the safety of the system that contains it" in r.stdout
 
 
+def test_python_port_passes_adr0010_gateway_vectors():
+    vectors = ROOT / "core/conformance/vectors/adr0010_gateway.json"
+    n = len(json.loads(vectors.read_text()))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(vectors)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert "adr0010_gateway.json" in r.stdout
+
+
 def test_a_t4_mutation_is_rejected_by_the_kit():
     r = subprocess.run(
         ["bash", str(ROOT / "scripts/ctk_mutation.sh")],

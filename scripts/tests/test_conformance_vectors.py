@@ -32,3 +32,17 @@ def test_conformance_readme_states_necessary_not_sufficient():
     text = (ROOT / "core/conformance/README.md").read_text(encoding="utf-8")
     assert "necessary and not sufficient" in text
     assert "C ABI" in text
+
+
+def test_adr0010_vectors_cover_trusted_time_envelope_and_shadow():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/adr0010_gateway.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "future_stamp_rejected" in ids
+    assert "age_from_reception" in ids
+    assert "velocity_clamped" in ids
+    assert "non_finite_rejected" in ids
+    assert "shadow_guard_blocks" in ids
+    tags = {tag for v in data for tag in v.get("adr", [])}
+    assert tags == {"0010-1", "0010-2", "0010-3"}

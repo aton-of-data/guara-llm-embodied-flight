@@ -28,7 +28,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.1.0-provisional"
+#define GUARA_ABI_VERSION "0.2.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -95,6 +95,40 @@ GUARA_API int guara_core_init(void * storage, size_t n, const guara_params * par
 GUARA_API int guara_core_step(void * storage, const guara_inputs * in, guara_output * out);
 GUARA_API int guara_core_latch_on_actuation_failure(void * storage, double t_s, guara_output * out);
 GUARA_API int guara_core_param_digest(void * storage, uint8_t out[GUARA_PARAM_DIGEST_LEN]);
+
+#define GUARA_GATEWAY_GUARD_OFF 0
+#define GUARA_GATEWAY_GUARD_ALLOW 1
+#define GUARA_GATEWAY_GUARD_DENY 2
+
+typedef struct guara_gateway_limits {
+  double max_speed_h_m_s;
+  double max_climb_rate_m_s;
+  double max_descent_rate_m_s;
+  double max_yaw_rate_rad_s;
+  double future_stamp_tolerance_s;
+  double cf_timeout_s;
+} guara_gateway_limits;
+
+typedef struct guara_gateway_output {
+  float velocity_ned_m_s[3];
+  float yaw_ned_rad;
+  uint8_t forwarding_cf;
+  uint32_t rejected_non_finite;
+  uint32_t rejected_implausible_stamp;
+  uint32_t rejected_yaw;
+  uint32_t rejected_by_guard;
+  uint32_t clamped;
+} guara_gateway_output;
+
+GUARA_API size_t guara_gateway_storage_size(void);
+GUARA_API size_t guara_gateway_storage_align(void);
+GUARA_API void guara_gateway_limits_default(guara_gateway_limits * limits);
+GUARA_API int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * limits);
+GUARA_API int guara_gateway_set_guard(void * storage, uint8_t mode);
+GUARA_API int guara_gateway_on_core_state(void * storage, uint8_t state, double t_s);
+GUARA_API int guara_gateway_on_cf_setpoint(void * storage, double t_recv_s, double stamp_s,
+  const float velocity_ned_m_s[3], float yaw_ned_rad);
+GUARA_API int guara_gateway_compute(void * storage, double t_s, guara_gateway_output * out);
 
 #ifdef __cplusplus
 }

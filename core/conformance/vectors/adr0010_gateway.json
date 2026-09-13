@@ -1,0 +1,105 @@
+[
+  {
+    "id": "future_stamp_rejected",
+    "adr": ["0010-1"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 101.0, "v": [1.0, 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 0, "rejected_stamp": 1}},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [1.0, 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.2, "expect": {"forwarding_cf": 1, "vx": 1.0}},
+      {"op": "compute", "t_s": 1.6, "expect": {"forwarding_cf": 0, "vx": 0.0}}
+    ]
+  },
+  {
+    "id": "age_from_reception",
+    "adr": ["0010-1"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 0.9, "v": [2.0, 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.4, "expect": {"forwarding_cf": 1}},
+      {"op": "compute", "t_s": 1.55, "expect": {"forwarding_cf": 0}}
+    ]
+  },
+  {
+    "id": "stale_on_arrival",
+    "adr": ["0010-1"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 0.4, "v": [2.0, 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 0, "rejected_stamp": 1}}
+    ]
+  },
+  {
+    "id": "setpoint_before_entry_discarded",
+    "adr": ["0010-1"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 2, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [2.0, 0.0, 0.0], "yaw": null},
+      {"op": "state", "state": 1, "t_s": 1.1},
+      {"op": "compute", "t_s": 1.2, "expect": {"forwarding_cf": 0}}
+    ]
+  },
+  {
+    "id": "velocity_clamped",
+    "adr": ["0010-2"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [30.0, 40.0, -20.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 1, "speed_h": 5.0, "vz": -3.0, "clamped": 1}},
+      {"op": "setpoint", "t_recv_s": 2.0, "stamp_s": 2.0, "v": [0.0, 0.0, 9.0], "yaw": null},
+      {"op": "compute", "t_s": 2.0, "expect": {"forwarding_cf": 1, "vz": 2.0, "clamped": 2}}
+    ]
+  },
+  {
+    "id": "non_finite_rejected",
+    "adr": ["0010-2"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": ["nan", 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 0, "rejected_non_finite": 1}},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [0.0, "inf", 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 0, "rejected_non_finite": 2}}
+    ]
+  },
+  {
+    "id": "yaw_rate_limited",
+    "adr": ["0010-2"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [0.0, 0.0, 0.0], "yaw": 0.0},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 1, "yaw": 0.0}},
+      {"op": "setpoint", "t_recv_s": 1.1, "stamp_s": 1.1, "v": [0.0, 0.0, 0.0], "yaw": 3.0},
+      {"op": "compute", "t_s": 1.1, "expect": {"forwarding_cf": 1, "yaw": 0.1}},
+      {"op": "compute", "t_s": 1.6, "expect": {"forwarding_cf": 1, "yaw": 0.6}}
+    ]
+  },
+  {
+    "id": "yaw_out_of_range_uncontrolled",
+    "adr": ["0010-2"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [1.0, 0.0, 0.0], "yaw": 40.0},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 1, "yaw": null, "rejected_yaw": 1}}
+    ]
+  },
+  {
+    "id": "shadow_guard_blocks",
+    "adr": ["0010-3"],
+    "timeout_s": 0.5,
+    "steps": [
+      {"op": "guard", "mode": 2},
+      {"op": "state", "state": 1, "t_s": 0.0},
+      {"op": "setpoint", "t_recv_s": 1.0, "stamp_s": 1.0, "v": [4.0, 0.0, 0.0], "yaw": null},
+      {"op": "compute", "t_s": 1.0, "expect": {"forwarding_cf": 0, "vx": 0.0, "rejected_guard": 1}}
+    ]
+  }
+]

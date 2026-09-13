@@ -42,6 +42,7 @@ add_library(guara_core
   src/decision_core.cpp
   src/param_digest.cpp
   src/abi.cpp
+  src/gateway_abi.cpp
 )
 add_library(guara::core ALIAS guara_core)
 target_include_directories(guara_core
@@ -77,6 +78,12 @@ if(GUARA_CORE_STANDALONE)
   target_compile_definitions(test_conformance PRIVATE
     "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
   add_test(NAME conformance_spec_s3 COMMAND test_conformance)
+
+  add_executable(test_gateway_vectors test/test_gateway_vectors.c)
+  target_link_libraries(test_gateway_vectors PRIVATE guara_core)
+  target_compile_definitions(test_gateway_vectors PRIVATE
+    "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
+  add_test(NAME conformance_adr0010_gateway COMMAND test_gateway_vectors)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE)
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)
