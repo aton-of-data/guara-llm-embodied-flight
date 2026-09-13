@@ -26,6 +26,19 @@ repos=(
 for entry in "${repos[@]}"; do
   IFS='|' read -r name remote ref commit <<<"${entry}"
   dir="${dest}/${name}"
+  if [[ "${GUARA_OFFLINE:-}" == "1" ]]; then
+    if [[ ! -d "${dir}/.git" ]]; then
+      echo "FAIL ${name}: missing (GUARA_OFFLINE=1; clone is not cached)" >&2
+      exit 1
+    fi
+    head="$(git -C "${dir}" rev-parse HEAD)"
+    if [[ "${head}" != "${commit}" ]]; then
+      echo "FAIL ${name}: ${head} != ${commit} (GUARA_OFFLINE=1; will not fetch)" >&2
+      exit 1
+    fi
+    echo "ok ${name} ${head}"
+    continue
+  fi
   if [[ ! -d "${dir}/.git" ]]; then
     git -c advice.detachedHead=false clone --quiet --depth 1 --branch "${ref}" "${remote}" "${dir}"
   fi

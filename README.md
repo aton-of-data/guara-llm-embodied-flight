@@ -357,6 +357,7 @@ generation only).
 
 ```bash
 ./scripts/fetch_third_party.sh            # pinned shallow clones (once)
+# Cached clones and image: GUARA_OFFLINE=1 ./scripts/dev.sh colcon test --packages-select guara_rta
 
 ./scripts/dev.sh colcon build --symlink-install
 ./scripts/dev.sh colcon test --packages-select guara_rta guara_geofence guara_monitors
