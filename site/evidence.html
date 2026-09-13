@@ -1,0 +1,424 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evidence and limits — Guará</title>
+<meta name="description" content="What Guará has actually measured, how to re-derive every number, the acceptance-criteria tracker, the failure modes, and the limits the project refuses to overclaim.">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .page-head { padding-block: 3.2rem 1rem; }
+  .obars { display: grid; gap: .55rem; margin: 1.5rem 0; }
+  .obar { display: grid; grid-template-columns: 8.5rem 1fr 5.5rem; gap: .8rem; align-items: center; font-size: .88rem; }
+  .obar .t { font-family: var(--mono); font-size: .8rem; color: var(--fg-muted); }
+  .obar .track { background: var(--bg-raise); border: 1px solid var(--line); border-radius: 4px; height: 1.5rem; position: relative; overflow: hidden; }
+  .obar .fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px 0 0 3px; }
+  .obar .n { font-family: var(--mono); font-size: .82rem; text-align: right; }
+  @media (max-width: 620px) { .obar { grid-template-columns: 6rem 1fr; } .obar .n { grid-column: 2; text-align: left; } }
+
+  .fm { display: grid; grid-template-columns: 5rem 1fr; gap: .8rem; padding: .8rem 0; border-bottom: 1px solid var(--line-soft); }
+  .fm:last-child { border-bottom: none; }
+  .fm .id { font-family: var(--mono); font-weight: 640; color: var(--unsafe); font-size: .85rem; }
+  .fm p { margin: 0; font-size: .92rem; }
+  @media (max-width: 560px) { .fm { grid-template-columns: 1fr; gap: .2rem; } }
+
+  .ac-summary { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-bottom: 1.5rem; }
+  .ac-summary > div { background: var(--bg-panel); padding: 1.1rem 1.2rem; }
+  @media (max-width: 620px) { .ac-summary { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html" aria-current="page">Evidence</a>
+      <a href="contribute.html">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap page-head">
+  <p class="eyebrow">Evidence</p>
+  <h1>What has actually been measured</h1>
+  <p class="lede">
+    No number without a run. Performance figures come only from <code>results/</code> via an
+    aggregation script, the reviewable part of each run is published verbatim, and a milestone is
+    not complete without an executed command and its output. This page is the short version; every
+    row links to the directory it came from.
+  </p>
+</div>
+
+<div class="wrap doc">
+  <aside class="toc">
+    <h4>On this page</h4>
+    <a href="#latency">The latency batch</a>
+    <a href="#pair">RTA on vs off</a>
+    <a href="#rerun">Re-derive it yourself</a>
+    <a href="#criteria">Acceptance criteria</a>
+    <a href="#review">The review that failed</a>
+    <a href="#failures">Failure modes</a>
+    <a href="#limits">Limits</a>
+  </aside>
+
+  <main class="doc-body">
+
+  <!-- ============ LATENCY ============ -->
+  <section id="latency">
+    <h2>1 · The latency batch</h2>
+    <p>
+      Thirty headless runs, seeds 1 through 30, on the current build, aggregated by
+      <code>scripts/aggregate.py</code>. This is the number the entire switching rule depends on:
+      if the trigger threshold is shorter than the time it takes to act, the threshold does nothing.
+    </p>
+
+    <figure>
+      <div class="plate">
+        <img src="assets/latency-distribution.svg"
+             alt="All thirty runs plotted on a millisecond axis, with p50 at 44.8 ms and p99 at 61.0 ms against a 1000 ms budget line">
+      </div>
+      <figcaption>
+        Every one of the 30 runs, plotted individually rather than summarised. Generated from the
+        published evidence by <code>scripts/plot_evidence.py</code>, which prints every number it
+        draws.
+      </figcaption>
+    </figure>
+
+    <h3>Obligation O-1, checked</h3>
+    <div class="obars">
+      <div class="obar">
+        <span class="t">δ_lat p99</span>
+        <span class="track"><span class="fill" style="width:6.1%; background:var(--accent)"></span></span>
+        <span class="n">0.061 s</span>
+      </div>
+      <div class="obar">
+        <span class="t">τ_gf budget</span>
+        <span class="track"><span class="fill" style="width:100%; background:color-mix(in srgb, var(--clear) 35%, transparent)"></span></span>
+        <span class="n">1.000 s</span>
+      </div>
+      <div class="obar">
+        <span class="t">τ_rec + δ_lat</span>
+        <span class="track"><span class="fill" style="width:6%; background:var(--accent)"></span></span>
+        <span class="n">1.799 s</span>
+      </div>
+      <div class="obar">
+        <span class="t">τ_daa budget</span>
+        <span class="track"><span class="fill" style="width:100%; background:color-mix(in srgb, var(--clear) 35%, transparent)"></span></span>
+        <span class="n">30.00 s</span>
+      </div>
+    </div>
+    <p class="small muted">
+      Both halves of O-1 hold with margin: <code>τ_gf = 1.0 s &gt; 0.061 s</code> and
+      <code>τ_daa = 30 s &gt; 1.738 + 0.061 s</code>. The two bar pairs are on different scales —
+      the geofence one is a factor of 16, the DAA one a factor of 17.
+    </p>
+
+    <div class="table-scroll" style="margin-top:1.4rem">
+      <table>
+        <thead><tr><th>Quantity</th><th>n</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>δ_lat</code></td><td>30</td><td>0.0448 s</td><td><strong>0.0610 s</strong></td>
+              <td>Unsafe sample → recovery mode effective (stages L0, L2–L6)</td></tr>
+          <tr><td><code>τ_rec</code></td><td>30</td><td>0.4420 s</td><td>1.7383 s</td>
+              <td>AUTO_LOITER entry until horizontal speed &lt; 0.5 m/s, from the ULog</td></tr>
+          <tr><td>L0</td><td>30</td><td>0.0000 s</td><td>0.0028 s</td><td>PX4 sample → PX4 publish</td></tr>
+          <tr><td>L3</td><td>30</td><td>0.0007 s</td><td>0.0013 s</td><td>Verdict stamp → arbiter reception</td></tr>
+          <tr><td>L4</td><td>30</td><td>0.0110 s</td><td>0.0249 s</td><td>Arbiter reception → decision tick</td></tr>
+          <tr><td>L5</td><td>30</td><td>0.0205 s</td><td>0.0314 s</td><td>Decision → command published</td></tr>
+          <tr><td>L6</td><td>30</td><td>0.0120 s</td><td>0.0120 s</td><td>Command → recovery mode effective</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="margin-top:1.8rem">Three things this number is not</h3>
+    <div class="note limit">
+      <span class="tag">Read before citing</span>
+      <p>
+        <strong>1. It is optimistic by construction.</strong> The <code>latency_hold</code> scenario
+        injects the monitor verdict, so stage L2 — Copilot processing — is zero on this path. A real
+        monitor evaluation is not free.
+      </p>
+      <p>
+        <strong>2. It excludes the transport.</strong> Stage L1, PX4 → ROS across the uXRCE-DDS
+        bridge, is recorded but excluded, because the PX4 and ROS clocks on this SIH setup differ by
+        a p99 of <strong>4.894 s</strong> against a 10 ms hypothesis. Criterion AC-19 gates any
+        cross-process number until that alignment is fixed. The project reports the misalignment
+        rather than quietly folding it into a plausible total.
+      </p>
+      <p>
+        <strong>3. It is SITL.</strong> It is a specific machine running software-in-the-loop. It is
+        not a claim about your companion computer, your link, or any real aircraft.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ PAIR ============ -->
+  <section id="pair">
+    <h2>2 · The boundary doing something</h2>
+    <p>
+      A latency number proves the switch is fast. It does not prove the switch matters. The paired
+      run does: the same plan, the same seed, the arbiter enabled and then disabled.
+    </p>
+
+    <figure>
+      <div class="plate">
+        <img src="assets/geofence-rta-pair.svg"
+             alt="Geofence breach depth: 0.000 metres with the RTA enabled, 47.178 metres with it disabled">
+      </div>
+      <figcaption>
+        Maximum geofence breach depth. With the arbiter enabled, 0.000 m. With it disabled,
+        47.178 m past the keep-in fence. This is the criterion AC-31 pair.
+      </figcaption>
+    </figure>
+
+    <p>
+      The version of this pair that matters most for the LLM thread is
+      <code>llm_survey_outside</code>: a survey plan produced through the full
+      utterance → model → intent → compiler chain, deliberately aimed outside the fence, flown as
+      the complex function. The plan executor does not re-check the compiler&rsquo;s static
+      constraints — in flight the RTA is the independent layer, and a fixture plan that aims outside
+      the fence is a legitimate test of exactly that.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Published run</th><th>What it demonstrates</th></tr></thead>
+        <tbody>
+          <tr><td><code>…_gf_straight_concave_s42_pair</code></td><td>The geofence pair above, with a constant-velocity CF</td></tr>
+          <tr><td><code>…_llm_survey_outside_s42_pair</code></td><td>The same pair with an LLM-compiled survey plan as the CF</td></tr>
+          <tr><td><code>…_kill_arbiter_in_cf_s42</code></td><td>The arbiter process killed while the planner has the aircraft</td></tr>
+          <tr><td><code>…_kill_arbiter_in_hold_s42</code></td><td>The arbiter killed while a recovery mode is active — the invisible-death case</td></tr>
+          <tr><td><code>…_hang_decision_thread_s42</code></td><td>The decision thread hung rather than killed</td></tr>
+          <tr><td><code>…_hang_ros_executor_s42</code></td><td>The ROS executor hung underneath a live decision core</td></tr>
+          <tr><td><code>…_stale_local_position_s42</code></td><td>Position input goes stale without going away</td></tr>
+          <tr><td><code>…_pilot_override_s42</code></td><td>The pilot takes the aircraft back mid-recovery</td></tr>
+          <tr><td><code>…_restart_arbiter_armed_s42</code></td><td>The arbiter restarted while the vehicle is armed</td></tr>
+          <tr><td><code>…_alt_ceiling_violation_s42</code></td><td>A Copilot monitor, not the geofence, triggering the switch</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">
+      All of the above are under
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/tree/main/docs/evidence"><code>docs/evidence/</code></a>,
+      published verbatim from <code>results/</code>. They are deliberately exempt from the
+      repository&rsquo;s own header checks, because editing a run artefact would break the contract
+      that an evidence directory is a copy of what a run produced.
+    </p>
+  </section>
+
+  <!-- ============ RERUN ============ -->
+  <section id="rerun">
+    <h2>3 · Re-derive every number yourself</h2>
+    <p>
+      Every run writes <code>results/{run_id}/</code> containing the scenario hash, the seed, the
+      Guará SHA, the PX4 build commit, the pinned third-party commits, and the PX4 parameters
+      <em>read back from the vehicle</em>. That last item is what separates a re-derivable number
+      from a reported one.
+    </p>
+
+    <div class="code-head"><span>reproduce the batch</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">./scripts/fetch_third_party.sh                 # pinned shallow clones, once
+./scripts/dev.sh colcon build --symlink-install
+
+./scripts/sitl_batch.sh --runs 30 --seed-start 1
+./scripts/dev.sh python3 scripts/aggregate.py results/batch_latency
+
+./scripts/sitl_pair.sh --scenario gf_straight_concave --seed 42</code></pre>
+
+    <div class="code-head"><span>check a number without running anything</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash"># results/ is git-ignored and empty in a fresh clone. Point the checkers at the
+# published evidence instead, and they will verify the numbers on this page.
+./scripts/dev.sh python3 scripts/check_ac.py AC-18 docs/evidence/batch_latency
+./scripts/dev.sh python3 scripts/check_run_contract.py docs/evidence/20260911T223448Z_hover_s42
+
+python3 scripts/plot_evidence.py               # regenerates both figures, printing every value</code></pre>
+
+    <div class="code-head"><span>verify the project's own boundaries</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">python3 scripts/check_license_isolation.py     # no NOSA-licensed code outside nosa/
+python3 scripts/check_spdx.py                  # every tracked source file carries a tag
+python3 scripts/check_links.py                 # every relative document link resolves</code></pre>
+
+    <p class="small muted">
+      The SITL scenarios, the latency batch and the monitor generation are deliberately
+      <em>outside</em> continuous integration: they build PX4 from source, and their results belong
+      in a run directory with a recorded seed and commit, not in a job log. Nothing CI produces is
+      a number that may be cited.
+    </p>
+  </section>
+
+  <!-- ============ CRITERIA ============ -->
+  <section id="criteria">
+    <h2>4 · Acceptance criteria</h2>
+    <p>
+      A criterion is PASS only with an executed command and an excerpt in its milestone report. The
+      tracker distinguishes three states, and &ldquo;planned&rdquo; means specified with no code —
+      a promise in the plan, not work in flight.
+    </p>
+
+    <div class="ac-summary">
+      <div class="stat clear">
+        <span class="v">35</span>
+        <span class="k">PASS — with an executed command and output</span>
+      </div>
+      <div class="stat accent">
+        <span class="v">2</span>
+        <span class="k">in progress — code exists, criterion not met</span>
+      </div>
+      <div class="stat">
+        <span class="v">18</span>
+        <span class="k">planned — specified, no code</span>
+      </div>
+    </div>
+
+    <p>
+      Of the 35 passing, <strong>14 are marked &ldquo;re-run 2026-09-11&rdquo;</strong>. That suffix
+      is not decoration; it is the residue of the review below.
+    </p>
+    <p class="small muted">
+      Full tracker:
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/milestones/STATUS.md"><code>docs/milestones/STATUS.md</code></a>,
+      covering AC-1…AC-50 across four threads.
+    </p>
+  </section>
+
+  <!-- ============ REVIEW ============ -->
+  <section id="review">
+    <h2>5 · The review that failed, and what happened next</h2>
+    <div class="note limit">
+      <span class="tag">2026-09-11 internal review of M1–M5</span>
+      <p>
+        The review invalidated <strong>one false PASS and eleven rows produced by a checker that had
+        silently stopped running</strong>. The latency batch that existed at the time was discarded
+        and re-measured from scratch on the corrected build — the 61 ms on this page is from the
+        re-measurement, not the original.
+      </p>
+    </div>
+    <p>
+      This is on the project&rsquo;s own site for a reason. A safety-assurance repository whose
+      evidence tracker has never caught itself being wrong is either very young or not being
+      checked. The findings, the fixes and the exact re-run commands are published:
+    </p>
+    <ul class="clean">
+      <li><code>docs/reviews/2026-09-11-m1-m5-review.md</code> — what was found</li>
+      <li><code>docs/reviews/2026-09-11-m1-m5-remediation.md</code> — the commands and their output</li>
+      <li>A separate public-readiness review, with its own findings</li>
+    </ul>
+    <p>
+      The structural fix is the one worth copying: the <code>cf_intent_unsafe</code> shadow check
+      and several <code>RtaState</code> counters exist <em>because</em> of that review, and the
+      message file says so in a comment dated to it.
+    </p>
+  </section>
+
+  <!-- ============ FAILURE MODES ============ -->
+  <section id="failures">
+    <h2>6 · Failure modes that are known and not fixed</h2>
+    <p>
+      These are catalogued in the SPEC with identifiers, so they can be cited, tested against and
+      argued with. The ones below are the load-bearing ones.
+    </p>
+
+    <div class="panel">
+      <div class="fm">
+        <span class="id">FM-1</span>
+        <p>Controller behaviour during the ~1.2 s detection window is <strong>[UNKNOWN]</strong> — stated as unknown rather than assumed benign.</p>
+      </div>
+      <div class="fm">
+        <span class="id">FM-2</span>
+        <p>With an internal recovery mode active, the arbiter&rsquo;s death is <strong>invisible to PX4</strong>. The vehicle keeps doing the safe thing, but nothing notices the watchdog has gone.</p>
+      </div>
+      <div class="fm">
+        <span class="id">FM-3</span>
+        <p>The arbiter <strong>cannot re-register in flight</strong>. A restart does not get you the boundary back until the next boot.</p>
+      </div>
+      <div class="fm">
+        <span class="id">FM-7</span>
+        <p>A recovery command not acknowledged within the retry budget latches the recovery. Handled — but it means actuation failure is a one-way door.</p>
+      </div>
+      <div class="fm">
+        <span class="id">FM-10</span>
+        <p>A wrong requirement is undetectable. Monitors check what was specified; a bad FRETish formalisation passes silently, forever.</p>
+      </div>
+      <div class="fm">
+        <span class="id">FM-12</span>
+        <p><strong>DDS is unauthenticated in this phase.</strong> A hostile node on the domain can publish setpoints. This is an accepted limitation, not a solved problem, and it is the first thing to fix before hardware.</p>
+      </div>
+    </div>
+
+    <h3 style="margin-top:1.8rem">Blocking risks</h3>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Risk</th><th>What it blocks</th></tr></thead>
+        <tbody>
+          <tr><td><strong>R-11</strong> · CopilotVerifier toolchain unavailable</td><td>The generated monitor C99 is trusted rather than proved — blocks research question RQ4</td></tr>
+          <tr><td><strong>R-5</strong> · DO-365B thresholds unsuited to small UAS</td><td>τ_daa rests on a threshold written for larger aircraft</td></tr>
+          <tr><td><strong>R-6</strong> · Hold as a DAA recovery</td><td>Stopping does not move you away from a converging intruder</td></tr>
+          <tr><td><strong>R-7</strong> · No traffic injection in SITL</td><td>The DAA path has never faced a real converging intruder in simulation</td></tr>
+          <tr><td><strong>R-8</strong> · The ASTM F3269 text is unavailable</td><td>The role mapping is marked [REVIEW] and unchecked against the standard</td></tr>
+          <tr><td><strong>RS-1</strong> · A safe mode with no heritage</td><td>The entire space recovery function — the risk a reviewer should attack first</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ LIMITS ============ -->
+  <section id="limits">
+    <h2>7 · Limits</h2>
+    <p class="lede">
+      This is not certification and it is not a product. It is a research prototype whose claims are
+      limited to what an executed command supports.
+    </p>
+
+    <ul class="clean">
+      <li><strong>It is not certification.</strong> No compliance with F3269, DO-365 or RBAC 100 is demonstrated anywhere in the repository.</li>
+      <li><strong>It does not guarantee collision avoidance.</strong> The v1 DAA recovery is Hold, and stopping does not move the vehicle away from a converging intruder. Guará guarantees only that the switch happens before the predicted loss time, under the measured O-1.</li>
+      <li><strong>It does not survive every one of its own failures.</strong> See FM-1, FM-2 and FM-3 above.</li>
+      <li><strong>It does not protect against spoofed inputs or hostile nodes.</strong> FM-12.</li>
+      <li><strong>It cannot detect a wrong requirement.</strong> FM-10.</li>
+      <li><strong>It runs outside the FMU</strong>, without the autopilot&rsquo;s real-time guarantees. Decision time is measured, not proven — there is no WCET analysis.</li>
+      <li><strong>SITL does not transfer.</strong> No result here is a claim about real flight.</li>
+      <li><strong>It does not make a language model correct.</strong> Guará bounds <em>physical</em> consequences covered by monitors. A mission-level mistake inside the safe envelope — the wrong field, the wrong dose, the wrong photograph — is not detected by anything in this repository.</li>
+    </ul>
+
+    <div class="note">
+      <span class="tag">If you cite this project</span>
+      <p>
+        There is no preprint yet; cite the repository and the commit, via
+        <code>CITATION.cff</code>. Every quantitative claim should cite the run directory under
+        <code>docs/evidence/</code> that produced it — not this page, and not the README.
+      </p>
+    </div>
+
+    <div class="btn-row">
+      <a class="btn btn-primary" href="contribute.html">Help close one of these gaps →</a>
+      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md">The full SPEC §7 and §9</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p class="small" style="margin:0 0 .5rem">
+      Guará · Apache-2.0 · Numbers on this page come from
+      <code>docs/evidence/batch_latency/metrics.json</code> and the paired run directories.
+    </p>
+    <p class="small" style="margin:0">
+      <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
+      <a href="integrate.html">Integrate</a> · <a href="contribute.html">Contribute</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,642 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Architecture — Guará</title>
+<meta name="description" content="The ASTM F3269 role mapping, the switching predicates, the untrusted-planner gateway contract, the latency budget and the message types — read off the real Guará source.">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  .page-head { padding-block: 3.2rem 1rem; }
+  .eq {
+    font-family: var(--mono); font-size: .93rem; line-height: 2.1;
+    background: var(--bg-code); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 1.1rem 1.25rem; margin: 0 0 1.2rem; overflow-x: auto;
+  }
+  .eq .u { color: var(--unsafe); font-weight: 600; }
+  .eq .c { color: var(--clear); font-weight: 600; }
+  .eq .cm { color: var(--fg-faint); }
+
+  /* state machine */
+  .fsm { width: 100%; height: auto; display: block; margin-bottom: 1rem; }
+  .fsm .n { stroke-width: 1.6; }
+  .fsm .n-inactive { fill: var(--bg-raise); stroke: var(--line); }
+  .fsm .n-cf { fill: color-mix(in srgb, var(--unsafe) 12%, var(--bg-panel)); stroke: color-mix(in srgb, var(--unsafe) 55%, transparent); }
+  .fsm .n-rf { fill: color-mix(in srgb, var(--clear) 12%, var(--bg-panel)); stroke: color-mix(in srgb, var(--clear) 55%, transparent); }
+  .fsm .n-latched { fill: color-mix(in srgb, var(--accent) 12%, var(--bg-panel)); stroke: color-mix(in srgb, var(--accent) 55%, transparent); }
+  .fsm text { font-family: var(--sans); fill: var(--fg); }
+  .fsm .nm { font-size: 13px; font-weight: 640; text-anchor: middle; }
+  .fsm .ns { font-size: 10px; fill: var(--fg-muted); text-anchor: middle; }
+  .fsm .e { stroke: var(--fg-faint); stroke-width: 1.4; fill: none; }
+  .fsm .e-fast { stroke: var(--unsafe); stroke-width: 2; fill: none; }
+  .fsm .e-slow { stroke: var(--clear); stroke-width: 1.6; fill: none; stroke-dasharray: 5 3; }
+  .fsm .el { font-family: var(--mono); font-size: 9.5px; font-weight: 600; text-anchor: middle; }
+
+  /* latency ladder */
+  .ladder { display: grid; gap: 2px; margin-bottom: 1.2rem; }
+  .rung { display: grid; grid-template-columns: 3.2rem 1fr auto; gap: .9rem; align-items: center;
+          background: var(--bg-panel); border: 1px solid var(--line); border-radius: 6px; padding: .55rem .9rem; }
+  .rung .id { font-family: var(--mono); font-weight: 640; color: var(--accent); font-size: .85rem; }
+  .rung .d { font-size: .88rem; }
+  .rung .n { font-family: var(--mono); font-size: .85rem; color: var(--fg-muted); white-space: nowrap; }
+  .rung.excluded { opacity: .6; border-style: dashed; }
+  .rung.excluded .id { color: var(--fg-faint); }
+  @media (max-width: 620px) { .rung { grid-template-columns: 2.6rem 1fr; } .rung .n { grid-column: 2; } }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="architecture.html" aria-current="page">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html">Evidence</a>
+      <a href="contribute.html">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap page-head">
+  <p class="eyebrow">Reference</p>
+  <h1>Architecture</h1>
+  <p class="lede">
+    How authority actually moves between an untrusted planner and an assured autopilot: the role
+    mapping, the switching predicates, the gateway contract, the latency budget and the message
+    types. Everything below is read off the source in the repository, not paraphrased from a
+    design document.
+  </p>
+</div>
+
+<div class="wrap doc">
+  <aside class="toc">
+    <h4>On this page</h4>
+    <a href="#roles">F3269 roles</a>
+    <a href="#core">The switching core</a>
+    <a href="#states">States and transitions</a>
+    <a href="#gateway">The gateway contract</a>
+    <a href="#channels">Channels and fail-closed</a>
+    <a href="#latency">The latency budget</a>
+    <a href="#messages">Message contracts</a>
+    <a href="#space">What changes in orbit</a>
+  </aside>
+
+  <main class="doc-body">
+
+  <!-- ============ ROLES ============ -->
+  <section id="roles">
+    <h2>1 · ASTM F3269 roles → Guará components</h2>
+    <p>
+      F3269 is the standard written to bound unassured functions — AI and ML explicitly included.
+      Guará implements its roles as separate processes so that the trusted part stays small enough
+      to reason about.
+    </p>
+    <div class="note limit">
+      <span class="tag">Honest caveat</span>
+      <p>
+        The ASTM F3269 text is not available to this project. The mapping below uses the published
+        component names and is marked <strong>[REVIEW]</strong> until someone checks it against
+        the licensed standard — that review is <a href="contribute.html#asks">an open ask</a>.
+      </p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>F3269 role</th><th>Guará realisation</th><th>Package</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Complex Function</strong></td>
+              <td>External node publishing <code>guara_msgs/CfSetpoint</code>; reaches PX4 only through the owned mode <code>GuaraCfGateway</code></td>
+              <td><em>out of tree</em></td></tr>
+          <tr><td><strong>Recovery Function</strong></td>
+              <td>PX4 internal modes Hold / RTL / Land, triggered by <code>scheduleMode</code></td>
+              <td>PX4</td></tr>
+          <tr><td><strong>Safety Monitor</strong></td>
+              <td>Copilot monitors, geofence predictor and DAIDALUS node, each publishing a timestamped verdict</td>
+              <td><code>guara_monitors</code>, <code>guara_geofence</code>, <code>guara_daidalus</code></td></tr>
+          <tr><td><strong>Switching Logic</strong></td>
+              <td><code>DecisionCore</code> — pure, allocation-free, fixed period <code>T_s</code></td>
+              <td><code>guara_rta</code></td></tr>
+          <tr><td><strong>Input Manager</strong></td>
+              <td>Age and validity checks on every input; the gateway that blocks the CF outside state <code>CF</code></td>
+              <td><code>guara_rta</code></td></tr>
+          <tr><td><strong>Final layer</strong></td>
+              <td>PX4 internal failsafes and geofence, deliberately left enabled</td>
+              <td>PX4</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="small muted">
+      That last row matters more than it looks. Guará is not the last line of defence and does not
+      try to be: PX4&rsquo;s own failsafes stay on underneath it, and Guará never defers one.
+    </p>
+  </section>
+
+  <!-- ============ CORE ============ -->
+  <section id="core">
+    <h2>2 · The switching core</h2>
+    <p>
+      At each tick <code>k</code> of period <code>T_s</code> the core evaluates four signals: time
+      to loss of well-clear <code>T_daa</code>, time to geofence violation <code>T_gf</code>, the
+      monitor flag <code>M</code>, and the input-validity flag <code>V</code>. Two predicates come
+      out of them.
+    </p>
+
+    <div class="eq">
+<span class="u">U(k)</span> = [T_daa ≤ τ_daa] ∨ [T_gf ≤ τ_gf] ∨ M(k) ∨ V(k)                         <span class="cm">unsafe</span>
+<span class="c">C(k)</span> = [T_daa &gt; τ_daa + h_daa] ∧ [T_gf &gt; τ_gf + h_gf] ∧ ¬M(k) ∧ ¬V(k)         <span class="cm">clear</span>
+    </div>
+
+    <p>
+      <code>U</code> switches to the recovery function <strong>in the same tick</strong>.
+      <code>C</code> alone does not switch back: the return demands <code>C</code> held
+      continuously for the dwell time <code>T_d</code>, a minimum dwell in recovery, and a switch
+      budget that latches the recovery after <code>N_max</code> switches in a window <code>W</code>.
+      That asymmetry is a design obligation, not an accident.
+    </p>
+
+    <h3>The obligation that makes the rule mean something</h3>
+    <div class="eq">
+<span class="c">O-1</span>   τ_gf  ≥ δ_lat
+      τ_daa ≥ τ_rec,daa + δ_lat
+    </div>
+    <p>
+      <code>δ_lat</code> is the <em>measured</em> p99 latency from the sample that makes
+      <code>U</code> true to the recovery mode being effective. A trigger threshold shorter than
+      the time it takes to act is a threshold that does nothing. This is why the whole project
+      refuses to publish a threshold without publishing the batch behind it —
+      <a href="evidence.html">δ_lat is measured at 61 ms</a> against τ_gf = 1000 ms.
+    </p>
+
+    <h3>Why the core is a plain struct-in, struct-out function</h3>
+    <p>
+      No ROS, no allocation after construction, and a bounded number of operations per tick — the
+      only loop iterates a fixed-capacity history of switch instants. Those three properties are
+      acceptance criteria AC-4, AC-5 and AC-6, which is what lets the core be unit-tested
+      exhaustively without a simulator.
+    </p>
+
+    <div class="code-head"><span>ros2_ws/src/guara_rta/include/guara_rta/decision_core.hpp</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-cpp">// Signals of SPEC §3.1 sampled at tick k.
+struct Inputs
+{
+  double t_s{0.0};                  // t_k, monotonic
+  bool in_charge{false};            // IC(k)
+  bool owned_mode_active{false};    // the owned (CF gateway) mode is the active PX4 mode
+  double t_daa_s{std::numeric_limits&lt;double&gt;::infinity()};  // T_daa(k); +inf = no conflict
+  double t_gf_s{std::numeric_limits&lt;double&gt;::infinity()};   // T_gf(k); +inf = no violation
+  bool monitor_violation{false};    // M(k)
+  Recovery monitor_action{Recovery::kHold};  // highest-rank action among violating monitors
+  bool input_invalid{false};        // V(k)
+  // Shadow check of the setpoint the CF is currently proposing. It withholds the return T5
+  // while the CF still intends to re-enter the unsafe set; it is never by itself a reason to
+  // leave CF, because in CF the gateway already filters the setpoint.
+  bool cf_intent_unsafe{false};
+};
+
+class DecisionCore
+{
+public:
+  // Precondition: validate(parameters) == nullptr. Violations are reported by valid().
+  explicit DecisionCore(const Parameters &amp; parameters) noexcept;
+
+  // Evaluates the transition table of SPEC §3.5 for tick k. Inputs with a non-finite or
+  // non-increasing t_s, and NaN time signals, are treated as invalid inputs (cause::kInput).
+  Output step(const Inputs &amp; in) noexcept;
+
+  // Forces a latched recovery, used when the actuator exhausts its retry budget (SPEC FM-7).
+  Output latchOnActuationFailure(double t_s) noexcept;
+};</code></pre>
+
+    <p>
+      Note <code>cf_intent_unsafe</code>. It is the subtlest field in the struct and the one that
+      matters most against a model: a planner that has just been cut off may immediately re-propose
+      the same unsafe motion. The shadow check runs the geofence predictor on the velocity the CF
+      is <em>proposing</em>, and withholds the return until the planner&rsquo;s own intent is clear.
+      It is deliberately never sufficient on its own to leave <code>CF</code>, because inside
+      <code>CF</code> the gateway is already filtering.
+    </p>
+
+    <h3>Parameters, and what they are honest about</h3>
+    <div class="code-head"><span>guara_rta::Parameters — defaults</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-cpp">struct Parameters
+{
+  double tau_daa_s{30.0};      // DAA trigger threshold
+  double tau_gf_s{1.0};        // geofence trigger threshold
+  double h_daa_s{5.0};         // additive DAA hysteresis on return
+  double h_gf_s{1.0};          // additive geofence hysteresis on return
+  double dwell_s{5.0};         // T_d: minimum dwell in RF and minimum continuous clear time
+  std::uint16_t n_max{3};      // N_max: CF-&gt;RF switches in window W that latch the recovery
+  double window_s{120.0};      // W
+  bool return_enabled{true};   // enables the T5 return
+  bool escalation_enabled{false};  // persistence escalation
+  double escalation_s{30.0};   // T_esc
+};</code></pre>
+    <p class="small muted">
+      Every value above is labelled in the source as a <em>hypothesis to be measured</em>, not a
+      tuned result. <code>validate()</code> returns a static description of the first violated
+      constraint rather than a bool, so a misconfiguration names itself in the log.
+    </p>
+  </section>
+
+  <!-- ============ STATES ============ -->
+  <section id="states">
+    <h2>3 · States and transitions</h2>
+    <p>
+      Four states, with the recovery function <code>r ∈ {HOLD, RTL, LAND}</code> ranked so that
+      escalation is always permitted and de-escalation never is. Red edges are immediate; green
+      dashed edges must be earned.
+    </p>
+
+    <svg class="fsm" viewBox="0 0 980 300" role="img"
+         aria-label="State machine: INACTIVE to CF when in charge; CF to RF immediately when unsafe; RF back to CF only after the clear condition holds for the dwell time; RF to LATCHED after N_max switches in the window; any pilot or failsafe action returns to INACTIVE.">
+      <defs>
+        <marker id="a1" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--fg-faint)"/></marker>
+        <marker id="a2" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--unsafe)"/></marker>
+        <marker id="a3" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto"><path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--clear)"/></marker>
+      </defs>
+
+      <rect class="n n-inactive" x="20" y="108" width="150" height="74" rx="12"/>
+      <text class="nm" x="95" y="140">INACTIVE</text>
+      <text class="ns" x="95" y="159">Guará holds nothing</text>
+
+      <rect class="n n-cf" x="300" y="108" width="150" height="74" rx="12"/>
+      <text class="nm" x="375" y="140">CF</text>
+      <text class="ns" x="375" y="159">planner flies, clamped</text>
+
+      <rect class="n n-rf" x="580" y="108" width="150" height="74" rx="12"/>
+      <text class="nm" x="655" y="140">RF(r)</text>
+      <text class="ns" x="655" y="159">Hold · RTL · Land</text>
+
+      <rect class="n n-latched" x="810" y="108" width="150" height="74" rx="12"/>
+      <text class="nm" x="885" y="140">LATCHED(r)</text>
+      <text class="ns" x="885" y="159">no return, by rule</text>
+
+      <!-- T1 -->
+      <path class="e" d="M170,145 H294" marker-end="url(#a1)"/>
+      <text class="el" x="232" y="136" fill="var(--fg-faint)">T1 · IC ∧ owned mode</text>
+
+      <!-- T2 unsafe -->
+      <path class="e-fast" d="M450,131 H574" marker-end="url(#a2)"/>
+      <text class="el" x="512" y="122" fill="var(--unsafe)">T2 · U(k) — same tick</text>
+
+      <!-- T5 return -->
+      <path class="e-slow" d="M574,166 H456" marker-end="url(#a3)"/>
+      <text class="el" x="515" y="186" fill="var(--clear)">T5 · C held for T_d</text>
+
+      <!-- latch -->
+      <path class="e" d="M730,145 H804" marker-end="url(#a1)"/>
+      <text class="el" x="767" y="136" fill="var(--fg-faint)">S(k) ≥ N_max</text>
+
+      <!-- escalate self loop -->
+      <path class="e-fast" d="M620,108 C620,58 700,58 700,108" marker-end="url(#a2)"/>
+      <text class="el" x="660" y="56" fill="var(--unsafe)">escalate r, never de-escalate</text>
+
+      <!-- back to inactive -->
+      <path class="e" d="M375,182 V248 H95 V188" marker-end="url(#a1)"/>
+      <path class="e" d="M655,182 V248" marker-end="url(#a1)" opacity=".7"/>
+      <path class="e" d="M885,182 V248" marker-end="url(#a1)" opacity=".7"/>
+      <text class="el" x="500" y="266" fill="var(--fg-faint)">any RC or GCS mode change, or any PX4 failsafe → INACTIVE, immediately</text>
+    </svg>
+
+    <div class="grid g2" style="margin-top:1.6rem">
+      <div class="panel">
+        <h3>The human always wins</h3>
+        <p class="small muted" style="margin:0">
+          Any RC or GCS mode change, and any PX4 failsafe, drops Guará to <code>INACTIVE</code> at
+          once. Guará never defers a PX4 failsafe and never argues with the pilot. This is a rule
+          about who owns the aircraft, not a fallback.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Latching is a feature</h3>
+        <p class="small muted" style="margin:0">
+          A planner that trips the boundary three times in two minutes is not having bad luck. After
+          <code>N_max</code> switches in the window <code>W</code>, the recovery latches and the
+          planner does not get the aircraft back. The switch history deliberately survives
+          deactivation, so toggling modes cannot reset the budget.
+        </p>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top:1.2rem">
+      The full transition table T1–T7, the six required properties P-1…P-6 and every design
+      obligation are in
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md"><code>docs/SPEC.md</code> §3</a>;
+      the rationale for returning only from Hold is
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/adr/0005-return-to-complex-function.md">ADR 0005</a>.
+    </p>
+  </section>
+
+  <!-- ============ GATEWAY ============ -->
+  <section id="gateway">
+    <h2>4 · The gateway contract</h2>
+    <p>
+      The switching core decides <em>who</em> flies. The gateway decides <em>what the untrusted
+      side is even allowed to ask for</em> while it is flying. This is where a language model is
+      actually contained, and every row below has a test that fails without it.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Threat from an untrusted planner</th><th>Enforcement</th><th>Test</th></tr></thead>
+        <tbody>
+          <tr><td>The planner stalls and a stale setpoint keeps flying</td>
+              <td>Freshness measured from <strong>reception on the gateway clock</strong>; implausible stamps rejected</td>
+              <td><code>test_gateway_envelope.cpp</code></td></tr>
+          <tr><td>Confident but out-of-envelope command (speed, climb, yaw step)</td>
+              <td>Clamp to <code>gateway.max_*</code>; non-finite values rejected outright</td>
+              <td><code>test_gateway_envelope.cpp</code></td></tr>
+          <tr><td>A plausible command that flies straight at the fence</td>
+              <td>Shadow check of the <em>proposed</em> velocity against the predictor before forwarding</td>
+              <td><code>test_gateway_envelope.cpp</code>, AC-9</td></tr>
+          <tr><td>Unsafe motion re-proposed immediately after a recovery</td>
+              <td>The return requires the CF&rsquo;s own intent to be clear</td>
+              <td><code>test_return_policy.cpp</code></td></tr>
+          <tr><td>Anti-chattering budget reset by toggling modes</td>
+              <td>Switch history survives deactivation</td>
+              <td><code>test_return_policy.cpp</code></td></tr>
+          <tr><td>Silent death of a monitor or the DAA node</td>
+              <td>Enabled channels fail closed; undeclared omissions refused at startup</td>
+              <td><code>test_channel_gating.cpp</code></td></tr>
+          <tr><td>Structurally malformed or extreme input</td>
+              <td>Property test against a deliberately adversarial CF</td>
+              <td><code>test_gateway_fuzz.cpp</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1.2rem">
+      Freshness being measured <strong>on the receiver&rsquo;s clock</strong> rather than from the
+      sender&rsquo;s stamp is the detail people get wrong. A compromised or confused planner
+      controls its own timestamps; it does not control when packets arrive.
+    </p>
+
+    <div class="note limit">
+      <span class="tag">Still open before a model drives a CF in anything but simulation</span>
+      <p>
+        In order: transport authentication on <code>/guara/cf/*</code> and <code>/fmu/in/*</code>
+        (SROS2, failure mode FM-12); a jailbreak corpus against the mission compiler; and the fuzz
+        corpus extended with future stamps and mode-tool abuse.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ CHANNELS ============ -->
+  <section id="channels">
+    <h2>5 · Channels and fail-closed</h2>
+    <p>
+      A channel is one source of safety evidence. The rule is uniform: an <em>enabled</em> channel
+      that stops producing a fresh verdict is treated as a violation, not as an absence of news.
+      Turning a channel off is possible, but only by declaring the omission — and the flight
+      safety profile refuses to start with an omission that was not declared.
+    </p>
+
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Channel</th><th>Signal</th><th>Produced by</th><th>Domain</th></tr></thead>
+        <tbody>
+          <tr><td><code>daa</code></td><td><code>T_daa</code> — time until the ownship enters the corrective well-clear volume</td><td>DAIDALUS v2, NOSA-isolated node</td><td><span class="pill">air only</span></td></tr>
+          <tr><td><code>geofence</code></td><td><code>T_gf</code> — predicted time to keep-in violation, with a braking model and position uncertainty</td><td><code>guara_geofence</code></td><td><span class="pill">air</span></td></tr>
+          <tr><td><code>requirements</code></td><td><code>M(k)</code> — Copilot monitors generated from FRETish requirements by Ogma</td><td><code>guara_monitors</code></td><td><span class="pill">both</span></td></tr>
+          <tr><td><code>inputs</code></td><td><code>V(k)</code> — age and validity of every input the core consumes</td><td>Input Manager</td><td><span class="pill">both</span></td></tr>
+          <tr><td><code>attitude_keepout</code></td><td>Time until a protected boresight enters a keep-out cone around a bright body</td><td><code>space/keepout.py</code></td><td><span class="pill info">space</span></td></tr>
+          <tr><td><code>power_margin</code>, <code>momentum</code></td><td>Specified; no implementation</td><td>—</td><td><span class="pill info">space</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1.2rem">
+      Monitors carry their own class and their own requested recovery, so the core does not need to
+      know what any individual requirement means — only how authoritative its action is. Recovery
+      actions are ranked <code>HOLD &lt; RTL &lt; LAND</code>, and the core selects the highest rank
+      among violating monitors.
+    </p>
+
+    <div class="code-head"><span>ros2_ws/src/guara_msgs/msg/MonitorVerdict.msg</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-python">uint8 CLASS_LOG=0       # recorded only; never enters M(k)
+uint8 CLASS_SWITCH=1    # a violation sets M(k) = 1
+
+uint8 ACTION_HOLD=0     # recovery requested on violation; ranked HOLD &lt; RTL &lt; LAND
+uint8 ACTION_RTL=1
+uint8 ACTION_LAND=2
+
+string monitor_id       # requirement identifier, e.g. REQ-ALT-01
+bool violated           # true if the monitored property is violated at this step
+bool inputs_complete    # a monitor that has not yet seen all inputs reports false, false
+float64 processing_s    # verdict latency, stage L2 of the budget</code></pre>
+
+    <p class="small muted">
+      <code>inputs_complete</code> is what stops a monitor from being quietly useless at startup: a
+      monitor that has not yet observed every one of its inputs reports <code>violated = false</code>
+      <em>and</em> says so, so the Input Manager can tell "no violation" apart from "no opinion yet".
+    </p>
+  </section>
+
+  <!-- ============ LATENCY ============ -->
+  <section id="latency">
+    <h2>6 · The latency budget</h2>
+    <p>
+      <code>δ_lat</code> is not one number that someone timed. It is a sum of named stages, each
+      measured on a clock that has been validated for that stage, which is what makes it possible
+      to say <em>which</em> stage is excluded and why.
+    </p>
+
+    <div class="ladder">
+      <div class="rung"><span class="id">L0</span><span class="d">PX4 sensor sample → PX4 publish (<code>timestamp − timestamp_sample</code>)</span><span class="n">p99 0.0028 s</span></div>
+      <div class="rung excluded"><span class="id">L1</span><span class="d">PX4 → ROS transport across the uXRCE-DDS bridge — <strong>excluded</strong>, mixed clocks</span><span class="n">recorded, not cited</span></div>
+      <div class="rung"><span class="id">L2</span><span class="d">Monitor processing, input reception → verdict publish</span><span class="n">p99 0.0000 s *</span></div>
+      <div class="rung"><span class="id">L3</span><span class="d">Verdict stamp → arbiter reception</span><span class="n">p99 0.0013 s</span></div>
+      <div class="rung"><span class="id">L4</span><span class="d">Arbiter reception → decision tick that sets U(k)</span><span class="n">p99 0.0249 s</span></div>
+      <div class="rung"><span class="id">L5</span><span class="d">Decision → <code>VehicleCommand</code> published</span><span class="n">p99 0.0314 s</span></div>
+      <div class="rung"><span class="id">L6</span><span class="d">Command → recovery mode effective in PX4</span><span class="n">p99 0.0120 s</span></div>
+    </div>
+
+    <div class="note limit">
+      <span class="tag">* Read this before quoting 61 ms</span>
+      <p>
+        L2 is zero because the <code>latency_hold</code> scenario <em>injects</em> the monitor
+        verdict, so no Copilot evaluation happens on that path. <code>δ_lat</code> is therefore
+        <strong>optimistic by construction</strong>, and the project says so rather than letting
+        the number travel alone. L1 is excluded because the PX4 and ROS clocks differ by seconds
+        on this SIH/uXRCE setup — a criterion (AC-19) gates any cross-process number until
+        alignment is under 10 ms.
+      </p>
+    </div>
+
+    <p>
+      Each <code>RtaEvent</code> carries every one of those instants on a named clock, which is how
+      the aggregation script re-derives the stages rather than trusting a summary:
+    </p>
+    <div class="code-head"><span>guara_msgs/RtaEvent.msg — the timing fields</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-python">float64 t_decide_s          # tick instant t_k (arbiter steady clock)
+float64 t_input_recv_s      # reception of the most recent input that made U true (steady)
+float64 t_input_stamp_s     # PX4 timestamp_sample [s] of the last local_position
+float64 t_cmd_pub_s         # VehicleCommand publish (steady clock)
+float64 t_ack_s             # last SET_NAV_STATE ACK (steady clock)
+float64 l0_s                # timestamp - timestamp_sample (PX4 clock)
+float64 clock_err_s         # ROS recv - PX4 timestamp (gated by AC-19)
+float64 l2_s                # last monitor processing_s
+float64 l3_s                # arbiter ROS recv - verdict stamp</code></pre>
+    <p class="small muted">
+      Both a steady-clock and a ROS-clock instant are recorded for the same event. That redundancy
+      is what surfaced the 4.9 s clock misalignment instead of hiding it inside a plausible-looking
+      total. <a href="evidence.html#latency">The full batch and how to re-run it →</a>
+    </p>
+  </section>
+
+  <!-- ============ MESSAGES ============ -->
+  <section id="messages">
+    <h2>7 · Message contracts</h2>
+    <p>
+      Five message types are the entire public surface between Guará and anything else. If you are
+      writing a complex function, you need exactly one of them.
+    </p>
+
+    <div class="table-scroll" style="margin-bottom:1.4rem">
+      <table>
+        <thead><tr><th>Type</th><th>Direction</th><th>Purpose</th></tr></thead>
+        <tbody>
+          <tr><td><code>CfSetpoint</code></td><td>CF → gateway</td><td>The only thing an untrusted planner may publish</td></tr>
+          <tr><td><code>MonitorVerdict</code></td><td>monitor → arbiter</td><td>One requirement&rsquo;s verdict at one step</td></tr>
+          <tr><td><code>DaaStatus</code></td><td>DAA node → arbiter</td><td>The single interface between DAIDALUS and the Apache-2.0 code</td></tr>
+          <tr><td><code>RtaState</code></td><td>arbiter → world</td><td>Periodic snapshot for observation and logging</td></tr>
+          <tr><td><code>RtaEvent</code></td><td>arbiter → world</td><td>One state transition with every timing instant</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>What a complex function is allowed to say</h3>
+    <div class="code-head"><span>ros2_ws/src/guara_msgs/msg/CfSetpoint.msg</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-python"># Generation time of the setpoint on the CF clock. Setpoints stamped before the most recent
+# RF -&gt; CF return instant are discarded by the gateway.
+builtin_interfaces/Time stamp
+
+# Commanded velocity in the local NED frame [m/s].
+float32[3] velocity_ned_m_s
+
+# Commanded yaw in the NED frame [rad]; NaN leaves yaw uncontrolled.
+float32 yaw_ned_rad</code></pre>
+
+    <p>
+      Three fields. No mode, no arm, no waypoint, no mission upload, no parameter write, no MAVLink.
+      A complex function cannot request a mode change because there is nowhere in the type to put
+      one. This is the same closure principle the
+      <a href="integrate.html#compiler">Mission Intent schema</a> applies one layer up, and it is
+      why &ldquo;the model tried to disable the geofence&rdquo; is not a failure mode that exists
+      here.
+    </p>
+
+    <h3>What the arbiter tells you about the planner it is watching</h3>
+    <p>
+      <code>RtaState</code> publishes counters that make an untrusted planner&rsquo;s behaviour
+      observable rather than anecdotal — how often it was clamped, how often it was blocked at the
+      fence, how often it sent something implausible:
+    </p>
+    <div class="code-head"><span>guara_msgs/RtaState.msg — the CF observability fields</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-python">bool     cf_intent_unsafe        # the CF's proposed setpoint would violate the fence
+float64  cf_intent_t_gf_s        # T_gf predicted on the CF's proposed velocity
+uint32   cf_rejected_stamp       # setpoints rejected for an implausible stamp
+uint32   cf_rejected_non_finite
+uint32   cf_rejected_guard       # setpoints blocked by the shadow guard
+uint32   cf_clamped              # setpoints clamped to the gateway envelope
+uint32   invalid_mask            # which channels set V(k) at this tick
+uint32   accepted_omissions      # declared protection omissions (1=daa, 2=monitors, 4=geofence)
+bool     actuation_failed        # a mode request was not accepted, or accepted without effect</code></pre>
+    <p class="small muted">
+      <code>cf_clamped</code> is the metric to watch when you swap in a new model. A planner whose
+      commands are constantly being clamped is not being contained successfully — it is being
+      contained <em>repeatedly</em>, which is a different and worse thing.
+    </p>
+  </section>
+
+  <!-- ============ SPACE ============ -->
+  <section id="space">
+    <h2>8 · What changes in orbit</h2>
+    <p>
+      The decision core is unchanged. The <em>signals</em> are replaced wholesale, because the
+      physics is different and because pretending otherwise is how ported safety logic goes wrong.
+    </p>
+
+    <div class="grid g2">
+      <div class="panel">
+        <h3>What survives the move</h3>
+        <ul class="clean tight small" style="margin:0">
+          <li><code>U</code> / <code>C</code> predicates and the four states</li>
+          <li>Asymmetry: leave immediately, return slowly</li>
+          <li>Fail-closed channels and declared omissions</li>
+          <li>The closed intent vocabulary, one layer up</li>
+          <li>The arbiter, now an FPP component on a rate group</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>What does not</h3>
+        <ul class="clean tight small" style="margin:0">
+          <li><strong>No DAA channel, ever.</strong> Conjunction assessment is a ground-based probabilistic process</li>
+          <li>The geofence braking model — an orbiting body cannot stop</li>
+          <li>The recovery function itself: <strong>F´ has no safe mode</strong></li>
+          <li>Return to the complex function: the space safe mode is <strong>latched</strong>, released only by ground command</li>
+        </ul>
+      </div>
+    </div>
+
+    <p style="margin-top:1.4rem">
+      The one space channel that exists as code today is the attitude keep-out predictor. It answers
+      a purely geometric question — at the current attitude and body rate, when does a protected
+      boresight enter a keep-out cone around a bright body — and it answers it in closed form
+      rather than by numerical integration, so its tests can demand ±0.05 s the way the geofence
+      predictor&rsquo;s do.
+    </p>
+
+    <div class="code-head"><span>space/keepout.py</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-python">"""Attitude keep-out predictor (ADR 0012 channel `attitude_keepout`, AC-47).
+
+An orbiting body cannot stop, so the air geofence's braking model does not transfer.
+This predictor answers a purely geometric question: at the current attitude and body
+rate, when does a protected boresight enter a keep-out cone around a bright body?
+
+Fail-closed: non-finite inputs, a zero-length vector, or an already-violated cone
+report T = 0. Receding, still, or out-of-horizon cases report +inf.
+"""
+TOL_S = 0.05  # AC-47 tolerance; documented here so tests and callers share it.</code></pre>
+
+    <div class="note limit">
+      <span class="tag">Risk RS-1 — attack this first</span>
+      <p>
+        The space recovery function does not exist in F´ and must be written by this project. A
+        safe mode with no flight heritage is the single largest weakness in the orbital thread, and
+        the project would rather have it reviewed early than discovered late.
+        <a href="contribute.html#asks">It is an open ask.</a>
+      </p>
+    </div>
+
+    <div class="btn-row">
+      <a class="btn btn-primary" href="integrate.html">Now put it in an operation →</a>
+      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md">Read the full SPEC</a>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p class="small" style="margin:0 0 .5rem">
+      Guará · Apache-2.0 · Copyright 2026 Aton Bertini Dornfeld and the Guará contributors.
+      Every API fact in the repository cites <code>repo@commit:file:line</code> in
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/GROUNDING.md">GROUNDING.md</a>.
+    </p>
+    <p class="small" style="margin:0">
+      <a href="index.html">Overview</a> · <a href="integrate.html">Integrate</a> ·
+      <a href="evidence.html">Evidence</a> · <a href="contribute.html">Contribute</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>

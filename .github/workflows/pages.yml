@@ -1,0 +1,55 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Publishes site/ to GitHub Pages. The site is plain static HTML with no build step and no
+# Jekyll, so what is deployed is byte-identical to what is in the tree — the same rule the
+# evidence directories follow.
+#
+# Enable once, in the repository settings: Settings -> Pages -> Source = GitHub Actions.
+name: pages
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; never cancel a running one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: check and upload
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy the figures from docs/assets, so the site keeps no second copy
+        run: ./scripts/sync_site_assets.sh
+
+      - name: Every internal link in the site resolves
+        run: python3 scripts/check_site_links.py
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

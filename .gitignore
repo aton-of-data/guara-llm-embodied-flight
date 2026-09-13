@@ -24,3 +24,7 @@ results/*
 # Ogma generation scratch (committed outputs live in guara_monitors/generated/)
 ros2_ws/src/guara_monitors/.ogma_out/
 __pycache__/
+
+# Figures the site displays are copied from docs/assets by scripts/sync_site_assets.sh
+site/assets/*.png
+site/assets/*.svg
