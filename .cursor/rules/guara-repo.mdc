@@ -1,0 +1,32 @@
+---
+description: Guará repository invariants — apply to every edit, every answer, every commit.
+alwaysApply: true
+---
+
+# Guará — invariants
+
+Mirror of `.claude/skills/guara-pipeline/references/quality-bar.md`, which holds the same
+ten rows with the script that enforces each and the standing gate commands. Edited together.
+
+- **Q1 No number without a run.** Figures come from `results/` via `scripts/aggregate.py`,
+  published into `docs/evidence/`. Never write a measurement you did not just produce.
+- **Q2 No API from memory.** PX4, ROS 2, F´, Ogma, Copilot, DAIDALUS, FRET: read it under
+  `third_party/` at the commit pinned in `third_party/VERSIONS.md` and cite
+  `repo@commit:file:line`. Touching an API means the `GROUNDING.md` row lands first.
+- **Q3 Test first.** A safety function gets a test watched failing before it exists.
+- **Q4 Bounded decision path.** `DecisionCore` and everything it calls per tick allocates
+  nothing and has bounded time.
+- **Q5 Document first.** A flight operation gets its `docs/operations/` document before code.
+- **Q6 Licence.** `SPDX-License-Identifier: Apache-2.0` as the first comment line of every new
+  source file. Nothing NOSA outside `nosa/`. No GPL-2.0-only dependency.
+- **Q7 Reproducible SITL.** Headless, seed and commit recorded.
+- **Q8 Rule O.** Space / F´ work never precedes the PX4 latency and batch results.
+- **Q9 Scope.** Civil flight safety. No target selection, no weapon function, no defeating a
+  geofence, a failsafe or Remote ID. Stop and report instead.
+- **Q10 Git and language.** English everywhere. Granular commits,
+  `type(scope): imperative summary`, author `aton-of-data`.
+
+Never weaken a test, a threshold or an acceptance criterion to make a gate pass. A gate that
+reports zero tests is RED. Doc comments only — a comment never explains why a change was made.
+Terse output: no preamble, no restatement, no closing summary; tables over prose; `UNKNOWN`
+written, never guessed. Node tooling uses `pnpm`.

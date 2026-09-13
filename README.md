@@ -445,7 +445,7 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 | [`third_party/VERSIONS.md`](third_party/VERSIONS.md) | Pinned commits and the PX4 ↔ `px4_msgs` byte-equality check |
 | [`NOTICE`](NOTICE) · [`CITATION.cff`](CITATION.cff) | Copyright, third-party licences, and how to cite the repository |
 | [`CONTRIBUTING.md`](CONTRIBUTING.md) · [`SECURITY.md`](SECURITY.md) · [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) | How to contribute, how to report a vulnerability, and the conduct standard |
-| [`CLAUDE.md`](CLAUDE.md) · [`docs/guara-prompt-pack.md`](docs/guara-prompt-pack.md) | The working rules and the reproducible prompt sequence used to build this |
+| [`CLAUDE.md`](CLAUDE.md) · [`docs/guara-prompt-pack.md`](docs/guara-prompt-pack.md) · [`docs/AGENT-PIPELINE.md`](docs/AGENT-PIPELINE.md) | The working rules, the reproducible prompt sequence used to build this, and the scope / execute / review process the agents run under |
 
 ---
 

@@ -24,6 +24,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 - A manual workflow publishing the dev image to GHCR, with a guard refusing to publish an
   image that references NOSA-licensed software.
 - Figures drawn from the published evidence by `scripts/plot_evidence.py`.
+- The agent pipeline is written down and enforced: `docs/AGENT-PIPELINE.md` describes the
+  scope / execute / review stages, `.claude/skills/guara-*` and `.cursor/rules/guara-*.mdc`
+  carry the invariants to the two surfaces that load them, and `scripts/check_pipeline.py`
+  refuses a surface that has drifted from the tree.
 
 ### Changed
 - The README is split: related work, architecture, roadmap and licensing move to `docs/`.

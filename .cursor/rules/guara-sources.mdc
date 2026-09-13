@@ -1,0 +1,16 @@
+---
+description: File-level rules for Guará source files.
+globs: ["**/*.cpp","**/*.hpp","**/*.h","**/*.c","**/*.py","**/*.sh","**/*.cmake","**/CMakeLists.txt","**/*.fpp","**/*.yaml"]
+alwaysApply: false
+---
+
+# Guará — source files
+
+- First comment line of a new file: `SPDX-License-Identifier: Apache-2.0`.
+- C++17, colcon/ament, gtest + `launch_testing`. Python: the pinned `requirements.lock`.
+- Doc comments describe what the unit does. No comment explaining why a change was made,
+  no reference to a review, a packet, a task or a model.
+- Nothing NOSA-licensed outside `nosa/`; `scripts/check_license_isolation.py` decides.
+- Nothing on the `DecisionCore` per-tick path allocates, throws, logs or blocks.
+- A safety function arrives with its failing test first.
+- English identifiers, English comments.
