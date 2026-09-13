@@ -11,8 +11,9 @@
 <style>
   :root { --figpfx: "I-"; }
   .page-head { padding-block: 3.2rem 1rem; }
-  .paths { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; margin: 2rem 0 0; }
-  @media (max-width: 820px) { .paths { grid-template-columns: 1fr; } }
+  .paths { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; margin: 2rem 0 0; }
+  @media (max-width: 1080px) { .paths { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 620px) { .paths { grid-template-columns: 1fr; } }
   .path { display: block; text-decoration: none; color: inherit; }
   .path:hover h3 { color: var(--accent); }
   .path h3 { margin-bottom: .35rem; }
@@ -63,10 +64,11 @@
   <p class="eyebrow">Directive</p>
   <h1>Integration guide</h1>
   <p class="lede">
-    Four integration paths, selected by what is being built: an existing complex function requiring
+    Five integration paths, selected by what is being built: an existing complex function requiring
     a boundary, a language model requiring a vehicle, a new flight operation requiring an operation
-    document, or a spacecraft. Every command shown on this page was executed against the repository
-    at the commit recorded below, and its output is reproduced verbatim.
+    document, a host with no ROS at all, or a spacecraft. Every command shown on this page was
+    executed against the repository at the commit recorded below, and its output is reproduced
+    verbatim.
   </p>
   <div class="paths">
     <a class="panel path" href="#cf">
@@ -84,13 +86,18 @@
       <h3>Add a flight operation</h3>
       <p>Inspection, dispensing, transport. The operation document precedes the code, and the capability pack is gated.</p>
     </a>
+    <a class="panel path" href="#kernel">
+      <span class="who">Path K</span>
+      <h3>Embed the kernel without ROS</h3>
+      <p>The switching core as a C ABI on your own host, and the published vectors that say your port behaves like the reference one.</p>
+    </a>
   </div>
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-02</dd></div>
     <div><dt>Title</dt><dd>Integration guide</dd></div>
     <div><dt>Describes commit</dt><dd>75f5760</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
-    <div><dt>Status</dt><dd>Paths A–C implemented; D specified</dd></div>
+    <div><dt>Status</dt><dd>Paths A–C and K implemented; D specified</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
   </dl>
 </div>
@@ -105,6 +112,7 @@
     <a href="#site">B.2 · Site model</a>
     <a href="#providers">B.3 · Model providers</a>
     <a href="#operation">C · Adding a flight operation</a>
+    <a href="#kernel">K · Embedding the kernel without ROS</a>
     <a href="#space">D · The switching core in orbit</a>
     <a href="#profiles">Safety profiles and declared omissions</a>
     <a href="#hardware">E · Preconditions for operation on hardware</a>
@@ -116,10 +124,10 @@
   <section id="decide">
     <h2>Selection of an integration seam</h2>
     <p>
-      Guará exposes three integration seams. Selecting the correct one determines most of the
+      Guará exposes four integration seams. Selecting the correct one determines most of the
       work; selecting the wrong one leads to re-implementing assurance logic that already exists.
     </p>
-    <p class="tbl-cap">The three integration seams, the interface each requires of the integrator, the assurance each inherits, and the effort each implies.</p>
+    <p class="tbl-cap">The four integration seams, the interface each requires of the integrator, the assurance each inherits, and the effort each implies.</p>
 <div class="table-scroll">
       <table>
         <thead><tr><th>Seam</th><th>You provide</th><th>You inherit</th><th>Effort</th></tr></thead>
@@ -141,6 +149,12 @@
             <td>A FRETish requirement, and a verdict publisher</td>
             <td>Fail-closed gating, recovery ranking, latency accounting</td>
             <td>Days to weeks</td>
+          </tr>
+          <tr>
+            <td><strong>Kernel C ABI</strong></td>
+            <td>A host: a scheduler, a clock, the input channels, and the recovery function itself</td>
+            <td>The switching rule, the gateway, the monitor aggregation, the predictor, and the vectors that say your port matches</td>
+            <td>Weeks</td>
           </tr>
         </tbody>
       </table>
@@ -542,6 +556,157 @@ python3 scripts/llm/eval.py --provider mock --only-class adversarial</code></pre
 <pre><code class="language-bash">python3 -m pytest scripts/tests -q                   # compiler, corpus, executor, keep-out
 ./scripts/dev.sh colcon test --packages-select guara_rta guara_geofence guara_monitors
 python3 scripts/check_links.py                       # every relative document link resolves</code></pre>
+  </section>
+
+  <!-- ============ PATH K ============ -->
+  <section id="kernel">
+    <h2>K · Embedding the kernel without ROS</h2>
+    <p>
+      Paths A to C put a complex function behind Guará&rsquo;s own ROS 2 arbiter. This path is the
+      other direction: the switching core, with no ROS, no ament, no PX4 and no Eigen, as a C ABI
+      you call from whatever already schedules your flight software.
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/adr/0014-delivery-model.md">ADR 0014</a> makes this the project&rsquo;s product surface rather
+      than an internal library, and pairs it with the artifact that makes it mean something &mdash;
+      a published set of input&rarr;decision vectors, and a runner that says whether your port
+      reproduces them.
+    </p>
+
+    <div class="note limit">
+      <span class="tag">What conformance is not</span>
+      <p>
+        Passing the kit demonstrates behavioural equivalence to the reference decision core on the
+        published vectors, and <strong>nothing about the safety of the system that contains it</strong>.
+        The report says so in its own text, so a reader who sees only the report still sees the
+        limit. The ABI is <strong>provisional</strong> until three independent ports pass the kit;
+        two exist today.
+      </p>
+    </div>
+
+    <h3>What you provide, and what you inherit</h3>
+    <p>
+      The kernel allocates nothing, owns no clock, and performs no I/O. It is a pure function of the
+      inputs you hand it, evaluated once per tick. Everything around that is yours: the scheduler,
+      the clock, the channels that produce <code>T_daa</code>, <code>T_gf</code> and the monitor
+      verdicts, and the recovery function the arbiter commands. On PX4 the recovery function is the
+      autopilot&rsquo;s own Hold, RTL and Land; on a host that has none, you write it.
+    </p>
+
+    <div class="code-head"><span>build, test, install, consume</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/core
+ctest --test-dir build/core --output-on-failure
+cmake --install build/core --prefix /your/prefix
+
+# in your own CMakeLists.txt
+find_package(guara_core REQUIRED)
+target_link_libraries(your_target PRIVATE guara::core)</code></pre>
+
+    <p class="small muted">
+      <code>./scripts/check_core_consumer.sh</code> runs exactly that sequence and then builds
+      <code>core/examples/consumer</code> against the install prefix. It is acceptance criterion
+      AC-57, and CI runs it on Ubuntu, macOS and Windows with no ROS, no PX4 and no Docker.
+    </p>
+
+    <h3 style="margin-top:2rem">The storage contract is the part people get wrong</h3>
+    <p>
+      There is no <code>guara_core_create()</code>. You own the memory, you size it with
+      <code>guara_core_storage_size()</code>, and you align it to
+      <code>guara_core_storage_align()</code>. A buffer that is too short <em>or</em> under-aligned is
+      refused with <code>GUARA_ERR_STORAGE</code> before anything is written to it &mdash; the
+      requirement is published, so it is also enforced.
+    </p>
+
+    <div class="code-head"><span>the whole lifecycle</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-c">unsigned char raw[1024];
+const size_t align = guara_core_storage_align();
+unsigned char *buf = (unsigned char *)(((uintptr_t)raw + (align - 1U)) &amp; ~(uintptr_t)(align - 1U));
+
+guara_params p;
+guara_params_default(&amp;p);
+guara_core_init(buf, sizeof raw - (size_t)(buf - raw), &amp;p);   /* GUARA_OK, or a refusal */
+
+guara_inputs in = { .t_s = t, .in_charge = 1, .owned_mode_active = 1,
+                    .t_daa_s = t_daa, .t_gf_s = t_gf,
+                    .monitor_action = GUARA_RECOVERY_HOLD };
+guara_output out;
+guara_core_step(buf, &amp;in, &amp;out);                              /* out.command is your mode request */</code></pre>
+
+    <ul class="clean">
+      <li>
+        <strong>Two encodings of &ldquo;action&rdquo; share the header, and they differ by one.</strong>
+        <code>guara_inputs.monitor_action</code> is a <code>GUARA_RECOVERY_*</code> value
+        (<code>NONE=0 … LAND=3</code>); <code>guara_monitor_sample.action</code> is the monitor wire
+        contract (<code>HOLD=0 … LAND=2</code>). A value above <code>GUARA_RECOVERY_LAND</code> is
+        refused rather than ranked: an unrepresentable action is not a weaker one.
+      </li>
+      <li>
+        <strong>The parameter set names itself.</strong> <code>guara_params_digest()</code> is an
+        FNV-1a-64 over the canonical fields, identical on every byte order, and the running arbiter
+        publishes it on <code>RtaState</code> beside the core and ABI versions. It is what an arming
+        gate compares against the declared configuration.
+      </li>
+      <li>
+        <strong>Nothing after init touches the heap or libc I/O.</strong> Two of the eleven kernel
+        tests link against stubs that trap <code>malloc</code>, <code>free</code> and
+        <code>write</code>, and fail if the kernel reaches for any of them.
+      </li>
+    </ul>
+
+    <h3 style="margin-top:2rem">Then prove your port matches</h3>
+    <p>
+      The vectors live in <code>core/conformance/vectors/</code> and cover the SPEC §3 transitions,
+      the ADR 0010 gateway rules, the monitor table&rsquo;s fail-closed cases, the geofence
+      predictor, and the parameter and vocabulary surfaces. Two ports read them today: the C ABI,
+      and an independent Python implementation written from the specification rather than from the
+      code.
+    </p>
+
+    <div class="code-head"><span>the kit, and what it writes down</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">pip install -e .
+
+guara ctk run --port python                        # the independent port
+guara ctk run --port sil                           # the C ABI, through ctypes
+guara ctk run --port sil --report results/latest_ctk
+guara ctk bench --port sil --report results/latest_bench</code></pre>
+
+    <p>
+      With no <code>--vectors</code>, both commands run the <strong>whole published set</strong> and
+      report one result and one hash over it. The hash is the point: it identifies the set your port
+      was actually measured against, so a later claim can be checked rather than believed.
+    </p>
+
+    <div class="code-head"><span>a report, verbatim</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-text">port           sil-cabi
+core           0.17.0-dev
+abi            0.17.0-provisional
+host           darwin
+arch           arm64
+vectors        adr0010_gateway.json,core_params.json,gateway_limits.json,geofence.json,
+               monitor_max_age.json,monitor_table.json,spec_s3.json,types.json
+vectors_sha256 14c9eed6cba2d22a05a4cd4802ef805a665c844a100a1a1cd6ab54b50c4780ad
+result         PASS 94/94
+note           Conformance is necessary and not sufficient: this run demonstrates behavioural
+               equivalence to the published vectors and nothing about the safety of the system
+               that contains it.</code></pre>
+
+    <p class="small muted">
+      <code>guara ctk bench</code> records the worst observed time of one kernel entry and labels it
+      <em>measured, not a bound</em>. A bound needs a WCET tool and a real-time kernel, neither of
+      which is in scope here; a distribution measured on a general-purpose Linux kernel is not a
+      guarantee and is not published as one.
+    </p>
+
+    <p class="small muted">
+      The kit has to be able to fail. <code>scripts/ctk_mutation.sh</code> and its siblings inject a
+      single behavioural mutation into a copy of a port &mdash; disabling the T4 latch &mdash; and
+      require the kit to reject it. A conformance kit that cannot detect one changed branch is
+      decoration.
+    </p>
+
+    <div class="btn-row">
+      <a class="btn btn-primary" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/core/README.md">core/README.md &nbsp;↗</a>
+      <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/core/include/guara/guara.h">The C ABI header &nbsp;↗</a>
+    </div>
   </section>
 
   <!-- ============ PATH D ============ -->
