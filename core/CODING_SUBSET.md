@@ -33,4 +33,6 @@
 
 - `-Wall -Wextra -Wpedantic -Werror` (standalone CMake).
 - Hidden ELF visibility; `GUARA_API` is the export set (`core/abi_symbols.txt`).
-- `scripts/core_qa.sh`: ASan, UBSan, clang-tidy over `core/src`.
+- `scripts/core_qa.sh`: ASan, UBSan, clang-tidy over `core/src`. Line coverage
+  of `core/src` is measured with gcov when GCC is available; the pass
+  threshold is PARAMETER TBD.

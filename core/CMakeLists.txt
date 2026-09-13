@@ -23,6 +23,20 @@ if(GUARA_CORE_SANITIZE)
   add_link_options(-fsanitize=address,undefined)
 endif()
 
+# Separate from sanitizers: gcov and ASan do not mix. AC-62 coverage is measured,
+# not gated; the pass threshold is PARAMETER TBD.
+option(GUARA_CORE_COVERAGE "Instrument the kernel with gcov (AC-62 measurement)" OFF)
+if(GUARA_CORE_COVERAGE)
+  if(GUARA_CORE_SANITIZE)
+    message(FATAL_ERROR "GUARA_CORE_COVERAGE cannot be combined with GUARA_CORE_SANITIZE")
+  endif()
+  if(NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    message(FATAL_ERROR "GUARA_CORE_COVERAGE requires GCC")
+  endif()
+  add_compile_options(--coverage -O0 -g)
+  add_link_options(--coverage)
+endif()
+
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(GUARA_CORE_STANDALONE OFF)
 else()
@@ -92,7 +106,10 @@ if(GUARA_CORE_STANDALONE)
   target_link_libraries(test_abi_monitor PRIVATE guara_core)
   add_test(NAME abi_monitor COMMAND test_abi_monitor)
 
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE)
+  # gcov's runtime writes .gcda files (and may allocate); those probes are
+  # for the unsanitized, uninstrumented kernel only.
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE
+      AND NOT GUARA_CORE_COVERAGE)
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)
     target_link_libraries(test_abi_no_alloc PRIVATE guara_core)
     target_link_options(test_abi_no_alloc PRIVATE

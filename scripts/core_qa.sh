@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 # AC-62: ASan, UBSan and clang-tidy over guara-core.
-# The conformance vector suite does not exist yet (M19); this run covers the
-# ABI tests. Branch coverage is PARAMETER TBD and is not claimed here.
+# Line coverage of core/src is measured when a GNU gcov build succeeds. The
+# pass threshold is PARAMETER TBD and is not claimed here.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -31,4 +31,20 @@ elif [[ "${require_tidy}" -eq 1 ]]; then
   exit 1
 fi
 
-echo "PASS core_qa: asan/ubsan clean on ABI tests; clang-tidy ${tidy_status}; coverage not measured (AC-62 PARAMETER TBD)"
+cov_status="skipped (GNU gcov build unavailable)"
+if command -v gcov >/dev/null 2>&1; then
+  cov_build="${GUARA_CORE_COV_BUILD:-${root}/build/core-cov}"
+  if cmake -S "${root}/core" -B "${cov_build}" \
+      -DCMAKE_BUILD_TYPE=Debug \
+      -DGUARA_CORE_COVERAGE=ON \
+      >/tmp/guara-core-cov-cmake.log 2>&1; then
+    cmake --build "${cov_build}" -j"$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 2)"
+    ctest --test-dir "${cov_build}" --output-on-failure
+    python3 "${root}/scripts/core_coverage.py" --build "${cov_build}"
+    cov_status="measured (not a bound)"
+  else
+    cov_status="skipped (GCC required; see /tmp/guara-core-cov-cmake.log)"
+  fi
+fi
+
+echo "PASS core_qa: asan/ubsan clean on ABI tests; clang-tidy ${tidy_status}; coverage ${cov_status} (AC-62 PARAMETER TBD)"
