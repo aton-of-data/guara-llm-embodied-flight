@@ -11,6 +11,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
+option(GUARA_CORE_SANITIZE "Instrument the kernel with ASan and UBSan (AC-62)" OFF)
+if(GUARA_CORE_SANITIZE)
+  if(NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
+    message(FATAL_ERROR "GUARA_CORE_SANITIZE requires GCC or Clang")
+  endif()
+  add_compile_options(
+    -fsanitize=address,undefined
+    -fno-omit-frame-pointer
+    -fno-sanitize-recover=all)
+  add_link_options(-fsanitize=address,undefined)
+endif()
+
 if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
   set(GUARA_CORE_STANDALONE OFF)
 else()
@@ -57,7 +69,7 @@ if(GUARA_CORE_STANDALONE)
   target_link_libraries(test_abi_digest PRIVATE guara_core)
   add_test(NAME abi_digest COMMAND test_abi_digest)
 
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE)
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)
     target_link_libraries(test_abi_no_alloc PRIVATE guara_core)
     target_link_options(test_abi_no_alloc PRIVATE

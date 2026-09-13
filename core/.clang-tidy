@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Static analysis for the host-free kernel (AC-62). Coverage of the vector
+# suite is still PARAMETER TBD; these checks apply to the C++ sources now.
+Checks: >
+  clang-analyzer-*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
+  cppcoreguidelines-no-malloc,
+  misc-misplaced-const,
+  misc-redundant-expression,
+  modernize-use-nullptr,
+  readability-misleading-indentation
+WarningsAsErrors: '*'
+HeaderFilterRegex: '.*/core/(include|src)/.*'
+FormatStyle: none

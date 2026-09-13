@@ -65,6 +65,18 @@ jobs:
           ctest --test-dir build/core -C Release --output-on-failure
         shell: bash
 
+  core-qa:
+    name: kernel sanitizers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install clang-tidy
+        run: |
+          sudo apt-get update -y --quiet
+          sudo apt-get install -y --quiet --no-install-recommends clang-tidy
+      - name: ASan, UBSan and clang-tidy (AC-62)
+        run: ./scripts/core_qa.sh --require-tidy
+
   boundaries:
     name: licence, headers and links
     runs-on: ubuntu-latest
