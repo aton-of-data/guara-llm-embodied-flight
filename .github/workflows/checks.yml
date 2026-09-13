@@ -68,6 +68,12 @@ jobs:
         shell: bash
         env:
           CMAKE_BUILD_TYPE: Release
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: SIL port through the C ABI (AC-64)
+        run: ./scripts/check_ctk_sil.sh
+        shell: bash
 
   core-qa:
     name: kernel sanitizers

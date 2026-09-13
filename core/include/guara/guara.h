@@ -23,7 +23,11 @@ extern "C" {
 #endif
 
 #if defined(_WIN32)
-#define GUARA_API
+#  if defined(GUARA_BUILD_SHARED)
+#    define GUARA_API __declspec(dllexport)
+#  else
+#    define GUARA_API
+#  endif
 #else
 #define GUARA_API __attribute__((visibility("default")))
 #endif

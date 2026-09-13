@@ -22,14 +22,31 @@ if old not in text:
 path.write_text(text.replace(old, new, 1), encoding="utf-8")
 PY
 
-export PYTHONPATH="${tmp}:${root}${PYTHONPATH:+:${PYTHONPATH}}"
 set +e
-python3 -m guara ctk run --port python >"${tmp}/out" 2>"${tmp}/err"
+"${python}" - "${tmp}" "${root}" <<'PY'
+import sys
+from pathlib import Path
+
+tmp = Path(sys.argv[1]).resolve()
+root = Path(sys.argv[2]).resolve()
+cleaned = []
+for p in sys.path:
+    if p in ("", "."):
+        continue
+    try:
+        if Path(p).resolve() == root:
+            continue
+    except OSError:
+        pass
+    cleaned.append(p)
+sys.path = [str(tmp)] + cleaned
+from guara.ctk import run as ctk
+sys.exit(ctk.run(["run", "--port", "python"]))
+PY
 rc=$?
 set -e
 if [[ "${rc}" -eq 0 ]]; then
   echo "FAIL ctk_mutation: kit accepted a port with T4 disabled" >&2
-  cat "${tmp}/out" "${tmp}/err" >&2 || true
   exit 1
 fi
 echo "PASS ctk_mutation: T4-disabled python port rejected (exit ${rc})"

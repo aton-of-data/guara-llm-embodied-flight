@@ -16,9 +16,6 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import jsonschema
-import yaml
-
 from . import doctor
 
 SCHEMA_FILE = Path("config") / "rta_params.schema.json"
@@ -114,6 +111,9 @@ def digest_core(core: dict[str, float | int | bool]) -> bytes:
 
 
 def load(path: Path | str, root: Path | None = None) -> ParamSet:
+    import jsonschema
+    import yaml
+
     path = Path(path)
     base = root if root is not None else doctor.repo_root()
     if base is None:

@@ -37,13 +37,15 @@ if(GUARA_CORE_STANDALONE)
   endif()
 endif()
 
-add_library(guara_core
+set(GUARA_CORE_SOURCES
   src/types.cpp
   src/decision_core.cpp
   src/param_digest.cpp
   src/abi.cpp
   src/gateway_abi.cpp
 )
+
+add_library(guara_core ${GUARA_CORE_SOURCES})
 add_library(guara::core ALIAS guara_core)
 target_include_directories(guara_core
   PUBLIC
@@ -101,9 +103,25 @@ if(GUARA_CORE_STANDALONE)
     add_test(NAME abi_freestanding COMMAND test_abi_freestanding)
   endif()
 
+  add_library(guara_cabi SHARED ${GUARA_CORE_SOURCES})
+  target_include_directories(guara_cabi PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>)
+  target_compile_definitions(guara_cabi PRIVATE GUARA_BUILD_SHARED)
+  set_target_properties(guara_cabi PROPERTIES
+    OUTPUT_NAME guara_cabi
+    C_VISIBILITY_PRESET hidden
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
+    POSITION_INDEPENDENT_CODE ON)
+
   include(GNUInstallDirs)
   include(CMakePackageConfigHelpers)
   install(TARGETS guara_core EXPORT guara_coreTargets
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+  install(TARGETS guara_cabi
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

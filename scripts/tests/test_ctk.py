@@ -9,6 +9,8 @@ import pathlib
 import subprocess
 import sys
 
+import pytest
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
@@ -43,6 +45,21 @@ def test_python_port_passes_adr0010_gateway_vectors():
     assert r.returncode == 0, r.stderr
     assert f"PASS {n}/{n}" in r.stdout
     assert "adr0010_gateway.json" in r.stdout
+
+
+def test_sil_port_passes_when_cabi_is_built():
+    from guara.ctk.sil import find_cabi
+    lib = find_cabi(ROOT)
+    if lib is None:
+        pytest.skip("guara_cabi shared library is not built")
+    n = len(json.loads((ROOT / "core/conformance/vectors/spec_s3.json").read_text()))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "sil"],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert "sil-cabi" in r.stdout
 
 
 def test_a_t4_mutation_is_rejected_by_the_kit():

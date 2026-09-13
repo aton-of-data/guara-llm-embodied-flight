@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Conformance kit runner (M19). Ports other than the Python reference are later."""
+"""Conformance kit runner (M19). Python reference and SIL (C ABI) ports."""
 from __future__ import annotations
 
 import argparse
@@ -13,6 +13,7 @@ from pathlib import Path
 from .. import doctor, params
 from .gateway import GatewayLimits, ReferenceGateway
 from .reference import Inputs, Params, ReferenceCore
+from .sil import SilCore, SilGateway, find_cabi, load_cabi
 
 NOTE = (
     "Conformance is necessary and not sufficient: this run demonstrates "
@@ -92,10 +93,10 @@ def _looks_like_gateway(data: list) -> bool:
     return bool(steps) and "op" in steps[0]
 
 
-def _run_spec_vectors(data: list) -> tuple[int, int]:
+def _run_spec_vectors(data: list, make_core) -> tuple[int, int]:
     n_ok = 0
     for vec in data:
-        core = ReferenceCore(params=_params(vec.get("params")))
+        core = make_core(_params(vec.get("params")))
         vec_id = vec["id"]
         for i, step in enumerate(vec["steps"]):
             if step.get("action") == "latch":
@@ -141,13 +142,13 @@ def _check_gateway(vec_id: str, step_i: int, expect: dict, got) -> None:
             raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
 
 
-def _run_gateway_vectors(data: list) -> tuple[int, int]:
+def _run_gateway_vectors(data: list, make_gateway) -> tuple[int, int]:
     n_ok = 0
     for vec in data:
         limits = GatewayLimits()
         if "timeout_s" in vec:
             limits.cf_timeout_s = float(vec["timeout_s"])
-        gw = ReferenceGateway(limits=limits)
+        gw = make_gateway(limits)
         vec_id = vec["id"]
         for i, step in enumerate(vec["steps"]):
             op = step["op"]
@@ -168,11 +169,15 @@ def _run_gateway_vectors(data: list) -> tuple[int, int]:
     return n_ok, len(data)
 
 
-def run_vectors(path: Path) -> tuple[int, int]:
+def run_vectors(path: Path, make_core=None, make_gateway=None) -> tuple[int, int]:
+    if make_core is None:
+        make_core = lambda params: ReferenceCore(params=params)
+    if make_gateway is None:
+        make_gateway = lambda limits: ReferenceGateway(limits=limits)
     data = json.loads(path.read_text(encoding="utf-8"))
     if _looks_like_gateway(data):
-        return _run_gateway_vectors(data)
-    return _run_spec_vectors(data)
+        return _run_gateway_vectors(data, make_gateway)
+    return _run_spec_vectors(data, make_core)
 
 
 def default_vectors(root: Path) -> Path:
@@ -210,8 +215,10 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
     runp = sub.add_parser("run", help="execute vectors and print a report")
-    runp.add_argument("--port", required=True, choices=("python",))
+    runp.add_argument("--port", required=True, choices=("python", "sil"))
     runp.add_argument("--vectors", type=Path, default=None)
+    runp.add_argument("--lib", type=Path, default=None,
+                      help="shared C ABI library for --port sil (or set GUARA_CABI)")
     runp.add_argument("--report", type=Path, default=None,
                       help="write the report to a file, or to report.txt in this directory")
     args = parser.parse_args(argv)
@@ -224,8 +231,24 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
         print("FAIL ctk: versions.env not found; run from a clone", file=err)
         return 1
     vectors = args.vectors if args.vectors is not None else default_vectors(root)
+    make_core = lambda params: ReferenceCore(params=params)
+    make_gateway = lambda limits: ReferenceGateway(limits=limits)
+    port_name = "python-reference"
+    if args.port == "sil":
+        lib_path = find_cabi(root, args.lib)
+        if lib_path is None:
+            print("FAIL ctk: C ABI library not found (build core/ or pass --lib)", file=err)
+            return 1
+        try:
+            lib = load_cabi(lib_path)
+        except OSError as exc:
+            print(f"FAIL ctk: cannot load {lib_path}: {exc}", file=err)
+            return 1
+        make_core = lambda params, _lib=lib: SilCore(_lib, params)
+        make_gateway = lambda limits, _lib=lib: SilGateway(_lib, limits)
+        port_name = "sil-cabi"
     try:
-        n_ok, n_all = run_vectors(vectors)
+        n_ok, n_all = run_vectors(vectors, make_core, make_gateway)
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
         print(f"FAIL ctk: {exc}", file=err)
         return 1
@@ -233,7 +256,7 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     digest = hashlib.sha256(vectors.read_bytes()).hexdigest()
     core_ver, abi_ver = params.versions_from_header(root)
     body = "\n".join(_report_lines(
-        "python-reference", core_ver, abi_ver, digest, vectors.name, n_ok, n_all,
+        port_name, core_ver, abi_ver, digest, vectors.name, n_ok, n_all,
     )) + "\n"
     print(body, file=out, end="")
     if args.report is not None:
