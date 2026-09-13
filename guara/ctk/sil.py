@@ -180,6 +180,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_transition_name.restype = c_char_p
     lib.guara_cause_name.argtypes = [c_uint32]
     lib.guara_cause_name.restype = c_char_p
+    lib.guara_err_name.argtypes = [c_int]
+    lib.guara_err_name.restype = c_char_p
     lib.guara_params_default.argtypes = [POINTER(CParams)]
     lib.guara_params_error.argtypes = [POINTER(CParams)]
     lib.guara_params_error.restype = c_char_p
@@ -357,6 +359,9 @@ class SilCore:
         if fn is None:
             if kind == "monitor_accept":
                 raw = self._lib.guara_monitor_accept_name(c_int(code))
+                return "UNKNOWN" if raw is None else raw.decode("utf-8")
+            if kind == "err":
+                raw = self._lib.guara_err_name(c_int(code))
                 return "UNKNOWN" if raw is None else raw.decode("utf-8")
             return "UNKNOWN"
         raw = fn(c_uint8(code))

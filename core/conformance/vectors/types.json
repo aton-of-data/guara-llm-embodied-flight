@@ -110,5 +110,17 @@
       {"op": "check_name", "kind": "monitor_accept", "code": 2, "expect": {"name": "TABLE_FULL"}},
       {"op": "check_name", "kind": "monitor_accept", "code": 3, "expect": {"name": "UNKNOWN"}}
     ]
+  },
+  {
+    "id": "err_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "err", "code": 0, "expect": {"name": "OK"}},
+      {"op": "check_name", "kind": "err", "code": 1, "expect": {"name": "NULL"}},
+      {"op": "check_name", "kind": "err", "code": 2, "expect": {"name": "STORAGE"}},
+      {"op": "check_name", "kind": "err", "code": 3, "expect": {"name": "PARAMS"}},
+      {"op": "check_name", "kind": "err", "code": 4, "expect": {"name": "UNINIT"}},
+      {"op": "check_name", "kind": "err", "code": 5, "expect": {"name": "UNKNOWN"}}
+    ]
   }
 ]

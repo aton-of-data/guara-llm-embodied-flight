@@ -259,4 +259,17 @@ const char * guara_cause_name(uint32_t bits)
   return guara_rta::causeName(bits);
 }
 
+
+const char * guara_err_name(int code)
+{
+  switch (code) {
+    case GUARA_OK: return "OK";
+    case GUARA_ERR_NULL: return "NULL";
+    case GUARA_ERR_STORAGE: return "STORAGE";
+    case GUARA_ERR_PARAMS: return "PARAMS";
+    case GUARA_ERR_UNINIT: return "UNINIT";
+    default: return "UNKNOWN";
+  }
+}
+
 }  // extern "C"

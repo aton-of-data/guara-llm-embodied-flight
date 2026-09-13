@@ -46,6 +46,7 @@ CAUSE_NAMES = {
     CAUSE_ESCALATION: "ESCALATION",
     CAUSE_ACTUATION: "ACTUATION",
 }
+ERR_NAMES = ("OK", "NULL", "STORAGE", "PARAMS", "UNINIT")
 
 
 def vocabulary_name(kind: str, code: int) -> str:
@@ -60,6 +61,10 @@ def vocabulary_name(kind: str, code: int) -> str:
         return monitor_action_name(n)
     if kind == "monitor_accept":
         return monitor_accept_name(n)
+    if kind == "err":
+        if 0 <= n < len(ERR_NAMES):
+            return ERR_NAMES[n]
+        return "UNKNOWN"
     table = {
         "state": STATE_NAMES,
         "recovery": RECOVERY_NAMES,

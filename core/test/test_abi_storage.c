@@ -23,6 +23,9 @@ int main(void)
   CHECK(strcmp(guara_core_version(), GUARA_CORE_VERSION) == 0);
   CHECK(strcmp(guara_abi_version(), GUARA_ABI_VERSION) == 0);
   CHECK(strstr(guara_abi_version(), "provisional") != NULL);
+  CHECK(strcmp(guara_err_name(GUARA_OK), "OK") == 0);
+  CHECK(strcmp(guara_err_name(GUARA_ERR_UNINIT), "UNINIT") == 0);
+  CHECK(strcmp(guara_err_name(9), "UNKNOWN") == 0);
 
   CHECK(guara_core_init(NULL, 64, NULL) == GUARA_ERR_NULL);
 
