@@ -1,0 +1,340 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap and gap register — Guará</title>
+<meta name="description" content="What is done, what is in flight, what is missing: the Guará milestone state, the ordering rules, and the gap register that names every known absence with the milestone that owns it.">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  :root { --figpfx: "R-"; }
+  .page-head { padding-block: 3.2rem 1rem; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html">Overview</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html">Evidence</a>
+      <a href="roadmap.html" aria-current="page">Roadmap</a>
+      <a href="nomenclature.html">Nomenclature</a>
+      <a href="contribute.html">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap page-head">
+  <p class="eyebrow">Programme</p>
+  <h1>Roadmap and gap register</h1>
+  <p class="lede">
+    What is done, what is in flight, and — at greater length, because it is the more useful half —
+    what is missing. Every known absence is a numbered row with exactly one milestone that owns it.
+    The register is published before anyone asks for it, on the view that a project which cannot
+    list its own gaps has not found them.
+  </p>
+  <dl class="docmeta">
+    <div><dt>Document</dt><dd>GUARA-SITE-06</dd></div>
+    <div><dt>Title</dt><dd>Roadmap and gap register</dd></div>
+    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
+    <div><dt>Issued</dt><dd>2026-09-13</dd></div>
+    <div><dt>Status</dt><dd>Research prototype — SITL only</dd></div>
+    <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
+  </dl>
+</div>
+
+<div class="wrap doc">
+  <aside class="toc">
+    <h4>On this page</h4>
+    <a href="#state">1 · Where the work is</a>
+    <a href="#rules">2 · The four ordering rules</a>
+    <a href="#tracks">3 · Tracks and sequence</a>
+    <a href="#register">4 · The gap register</a>
+    <a href="#risks">5 · Risk families</a>
+    <a href="#next">6 · What a contributor can take</a>
+  </aside>
+
+  <main class="doc-body">
+
+  <section id="state">
+    <h2>1 · Where the work is</h2>
+    <p>
+      A milestone is not complete without an executed command and an excerpt of its output, and an
+      acceptance criterion is <code>PASS</code> only on the same terms. Code existing is not a
+      criterion being met, which is why several rows below say <em>in progress</em> while their
+      code is already in the tree.
+    </p>
+    <p class="tbl-cap">Milestone state by thread. The authority for every cell is <code>docs/milestones/STATUS.md</code> in the repository; this table restates it and does not extend it.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Thread</th><th>What it is</th><th>Milestones</th><th>State</th></tr></thead>
+        <tbody>
+          <tr><td>core</td><td>The PX4 runtime-assurance core: arbiter, geofence predictor, detect-and-avoid, latency and batch</td><td>M1–M7, P4</td><td><strong>Done and measured.</strong> P5–P7 — adversarial complex function, preprint, upstream contribution — not started</td></tr>
+          <tr><td>A</td><td>Air and LLM embodiment</td><td>M8–M12, M9b</td><td>M8 done; M9 in progress; M9b onward planned</td></tr>
+          <tr><td>B</td><td>The F´ host for the same switching core</td><td>M13–M15</td><td>Specified. <strong>No F´ deployment has ever run.</strong></td></tr>
+          <tr><td>C</td><td>The space domain: orbital constraint monitors, the latched safe mode</td><td>M13c, M16</td><td>Attitude keep-out predictor passes its analytic criterion; the orbital run needs a simulator that is not yet pinned</td></tr>
+          <tr><td>S</td><td>Setup and reproducibility</td><td>M17</td><td>In progress: single pin source, hash-pinned lockfile, workstation preflight, offline mode</td></tr>
+          <tr><td>K</td><td>The kernel and its delivery</td><td>M18–M20</td><td>In progress: the host-free kernel and its C ABI, the conformance kit and two ports. <strong>Nothing is published yet</strong></td></tr>
+          <tr><td>M</td><td>Monitors, requirements and the specification</td><td>M2, M19</td><td>Two gaps open: no standing non-vacuity check on a deployed monitor, and semantics the core has that the specification does not state</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <span class="tag">What this page is not</span>
+      <p>
+        It is not a schedule and carries no dates. A single-author research project that published
+        a delivery date would be publishing a guess. What it does carry is an <em>order</em>, and
+        the rules below are what fix that order.
+      </p>
+    </div>
+  </section>
+
+  <section id="rules">
+    <h2>2 · The four ordering rules</h2>
+    <p>
+      Each rule exists because the cheapest mistake available to this project is to let an
+      interesting thread outrun the evidence that makes it meaningful.
+    </p>
+    <p class="tbl-cap">The rules that decide what may start when, and the failure each one prevents.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Rule</th><th>Says</th><th>Prevents</th></tr></thead>
+        <tbody>
+          <tr><td>O — scope protection</td><td>No F´ or space work begins before the PX4 latency and batch results are complete.</td><td>A half-ported second host standing in for results the first host never produced. This rule is why the space thread today is one carefully tested geometric predictor.</td></tr>
+          <tr><td>D — delivery</td><td>Nothing is published whose conformance report is missing or failing, and no published artifact claims safety of itself. No release without an SBOM, a provenance attestation and a licence-boundary check.</td><td>An installable artifact that people fly, carrying an implied assurance nobody generated.</td></tr>
+          <tr><td>H — hardware gate</td><td>SITL → hardware-in-the-loop → bench → tether → low-altitude → operational, each step's evidence bundle a precondition of the next. No flight with a model in the loop before transport authentication passes on the same configuration that flies.</td><td>The step from simulator to aircraft being taken in one jump, which is how this class of project hurts someone.</td></tr>
+          <tr><td>T — trust boundary</td><td>No milestone gives a language model a shorter path to an actuator than intent → deterministic compiler → validated plan → trusted executor → gateway → arbiter → platform recovery function.</td><td>Capability creep at the boundary: the model gaining reach because a feature was convenient.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="tracks">
+    <h2>3 · Tracks and sequence</h2>
+    <p>
+      Four tracks run past the current work. The kernel track feeds both domains, which is the
+      whole architectural claim: one switching core, two hosts, one conformance kit deciding
+      whether they agree.
+    </p>
+    <pre><code>M17 setup  ────────────────────────────────────────────────►  continuous
+     │
+     └─► M18 kernel ─► M19 conformance kit ─► M20 published artifacts
+                              │                      │
+                              │                      ├─► air:   M21 HITL ─► M22 companion ─► M23 instrumentation ─► M24 dossier ─► M25 LLM flight campaign
+                              │                      │
+                              └──────────────────────┴─► space: (M13 host ─► M14 safe mode ─► M15 upstream) ─► M26 target ─► M27 operations ─► M28 campaign</code></pre>
+    <div class="note">
+      <span class="tag">The asymmetry between the domains</span>
+      <p>
+        On PX4 the recovery function was <em>free</em>: Hold, RTL and Land are assured,
+        pre-existing, pilot-familiar modes, and the contribution is only the switching logic. F´
+        ships no safe mode at all — a search of the pinned clone returns nothing — so in orbit the
+        project must supply <strong>both halves</strong>, and the recovery half is new
+        safety-critical code with no flight heritage. That is risk RS-1, and it is the one a
+        reviewer should attack first.
+      </p>
+    </div>
+  </section>
+
+  <section id="register">
+    <h2>4 · The gap register</h2>
+    <p>
+      Every row is a real absence, not an aspiration, and every row has exactly one owning milestone.
+      The full register with its wording and its traceability table is
+      <code>docs/PLAN-M17-M28.md</code> §1; what follows is the same content grouped by track.
+    </p>
+
+    <h3>G-S · setup and reproducibility</h3>
+    <p class="tbl-cap">Gaps in making the project run identically on a machine that is not the author's.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>#</th><th>Gap</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>G-S1</td><td>Python dependencies were floors, not pins: two machines resolved two environments</td><td>M17</td></tr>
+          <tr><td>G-S2</td><td>Pins duplicated between requirements files and the Dockerfile, with nothing detecting drift</td><td>M17</td></tr>
+          <tr><td>G-S3</td><td>Nothing was installable, so the smallest path only worked from a clone</td><td>M17, M20</td></tr>
+          <tr><td>G-S4</td><td>The dev image is built locally and amd64-only; the registry publish is manual, so there is no reliable pull path and none at all for arm64</td><td>M17</td></tr>
+          <tr><td>G-S5</td><td>No workstation preflight: nothing checked architecture, Docker, disk, memory, clock skew or pinned clone commits before a run failed halfway</td><td>M17</td></tr>
+          <tr><td>G-S6</td><td>No offline path: fetching sources and building the image both needed the network</td><td>M17</td></tr>
+          <tr><td>G-S7</td><td>Continuous integration tested only the Python layer, so the arbiter could break silently</td><td>M17</td></tr>
+          <tr><td>G-S8</td><td>ROS 2 Humble reaches end of life in May 2027, inside this plan's horizon, with no migration scheduled</td><td>M20</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>G-K · the kernel and its delivery</h3>
+    <p class="tbl-cap">Gaps between a switching core that works in this repository and one a third party can consume and check.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>#</th><th>Gap</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>G-K1</td><td>The core was ROS-free in its code but ROS-packaged in its build, so no non-ROS host could consume it</td><td>M18</td></tr>
+          <tr><td>G-K2</td><td>No C ABI, no versioned interface, no caller-supplied storage — the shapes a flight-software integrator expects</td><td>M18</td></tr>
+          <tr><td>G-K3</td><td>No semantic version, no ABI gate, no behavioural-compatibility gate between releases</td><td>M18, M20</td></tr>
+          <tr><td>G-K4</td><td>No worst-case evidence: bounded work per tick is asserted by construction and by a no-allocation test, never measured on a target</td><td>M18, M22</td></tr>
+          <tr><td>G-K5</td><td>No conformance vectors an integrator could run; host equivalence was an internal claim with no shippable artifact</td><td>M19</td></tr>
+          <tr><td>G-K6</td><td>No independent implementation had read the specification, so the specification's ambiguities were unknown</td><td>M19</td></tr>
+          <tr><td>G-K7</td><td>No binary distribution on any channel: no packages, no wheel, no F´ library, no multi-arch image, no SBOM, no provenance</td><td>M20</td></tr>
+          <tr><td>G-K8</td><td>Runtime configuration was loaded without a schema check or a hash recorded against the running core</td><td>M18, M23</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>G-M · monitors, requirements and the specification</h3>
+    <p class="tbl-cap">The signals the whole architecture switches on, and the document two hosts have to agree through. Both rows are new as of 2026-09-13.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>#</th><th>Gap</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>G-M1</td><td>No standing check that a deployed monitor is <em>non-vacuous</em> — although the defect has already occurred once, with a requirement reporting a violation in every one of 1728 verdicts including on the ground, and a checker that accepted it. That requirement and that checker were fixed; the class was not</td><td>M2</td></tr>
+          <tr><td>G-M2</td><td>The specification does not state semantics the decision core has: the recovery rank never falls once escalated, and a return to the complex function is possible only from the mildest recovery. Both behaviours are safe; neither is written down, so an independent implementation can get them wrong</td><td>M19</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>G-H · air, on real hardware</h3>
+    <p class="tbl-cap">Everything between a measured simulation and a flight. Three rows moved to the air thread on 2026-09-13 because none of them needs hardware.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>#</th><th>Gap</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>G-H1</td><td>No hardware-in-the-loop stage at all: the step from simulation to flight is a cliff</td><td>M21</td></tr>
+          <tr><td>G-H2</td><td>Every latency number is x86 simulation; nothing measured on an arm companion under a general-purpose kernel</td><td>M21, M22</td></tr>
+          <tr><td>G-H3</td><td>No companion target: no arm64 image, no boot service, no scheduling policy, no isolation between the arbiter and the complex function</td><td>M22</td></tr>
+          <tr><td>G-H4</td><td>No dead-man between companion and flight controller on real hardware; the autopilot's offboard-loss failsafe is neither configured nor tested as a criterion</td><td>M22</td></tr>
+          <tr><td>G-H5</td><td>No black box: no single bundle correlating the autopilot log, the recorded topics and the arbiter's events on one timebase, and no measured clock offset between them</td><td>M23</td></tr>
+          <tr><td>G-H6</td><td>No arming gate: nothing refuses to fly when the loaded geofence, parameters, monitor build or core version differ from the declared set</td><td>M23</td></tr>
+          <tr><td>G-H7</td><td>The operator cannot see the arbiter: no ground-station annunciation of a switch or its cause</td><td>M23</td></tr>
+          <tr><td>G-H8</td><td>The override matrix — radio loss, ground-station loss, companion loss, kill switch, pilot mode change, low battery — is untested on hardware</td><td>M23</td></tr>
+          <tr><td>G-H9</td><td>No operational safety dossier: no concept of operations, no system-level hazard and failure-mode analysis, no operational-risk assessment mapping, no regulatory position for Brazil or Europe, and no explicit map of which certification objectives are <em>not</em> claimed</td><td>M24</td></tr>
+          <tr><td>G-H10</td><td>The hardware run has no evidence contract: aircraft, pilot, site, weather, battery, waiver and firmware hash are required fields nowhere</td><td>M23, M25</td></tr>
+          <tr><td>G-H11</td><td>Transport authentication is open, and it is a hard precondition for any model-driven complex function on a real vehicle</td><td>M9b</td></tr>
+          <tr><td>G-H12</td><td>No model-side runtime discipline: no request budget, no hard timeout, no watchdog on the model process, no defined degraded mode when it is unreachable</td><td>M9b</td></tr>
+          <tr><td>G-H13</td><td>The adversarial corpus was written by the author of the compiler it attacks, and has never been externally reviewed or coverage-measured</td><td>M9b</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>G-Z · space</h3>
+    <p class="tbl-cap">The orbital domain. Five rows are new as of 2026-09-13, four of which need no hardware and no F´ host.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>#</th><th>Gap</th><th>Owner</th></tr></thead>
+        <tbody>
+          <tr><td>G-Z1</td><td>The F´ host is unextracted and the safe mode unwritten — everything downstream is blocked on them</td><td>M13/M14, M26</td></tr>
+          <tr><td>G-Z2</td><td>No cross-compilation and no processor-in-the-loop: nothing has run on an onboard-computer-class board</td><td>M26</td></tr>
+          <tr><td>G-Z3</td><td>&ldquo;Released only by ground command&rdquo; is a sentence, not an interface: no authenticated telecommand path and no rejection test for a non-ground release</td><td>M27</td></tr>
+          <tr><td>G-Z4</td><td>No standard packet-services framing: the channels and events are not expressed as on-board monitoring, events or event-action definitions an operator would recognise</td><td>M27</td></tr>
+          <tr><td>G-Z5</td><td>No time system declared, and clock drift unbudgeted</td><td>M27</td></tr>
+          <tr><td>G-Z6</td><td>No orbital simulator is pinned, so the orbital criterion has nothing to run against</td><td>M27</td></tr>
+          <tr><td>G-Z7</td><td>Only the analytic keep-out channel exists; power margin, momentum, input validity and requirements have no implementation</td><td>M26</td></tr>
+          <tr><td>G-Z8</td><td>No map of which space software-engineering objectives are <em>not</em> claimed, the sibling of G-H9</td><td>M27</td></tr>
+          <tr><td>G-Z9</td><td>The adversarial corpus is air-only — fields, spraying, ground sample distance, ceiling, geofence — so the orbital jailbreak criterion has nothing to run: every air case dies at the space schema, for the wrong reason, and the run looks like a pass</td><td>M16</td></tr>
+          <tr><td>G-Z10</td><td>No authenticated origin for a space intent or a sequence. G-Z3 covers only the safe-mode <em>release</em>; the command path reaching the sequencer is unconstrained, and a default F´ uplink authenticates nothing</td><td>M27</td></tr>
+          <tr><td>G-Z11</td><td>The air gateway's rules had no space instantiation: no freshness source, no envelope clamp on commanded rates, no shadow keep-out check on a proposed slew. <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/adr/0015-space-untrusted-function-contract.md">ADR 0015</a> now decides it; the implementation is open</td><td>M26</td></tr>
+          <tr><td>G-Z12</td><td>The space decision rules are not published as conformance vectors, so an F´ port would be <em>trusted</em> to match the reference rather than <em>checked</em> against it</td><td>M19</td></tr>
+          <tr><td>G-Z13</td><td>Whether safe-mode entry can itself violate a keep-out is unmeasured. A star tracker's keep-out cone is declared around the body that blinds it, so a direct slew to a sun-pointing recovery attitude may sweep the very cone it must avoid</td><td>M14</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="tag">Three criteria expected to find something</span>
+      <p>
+        Ten ground-side acceptance criteria were added on 2026-09-13, none of which needs hardware,
+        a host, a simulator or a network. Three of them are predictions of a defect rather than
+        confirmations of a design: that the specified safe mode is unsafe for a measurable fraction
+        of initial attitudes (G-Z13); that at least one deployed monitor's verdict never changes
+        (G-M1); and that the independently written reference implementation disagrees with the C
+        core on a rule the specification never stated (G-M2). All three are cheap to test now and
+        expensive to discover later.
+      </p>
+    </div>
+  </section>
+
+  <section id="risks">
+    <h2>5 · Risk families</h2>
+    <p>
+      Risks are numbered in four families across four documents. A gap is a known absence; a risk is
+      something that could invalidate work already done.
+    </p>
+    <p class="tbl-cap">The four families, what each covers, and the document that defines it.</p>
+    <div class="table-scroll">
+      <table class="nomen">
+        <thead><tr><th>Family</th><th>Covers</th><th>Defined in</th></tr></thead>
+        <tbody>
+          <tr><td>R-1…R-14</td><td>The PX4 core: environment, toolchain, thresholds, pins</td><td><code>docs/SPEC.md</code> §9</td></tr>
+          <tr><td>RP-1…RP-3</td><td>The LLM-embodiment programme: who wrote the corpus, what its size bounds</td><td><code>docs/PLAN-M8-M16.md</code> §6</td></tr>
+          <tr><td>RS-1…RS-6</td><td>The space thread: the safe mode with no heritage, the pre-release sequencer, simulator fidelity</td><td><code>docs/research/SPACE-AUTONOMY.md</code> §8</td></tr>
+          <tr><td>RH-1…RH-9</td><td>Delivery and hardware: end-of-life distributions, publishing posture, vendor capture, measured-versus-proven timing</td><td><code>docs/PLAN-M17-M28.md</code> §7</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <span class="tag">The two that cost most if ignored</span>
+      <p>
+        <strong>RS-1:</strong> the orbital recovery function has no flight heritage because it does
+        not exist yet. <strong>RH-9:</strong> measuring on a general-purpose kernel yields
+        distributions, not bounds — every timing figure this project publishes is a worst
+        <em>observed</em> value, and a real bound would need a worst-case-execution-time tool and a
+        real-time operating system, neither of which is in scope. Anyone reading a measured p99 as
+        a guarantee is reading it wrongly, and that sentence travels inside the artifacts rather
+        than only on this page.
+      </p>
+    </div>
+  </section>
+
+  <section id="next">
+    <h2>6 · What a contributor can take</h2>
+    <p>
+      The items below are bounded, each blocks a numbered gap or risk, and none of them requires
+      hardware this project does not have. The full list, with what each one asks of you, is on the
+      <a href="contribute.html#asks">contribution page</a>.
+    </p>
+    <ul>
+      <li><strong>Write the switching core from the specification alone.</strong> A second implementation, by a path independent of the existing one, to find out what the specification fails to say. No hardware, no container, no ROS. It is the single item that would most improve the specification, and the C ABI stays provisional until it exists (G-K6).</li>
+      <li><strong>A space adversarial corpus.</strong> A file of utterances that attack the orbital boundary rather than the air one: a slew whose endpoints are both legal and whose path crosses a keep-out, a request to release the safe-mode latch, a sequence whose members are individually valid and whose aggregate exhausts momentum (G-Z9).</li>
+      <li><strong>Measure the safe-mode entry manoeuvre.</strong> Sweep initial attitudes and count how many direct slews to the survivable attitude cross a declared keep-out cone. Needs the analytic predictor that already exists and nothing else (G-Z13).</li>
+      <li><strong>First timing numbers that are not x86.</strong> Anyone with a small arm board can produce the first on-target measurements this project has (G-K4, G-H2).</li>
+      <li><strong>Port the packages ahead of the distribution's end of life</strong> in May 2027 (G-S8, RH-1).</li>
+      <li><strong>Review the safe-mode specification</strong> — ideally someone who has flown a spacecraft safe mode, reading it for what it gets wrong (RS-1).</li>
+    </ul>
+    <div class="note">
+      <span class="tag">And the most valuable report of all</span>
+      <p>
+        A run from a setup that is not the author's: a different airframe, a different distribution,
+        a different model behind the intent compiler — and a description of what broke. The
+        evaluation harness ships a provider that needs no key and no network, so reproducing the
+        pipeline costs nothing but time.
+      </p>
+    </div>
+  </section>
+
+  </main>
+</div>
+
+<footer class="site">
+  <div class="wrap">
+    <p class="small" style="margin:0 0 .5rem">
+      Guará · Apache-2.0 · Copyright 2026 Aton Bertini Dornfeld and the Guará contributors.
+      Civil flight safety only.
+    </p>
+    <p class="small" style="margin:0">
+      <a href="index.html">Overview</a> · <a href="architecture.html">Architecture</a> ·
+      <a href="integrate.html">Integrate</a> · <a href="evidence.html">Evidence</a> ·
+      <a href="nomenclature.html">Nomenclature</a> · <a href="contribute.html">Contribute</a>
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
