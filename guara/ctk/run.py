@@ -224,6 +224,13 @@ def _looks_like_gateway(data: list) -> bool:
     return bool(ops & {"setpoint", "compute"})
 
 
+def _looks_like_gateway_limits(data: list) -> bool:
+    if not data:
+        return False
+    ops = {step.get("op") for step in (data[0].get("steps") or [])}
+    return "check_gateway_limits" in ops
+
+
 def _looks_like_monitor(data: list) -> bool:
     if not data:
         return False
@@ -379,6 +386,39 @@ def _run_gateway_vectors(data: list, make_gateway) -> VectorRun:
     return stats
 
 
+def _gw_limits(raw: dict | None, base: GatewayLimits | None = None) -> GatewayLimits:
+    p = GatewayLimits() if base is None else replace(base)
+    if not raw:
+        return p
+    for key in ("max_speed_h_m_s", "max_climb_rate_m_s", "max_descent_rate_m_s",
+                "max_yaw_rate_rad_s", "future_stamp_tolerance_s", "cf_timeout_s"):
+        if key in raw:
+            setattr(p, key, float(raw[key]))
+    return p
+
+
+def _run_gateway_limits_vectors(data: list, make_gateway) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
+    gw = make_gateway(GatewayLimits())
+    for vec in data:
+        vec_id = vec["id"]
+        base = _gw_limits(vec.get("limits"))
+        for i, step in enumerate(vec["steps"]):
+            op = step.get("op")
+            t0 = time.perf_counter_ns()
+            if op != "check_gateway_limits":
+                raise CtkError(f"{vec_id} step {i}: unknown op {op}")
+            got = gw.limits_error(_gw_limits(step.get("limits"), base))
+            _mark(stats, t0)
+            if "limits_error" not in (step.get("expect") or {}):
+                raise CtkError(f"{vec_id} step {i}: check_gateway_limits missing limits_error")
+            want = step["expect"]["limits_error"]
+            if got != want:
+                raise CtkError(f"{vec_id} step {i}: limits_error got {got!r} want {want!r}")
+        stats.n_ok += 1
+    return stats
+
+
 def _check_monitor(vec_id: str, step_i: int, expect: dict, got: MonitorEval) -> None:
     mapping = {
         "violation": got.violation,
@@ -444,6 +484,8 @@ def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None
         return _run_geofence_vectors(data, make_geofence)
     if _looks_like_monitor(data):
         return _run_monitor_vectors(data, make_monitor)
+    if _looks_like_gateway_limits(data):
+        return _run_gateway_limits_vectors(data, make_gateway)
     if _looks_like_gateway(data):
         return _run_gateway_vectors(data, make_gateway)
     if _looks_like_core_params(data):

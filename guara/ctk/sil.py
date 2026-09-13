@@ -193,6 +193,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_gateway_storage_size.restype = c_size_t
     lib.guara_gateway_storage_align.restype = c_size_t
     lib.guara_gateway_limits_default.argtypes = [POINTER(CGatewayLimits)]
+    lib.guara_gateway_limits_error.argtypes = [POINTER(CGatewayLimits)]
+    lib.guara_gateway_limits_error.restype = c_char_p
     lib.guara_gateway_init.argtypes = [c_void_p, c_size_t, POINTER(CGatewayLimits)]
     lib.guara_gateway_init.restype = c_int
     lib.guara_gateway_set_guard.argtypes = [c_void_p, c_uint8]
@@ -376,6 +378,18 @@ class SilGateway:
         rc = lib.guara_gateway_init(self._buf.addr, size, ctypes.byref(cl))
         if rc != GUARA_OK:
             raise OSError(f"guara_gateway_init returned {rc}")
+
+    def limits_error(self, limits: GatewayLimits) -> str | None:
+        cl = CGatewayLimits(
+            max_speed_h_m_s=limits.max_speed_h_m_s,
+            max_climb_rate_m_s=limits.max_climb_rate_m_s,
+            max_descent_rate_m_s=limits.max_descent_rate_m_s,
+            max_yaw_rate_rad_s=limits.max_yaw_rate_rad_s,
+            future_stamp_tolerance_s=limits.future_stamp_tolerance_s,
+            cf_timeout_s=limits.cf_timeout_s,
+        )
+        raw = self._lib.guara_gateway_limits_error(ctypes.byref(cl))
+        return None if raw is None else raw.decode("utf-8")
 
     def set_guard(self, mode: int) -> None:
         rc = self._lib.guara_gateway_set_guard(self._buf.addr, c_uint8(mode))

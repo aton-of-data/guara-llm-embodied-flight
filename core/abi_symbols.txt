@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Exported C ABI (AC-61). Must match GUARA_API symbols in include/guara/guara.h.
 # A symbol change without an ABI version bump fails scripts/check_abi.py.
-abi: 0.10.0-provisional
+abi: 0.11.0-provisional
 guara_abi_version
 guara_cause_name
 guara_command_name
@@ -15,6 +15,7 @@ guara_core_version
 guara_gateway_compute
 guara_gateway_init
 guara_gateway_limits_default
+guara_gateway_limits_error
 guara_gateway_on_cf_setpoint
 guara_gateway_on_core_state
 guara_gateway_set_guard

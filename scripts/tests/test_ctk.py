@@ -48,6 +48,19 @@ def test_python_port_passes_adr0010_gateway_vectors():
     assert "adr0010_gateway.json" in r.stdout
 
 
+def test_python_port_passes_gateway_limits_vectors():
+    vectors = ROOT / "core/conformance/vectors/gateway_limits.json"
+    n = len(json.loads(vectors.read_text()))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(vectors)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert "gateway_limits.json" in r.stdout
+
+
 def test_python_port_passes_monitor_table_vectors():
     vectors = ROOT / "core/conformance/vectors/monitor_table.json"
     n = len(json.loads(vectors.read_text()))

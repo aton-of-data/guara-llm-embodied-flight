@@ -1,0 +1,43 @@
+[
+  {
+    "id": "default_gateway_limits_are_valid",
+    "adr": ["0010-2"],
+    "steps": [{"op": "check_gateway_limits", "expect": {"limits_error": null}}]
+  },
+  {
+    "id": "cf_timeout_must_be_positive",
+    "adr": ["0010-1"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"cf_timeout_s": 0.0},
+               "expect": {"limits_error": "cf_timeout_s must be > 0"}}]
+  },
+  {
+    "id": "max_speed_must_be_positive",
+    "adr": ["0010-2"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"max_speed_h_m_s": 0.0},
+               "expect": {"limits_error": "max_speed_h_m_s must be > 0"}}]
+  },
+  {
+    "id": "max_climb_must_be_positive",
+    "adr": ["0010-2"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"max_climb_rate_m_s": 0.0},
+               "expect": {"limits_error": "max_climb_rate_m_s must be > 0"}}]
+  },
+  {
+    "id": "max_descent_must_be_positive",
+    "adr": ["0010-2"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"max_descent_rate_m_s": 0.0},
+               "expect": {"limits_error": "max_descent_rate_m_s must be > 0"}}]
+  },
+  {
+    "id": "max_yaw_rate_must_be_positive",
+    "adr": ["0010-2"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"max_yaw_rate_rad_s": 0.0},
+               "expect": {"limits_error": "max_yaw_rate_rad_s must be > 0"}}]
+  },
+  {
+    "id": "future_stamp_tolerance_must_be_non_negative",
+    "adr": ["0010-1"],
+    "steps": [{"op": "check_gateway_limits", "limits": {"future_stamp_tolerance_s": -0.01},
+               "expect": {"limits_error": "future_stamp_tolerance_s must be >= 0"}}]
+  }
+]

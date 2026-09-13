@@ -156,6 +156,209 @@ static int skip_value(Cursor *c)
   return parse_number(c, &v);
 }
 
+static int parse_limits_fields(Cursor *c, guara_gateway_limits *p)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[40];
+    double v = 0.0;
+    if (!parse_string(c, key, sizeof key) || !take(c, ':') || !parse_number(c, &v)) {
+      return 0;
+    }
+    if (strcmp(key, "max_speed_h_m_s") == 0) {
+      p->max_speed_h_m_s = v;
+    } else if (strcmp(key, "max_climb_rate_m_s") == 0) {
+      p->max_climb_rate_m_s = v;
+    } else if (strcmp(key, "max_descent_rate_m_s") == 0) {
+      p->max_descent_rate_m_s = v;
+    } else if (strcmp(key, "max_yaw_rate_rad_s") == 0) {
+      p->max_yaw_rate_rad_s = v;
+    } else if (strcmp(key, "future_stamp_tolerance_s") == 0) {
+      p->future_stamp_tolerance_s = v;
+    } else if (strcmp(key, "cf_timeout_s") == 0) {
+      p->cf_timeout_s = v;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
+static int check_limits_error(const char *id, int step_i, Cursor *c, const char *got)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "limits_error") == 0) {
+      if (parse_null(c)) {
+        ok = got == NULL;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d limits_error got %s want null\n",
+                  id, step_i, got ? got : "null");
+          return 0;
+        }
+      } else {
+        char want[80] = {0};
+        ok = parse_string(c, want, sizeof want) && got != NULL && strcmp(got, want) == 0;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d limits_error got %s want %s\n",
+                  id, step_i, got ? got : "null", want);
+          return 0;
+        }
+      }
+    } else if (!skip_value(c)) {
+      ok = 0;
+    }
+    if (!ok) {
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
+static int run_limits_step(Cursor *c, const guara_gateway_limits *base, const char *id, int step_i)
+{
+  guara_gateway_limits step_p = *base;
+  int has_expect = 0;
+  Cursor expect_at;
+  memset(&expect_at, 0, sizeof expect_at);
+  char op[32] = {0};
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 0;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "op") == 0) {
+      ok = parse_string(c, op, sizeof op);
+    } else if (strcmp(key, "limits") == 0) {
+      ok = parse_limits_fields(c, &step_p);
+    } else if (strcmp(key, "expect") == 0) {
+      expect_at = *c;
+      ok = skip_value(c);
+      has_expect = 1;
+    } else {
+      ok = skip_value(c);
+    }
+    if (!ok) {
+      fprintf(stderr, "FAIL %s step %d: bad field %s\n", id, step_i, key);
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    if (!take(c, '}')) {
+      return 0;
+    }
+    break;
+  }
+  if (strcmp(op, "check_gateway_limits") != 0) {
+    fprintf(stderr, "FAIL %s step %d: unknown op %s\n", id, step_i, op);
+    return 0;
+  }
+  const char *err = guara_gateway_limits_error(&step_p);
+  if (has_expect) {
+    Cursor ec = expect_at;
+    if (!check_limits_error(id, step_i, &ec, err)) {
+      return 0;
+    }
+  }
+  return 1;
+}
+
+static int run_limits_vector(Cursor *c)
+{
+  char id[80] = "unknown";
+  guara_gateway_limits limits;
+  guara_gateway_limits_default(&limits);
+  int has_steps = 0;
+  Cursor steps_at;
+  memset(&steps_at, 0, sizeof steps_at);
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 0;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    if (strcmp(key, "id") == 0) {
+      if (!parse_string(c, id, sizeof id)) {
+        return 0;
+      }
+    } else if (strcmp(key, "limits") == 0) {
+      if (!parse_limits_fields(c, &limits)) {
+        return 0;
+      }
+    } else if (strcmp(key, "steps") == 0) {
+      steps_at = *c;
+      if (!skip_value(c)) {
+        return 0;
+      }
+      has_steps = 1;
+    } else if (!skip_value(c)) {
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    if (!take(c, '}')) {
+      return 0;
+    }
+    break;
+  }
+  if (!has_steps) {
+    fprintf(stderr, "FAIL %s: missing steps\n", id);
+    return 0;
+  }
+  Cursor sc = steps_at;
+  if (!take(&sc, '[')) {
+    return 0;
+  }
+  int step_i = 0;
+  if (take(&sc, ']')) {
+    fprintf(stderr, "FAIL %s: no steps\n", id);
+    return 0;
+  }
+  for (;;) {
+    if (!run_limits_step(&sc, &limits, id, step_i)) {
+      return 0;
+    }
+    ++step_i;
+    if (take(&sc, ',')) {
+      continue;
+    }
+    return take(&sc, ']');
+  }
+}
+
 static int parse_float_token(Cursor *c, float *out)
 {
   skip_ws(c);
@@ -536,5 +739,42 @@ int main(void)
     return 1;
   }
   printf("PASS conformance_adr0010_gateway vectors=%d\n", nvec);
+
+  const char *lim_path = GUARA_VECTORS_DIR "/gateway_limits.json";
+  size_t ln = 0;
+  char *lim_text = read_file(lim_path, &ln);
+  CHECK(lim_text != NULL);
+  Cursor lc = {lim_text, ln, 0};
+  CHECK(take(&lc, '['));
+  int nlim = 0;
+  CHECK(!take(&lc, ']'));
+  for (;;) {
+    if (!run_limits_vector(&lc)) {
+      free(lim_text);
+      return 1;
+    }
+    ++nlim;
+    if (take(&lc, ',')) {
+      continue;
+    }
+    if (!take(&lc, ']')) {
+      fprintf(stderr, "FAIL trailing JSON after gateway-limits vectors\n");
+      free(lim_text);
+      return 1;
+    }
+    break;
+  }
+  skip_ws(&lc);
+  if (lc.i != lc.n) {
+    fprintf(stderr, "FAIL trailing bytes after gateway-limits JSON\n");
+    free(lim_text);
+    return 1;
+  }
+  free(lim_text);
+  if (nlim < 7) {
+    fprintf(stderr, "FAIL expected at least 7 gateway-limits vectors, got %d\n", nlim);
+    return 1;
+  }
+  printf("PASS conformance_gateway_limits vectors=%d\n", nlim);
   return 0;
 }

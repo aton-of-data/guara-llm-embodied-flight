@@ -87,6 +87,32 @@ void guara_gateway_limits_default(guara_gateway_limits * limits)
   limits->cf_timeout_s = 0.5;
 }
 
+const char * guara_gateway_limits_error(const guara_gateway_limits * limits)
+{
+  if (limits == nullptr) {
+    return "limits is null";
+  }
+  if (!(limits->cf_timeout_s > 0.0)) {
+    return "cf_timeout_s must be > 0";
+  }
+  if (!(limits->max_speed_h_m_s > 0.0)) {
+    return "max_speed_h_m_s must be > 0";
+  }
+  if (!(limits->max_climb_rate_m_s > 0.0)) {
+    return "max_climb_rate_m_s must be > 0";
+  }
+  if (!(limits->max_descent_rate_m_s > 0.0)) {
+    return "max_descent_rate_m_s must be > 0";
+  }
+  if (!(limits->max_yaw_rate_rad_s > 0.0)) {
+    return "max_yaw_rate_rad_s must be > 0";
+  }
+  if (!(limits->future_stamp_tolerance_s >= 0.0)) {
+    return "future_stamp_tolerance_s must be >= 0";
+  }
+  return nullptr;
+}
+
 int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * limits)
 {
   if (storage == nullptr || limits == nullptr) {
@@ -95,10 +121,7 @@ int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * li
   if (n < sizeof(GwStorage)) {
     return GUARA_ERR_STORAGE;
   }
-  if (!(limits->cf_timeout_s > 0.0) || !(limits->max_speed_h_m_s > 0.0) ||
-    !(limits->max_climb_rate_m_s > 0.0) || !(limits->max_descent_rate_m_s > 0.0) ||
-    !(limits->max_yaw_rate_rad_s > 0.0) || !(limits->future_stamp_tolerance_s >= 0.0))
-  {
+  if (guara_gateway_limits_error(limits) != nullptr) {
     return GUARA_ERR_PARAMS;
   }
   GwStorage * s = as_gw(storage);

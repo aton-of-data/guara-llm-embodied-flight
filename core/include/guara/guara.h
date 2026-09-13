@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.10.0-provisional"
+#define GUARA_ABI_VERSION "0.11.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -133,6 +133,7 @@ typedef struct guara_gateway_output {
 GUARA_API size_t guara_gateway_storage_size(void);
 GUARA_API size_t guara_gateway_storage_align(void);
 GUARA_API void guara_gateway_limits_default(guara_gateway_limits * limits);
+GUARA_API const char * guara_gateway_limits_error(const guara_gateway_limits * limits);
 GUARA_API int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * limits);
 GUARA_API int guara_gateway_set_guard(void * storage, uint8_t mode);
 GUARA_API int guara_gateway_on_core_state(void * storage, uint8_t state, double t_s);

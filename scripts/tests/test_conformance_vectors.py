@@ -48,6 +48,18 @@ def test_adr0010_vectors_cover_trusted_time_envelope_and_shadow():
     assert tags == {"0010-1", "0010-2", "0010-3"}
 
 
+def test_gateway_limits_vectors_cover_every_init_branch():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/gateway_limits.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "default_gateway_limits_are_valid" in ids
+    assert "cf_timeout_must_be_positive" in ids
+    assert "future_stamp_tolerance_must_be_non_negative" in ids
+    cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
+    assert "conformance_adr0010_gateway" in cmake
+
+
 def test_monitor_table_vectors_cover_stale_incomplete_and_hostile_fields():
     data = json.loads(
         (ROOT / "core/conformance/vectors/monitor_table.json").read_text(encoding="utf-8")

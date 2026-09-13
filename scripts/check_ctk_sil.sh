@@ -35,6 +35,7 @@ fi
 
 "${py}" -m guara ctk run --port sil
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/adr0010_gateway.json"
+"${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/gateway_limits.json"
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/monitor_table.json"
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/geofence.json"
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/core_params.json"

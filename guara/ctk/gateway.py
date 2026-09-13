@@ -23,6 +23,22 @@ class GatewayLimits:
     cf_timeout_s: float = 0.5
 
 
+def validate_gateway_limits(limits: GatewayLimits) -> str | None:
+    if not (limits.cf_timeout_s > 0.0):
+        return "cf_timeout_s must be > 0"
+    if not (limits.max_speed_h_m_s > 0.0):
+        return "max_speed_h_m_s must be > 0"
+    if not (limits.max_climb_rate_m_s > 0.0):
+        return "max_climb_rate_m_s must be > 0"
+    if not (limits.max_descent_rate_m_s > 0.0):
+        return "max_descent_rate_m_s must be > 0"
+    if not (limits.max_yaw_rate_rad_s > 0.0):
+        return "max_yaw_rate_rad_s must be > 0"
+    if not (limits.future_stamp_tolerance_s >= 0.0):
+        return "future_stamp_tolerance_s must be >= 0"
+    return None
+
+
 @dataclass
 class GatewayOutput:
     vx: float = 0.0
@@ -59,6 +75,9 @@ class ReferenceGateway:
 
     def set_guard(self, mode: int) -> None:
         self.guard_mode = mode
+
+    def limits_error(self, limits: GatewayLimits) -> str | None:
+        return validate_gateway_limits(limits)
 
     def on_core_state(self, state: int, t_s: float) -> None:
         if state == CF and self.state != CF:
