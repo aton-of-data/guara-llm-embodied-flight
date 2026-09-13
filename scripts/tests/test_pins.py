@@ -20,6 +20,7 @@ import pins  # noqa: E402
 
 PIN_FILES = (
     "versions.env",
+    "pyproject.toml",
     "docker/Dockerfile",
     "docker/Dockerfile.fm",
     "requirements.txt",
@@ -46,6 +47,13 @@ def rewrite(path: pathlib.Path, old: str, new: str) -> None:
 def test_the_repository_pins_are_consistent():
     errors = pins.check(ROOT)
     assert errors == [], errors
+
+
+def test_a_pyproject_dependency_drift_is_detected(tmp_path):
+    tree = clone_pin_tree(tmp_path)
+    rewrite(tree / "pyproject.toml", '"PyYAML>=6.0"', '"PyYAML>=5.0"')
+    errors = pins.check(tree)
+    assert any("pyproject.toml" in e and "PyYAML>=5.0" in e for e in errors), errors
 
 
 def test_a_dockerfile_arg_drift_is_detected(tmp_path):

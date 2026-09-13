@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: Apache-2.0
+#
+# Installable Python layer (M17 / G-S3). Pins in [project] dependencies must
+# equal versions.env (scripts/check_reproducible.py --pins). This is not a
+# PyPI release — that is M20 / AC-69.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guara"
+version = "0.17.0.dev0"
+description = "Trusted-layer compilers and workstation CLI for the Guará RTA"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [{name = "aton-of-data", email = "dornfeld.in@gmail.com"}]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering",
+]
+dependencies = [
+  "PyYAML>=6.0",
+  "jsonschema>=4.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0",
+  "pyulog>=1.0",
+]
+
+[project.scripts]
+guara = "guara.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/aton-of-data/guara-llm-embodied-flight"
+Documentation = "https://aton-of-data.github.io/guara-llm-embodied-flight/"
+
+[tool.setuptools.packages.find]
+include = ["guara*", "mission*", "space*"]
+exclude = ["scripts*", "ros2_ws*", "nosa*", "site*", "docs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["scripts/tests"]

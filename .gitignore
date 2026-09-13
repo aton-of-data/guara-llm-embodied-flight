@@ -7,6 +7,10 @@ build/
 install/
 log/
 
+# Python packaging (M17 `pip install -e .`)
+*.egg-info/
+dist/
+
 .DS_Store
 .claude/settings.local.json
 

@@ -83,6 +83,8 @@ REQUIREMENT_FILES = {
     "requirements-dev.txt": ("PY_PYTEST", "PY_PYULOG"),
 }
 
+PYPROJECT = "pyproject.toml"
+
 VERSIONS_MD_REPOS = (
     ("PX4-Autopilot", "PX4_REMOTE", "PX4_REF", "PX4_COMMIT"),
     ("px4_msgs", "PX4_MSGS_REMOTE", "PX4_MSGS_REF", "PX4_MSGS_COMMIT"),
@@ -157,6 +159,18 @@ def requirement_lines(path: pathlib.Path) -> list[str]:
             continue
         lines.append(line)
     return lines
+
+
+def toml_quoted_array(text: str, marker: str) -> list[str] | None:
+    """Quoted strings of the first TOML array that follows `marker`."""
+    idx = text.find(marker)
+    if idx < 0:
+        return None
+    lb = text.find("[", idx)
+    rb = text.find("]", lb)
+    if lb < 0 or rb < 0:
+        return None
+    return re.findall(r'"([^"]+)"', text[lb:rb])
 
 
 def versions_md_rows(path: pathlib.Path) -> dict[str, tuple[str, str, str]]:
@@ -237,6 +251,24 @@ def check(root: pathlib.Path) -> list[str]:
             lines = lines[1:]
         if lines != expected:
             errors.append(f"{rel} pins {lines} != versions.env {expected}")
+
+    pyproject = root / PYPROJECT
+    if not pyproject.is_file():
+        errors.append(f"missing {PYPROJECT}")
+    else:
+        text = pyproject.read_text(encoding="utf-8")
+        deps = toml_quoted_array(text, "\ndependencies")
+        expected = [pins[k] for k in REQUIREMENT_FILES["requirements.txt"]]
+        if deps is None:
+            errors.append(f"{PYPROJECT} has no dependencies array")
+        elif deps != expected:
+            errors.append(f"{PYPROJECT} dependencies {deps} != versions.env {expected}")
+        dev = toml_quoted_array(text, "\ndev")
+        expected_dev = [pins[k] for k in REQUIREMENT_FILES["requirements-dev.txt"]]
+        if dev is None:
+            errors.append(f"{PYPROJECT} has no optional-dev array")
+        elif dev != expected_dev:
+            errors.append(f"{PYPROJECT} optional-dev {dev} != versions.env {expected_dev}")
 
     versions_md = root / "third_party" / "VERSIONS.md"
     if not versions_md.is_file():

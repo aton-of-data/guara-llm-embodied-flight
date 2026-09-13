@@ -306,11 +306,15 @@ expected answer was, so adding one cannot change a result.
 
 ### In 60 seconds, with no container
 
-The trusted layer between a model and the aircraft is pure Python and needs two packages.
-This runs the deterministic compiler directly — no ROS 2, no PX4 build, no model, no key:
+The trusted layer between a model and the aircraft is pure Python. `pip install -e .`
+installs it as the `guara` package (G-S3); `guara doctor` is the workstation preflight
+(AC-51). `pip install -r requirements.txt` still works if you do not want a package
+install. This runs the deterministic compiler directly — no ROS 2, no PX4 build, no
+model, no key:
 
 ```bash
-pip install -r requirements.txt
+pip install -e .
+guara doctor
 
 # a Mission Intent inside the envelope -> a flyable plan (exit 0)
 python3 -m mission.compiler --intent mission/intents/survey_north_3.json

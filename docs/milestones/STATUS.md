@@ -55,6 +55,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-30 | A | M9 | PASS | `scripts/tests/test_llm_eval.py` (no key, no network) |
 | AC-31 | A | M9 | PASS | pair on=0.000 m off=47.178 m (`docs/evidence/20260912T134907Z_llm_survey_outside_s42_pair/`); nominal member also PASS |
 | AC-47 | C | M13c | PASS | `docs/milestones/M13c.md` (analytic cases, ±0.05 s, clean tree at `696c4ed`) |
+| AC-51 | S | M17 | in progress | `guara doctor` (tier 0); not PASS until Linux, macOS and Windows/WSL are all recorded |
 | AC-52 | S | M17 | in progress | pin-drift check (`scripts/check_reproducible.py --pins`); hash lock (G-S1) still open |
 
 ## Planned criteria
@@ -82,7 +83,6 @@ place as the evidence for it.
 | AC-48 | C | M13c | An orbital run: keep-out channel on = zero cone violation, channel off = violation | a simulator in the loop (Basilisk ↔ ROS 2) |
 | AC-49 | C | M16 | Latency budget in the orbital profile with the F´ host, reported as AC-18 reports PX4 | M13, M14 |
 | AC-50 | C | M16 | Zero adversarial utterances produce a sequence that passes both sequencer validation and the gate | the intent → sequence compiler |
-| AC-51 | S | M17 | Tier 0 installs; `guara doctor` exits 0 on Linux, macOS and Windows/WSL | `pyproject.toml` and the CLI |
 | AC-53 | S | M17 | Multi-arch `guara-dev` pull; a scenario runs from the digest with no PX4 source build | GHCR publish of linux/amd64 and linux/arm64 |
 | AC-54 | S | M17 | Cold clone → first green SITL measured on a declared reference machine | `scripts/bench_setup.sh` |
 | AC-55 | S | M17 | CI builds and unit-tests `guara-core` with no ROS, PX4 or Docker | M18 `core/` extraction |
