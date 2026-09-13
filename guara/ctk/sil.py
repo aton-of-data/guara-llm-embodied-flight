@@ -21,6 +21,7 @@ from ctypes import (
 from pathlib import Path
 
 from .gateway import GatewayLimits, GatewayOutput
+from .monitors import MonitorEval
 from .reference import Inputs, Output, Params
 
 GUARA_OK = 0
@@ -103,6 +104,26 @@ class CGatewayOutput(ctypes.Structure):
     ]
 
 
+class CMonitorSample(ctypes.Structure):
+    _fields_ = [
+        ("id", c_char_p),
+        ("monitor_class", c_uint8),
+        ("action", c_uint8),
+        ("violated", c_uint8),
+        ("inputs_complete", c_uint8),
+    ]
+
+
+class CMonitorEval(ctypes.Structure):
+    _fields_ = [
+        ("violation", c_uint8),
+        ("action", c_uint8),
+        ("invalid", c_uint8),
+        ("first_violating_id", ctypes.c_char * 48),
+        ("first_invalid_id", ctypes.c_char * 48),
+    ]
+
+
 class _Aligned:
     def __init__(self, size: int, align: int) -> None:
         align = max(int(align), 1)
@@ -138,6 +159,16 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_gateway_on_cf_setpoint.restype = c_int
     lib.guara_gateway_compute.argtypes = [c_void_p, c_double, POINTER(CGatewayOutput)]
     lib.guara_gateway_compute.restype = c_int
+    lib.guara_monitor_storage_size.restype = c_size_t
+    lib.guara_monitor_storage_align.restype = c_size_t
+    lib.guara_monitor_init.argtypes = [c_void_p, c_size_t, c_double]
+    lib.guara_monitor_init.restype = c_int
+    lib.guara_monitor_expect.argtypes = [c_void_p, c_char_p]
+    lib.guara_monitor_expect.restype = c_int
+    lib.guara_monitor_observe.argtypes = [c_void_p, POINTER(CMonitorSample), c_double]
+    lib.guara_monitor_observe.restype = c_int
+    lib.guara_monitor_evaluate.argtypes = [c_void_p, c_double, POINTER(CMonitorEval)]
+    lib.guara_monitor_evaluate.restype = c_int
     return lib
 
 
@@ -306,4 +337,49 @@ class SilGateway:
             rejected_yaw=int(out.rejected_yaw),
             rejected_guard=int(out.rejected_by_guard),
             clamped=int(out.clamped),
+        )
+
+
+def _cstr(buf: bytes) -> str:
+    return buf.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
+
+
+class SilMonitor:
+    def __init__(self, lib: ctypes.CDLL, max_age_s: float) -> None:
+        self._lib = lib
+        size = int(lib.guara_monitor_storage_size())
+        align = int(lib.guara_monitor_storage_align())
+        self._buf = _Aligned(size, align)
+        rc = lib.guara_monitor_init(self._buf.addr, size, c_double(max_age_s))
+        if rc != GUARA_OK:
+            raise OSError(f"guara_monitor_init returned {rc}")
+
+    def expect(self, ident: str) -> int:
+        rc = self._lib.guara_monitor_expect(self._buf.addr, ident.encode("utf-8"))
+        return int(rc)
+
+    def observe(self, ident: str, monitor_class: int, action: int, violated: int,
+                complete: int, t_recv_s: float) -> int:
+        raw = ident.encode("utf-8")
+        sample = CMonitorSample()
+        sample.id = raw
+        sample.monitor_class = monitor_class
+        sample.action = action
+        sample.violated = violated
+        sample.inputs_complete = complete
+        return int(self._lib.guara_monitor_observe(
+            self._buf.addr, ctypes.byref(sample), c_double(t_recv_s)))
+
+    def evaluate(self, t_s: float) -> MonitorEval:
+        out = CMonitorEval()
+        rc = self._lib.guara_monitor_evaluate(
+            self._buf.addr, c_double(t_s), ctypes.byref(out))
+        if rc != GUARA_OK:
+            raise OSError(f"guara_monitor_evaluate returned {rc}")
+        return MonitorEval(
+            violation=int(out.violation),
+            action=int(out.action),
+            invalid=int(out.invalid),
+            first_violating_id=_cstr(bytes(out.first_violating_id)),
+            first_invalid_id=_cstr(bytes(out.first_invalid_id)),
         )

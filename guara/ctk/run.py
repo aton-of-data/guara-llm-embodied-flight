@@ -14,8 +14,9 @@ from pathlib import Path
 
 from .. import doctor, params
 from .gateway import GatewayLimits, ReferenceGateway
+from .monitors import MonitorEval, ReferenceMonitor
 from .reference import Inputs, Params, ReferenceCore
-from .sil import SilCore, SilGateway, find_cabi, load_cabi
+from .sil import SilCore, SilGateway, SilMonitor, find_cabi, load_cabi
 
 NOTE = (
     "Conformance is necessary and not sufficient: this run demonstrates "
@@ -103,8 +104,15 @@ def _num(value) -> float:
 def _looks_like_gateway(data: list) -> bool:
     if not data:
         return False
-    steps = data[0].get("steps") or []
-    return bool(steps) and "op" in steps[0]
+    ops = {step.get("op") for step in (data[0].get("steps") or [])}
+    return bool(ops & {"setpoint", "compute"})
+
+
+def _looks_like_monitor(data: list) -> bool:
+    if not data:
+        return False
+    ops = {step.get("op") for step in (data[0].get("steps") or [])}
+    return bool(ops & {"expect", "observe", "evaluate"})
 
 
 def _mark(stats: VectorRun, t0: int) -> None:
@@ -197,12 +205,66 @@ def _run_gateway_vectors(data: list, make_gateway) -> VectorRun:
     return stats
 
 
-def run_vectors(path: Path, make_core=None, make_gateway=None) -> VectorRun:
+def _check_monitor(vec_id: str, step_i: int, expect: dict, got: MonitorEval) -> None:
+    mapping = {
+        "violation": got.violation,
+        "action": got.action,
+        "invalid": got.invalid,
+        "first_violating_id": got.first_violating_id,
+        "first_invalid_id": got.first_invalid_id,
+    }
+    for key, want in expect.items():
+        if key not in mapping:
+            continue
+        if mapping[key] != want:
+            raise CtkError(f"{vec_id} step {step_i}: {key} got {mapping[key]!r} want {want!r}")
+
+
+def _run_monitor_vectors(data: list, make_monitor) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
+    for vec in data:
+        table = make_monitor(float(vec.get("max_age_s", 0.5)))
+        vec_id = vec["id"]
+        for i, step in enumerate(vec["steps"]):
+            op = step["op"]
+            t0 = time.perf_counter_ns()
+            if op == "expect":
+                table.expect(step["id"])
+                _mark(stats, t0)
+            elif op == "observe":
+                acc = table.observe(
+                    step["id"],
+                    int(step.get("class", 1)),
+                    int(step.get("action", 0)),
+                    int(step.get("violated", 0)),
+                    int(step.get("complete", 1)),
+                    float(step["t_recv_s"]),
+                )
+                _mark(stats, t0)
+                if "expect_accept" in step and acc != int(step["expect_accept"]):
+                    raise CtkError(
+                        f"{vec_id} step {i}: accept got {acc} want {step['expect_accept']}"
+                    )
+            elif op == "evaluate":
+                got = table.evaluate(float(step["t_s"]))
+                _mark(stats, t0)
+                _check_monitor(vec_id, i, step.get("expect") or {}, got)
+            else:
+                raise CtkError(f"{vec_id} step {i}: unknown op {op}")
+        stats.n_ok += 1
+    return stats
+
+
+def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None) -> VectorRun:
     if make_core is None:
         make_core = lambda params: ReferenceCore(params=params)
     if make_gateway is None:
         make_gateway = lambda limits: ReferenceGateway(limits=limits)
+    if make_monitor is None:
+        make_monitor = lambda max_age: ReferenceMonitor(max_age_s=max_age)
     data = json.loads(path.read_text(encoding="utf-8"))
+    if _looks_like_monitor(data):
+        return _run_monitor_vectors(data, make_monitor)
     if _looks_like_gateway(data):
         return _run_gateway_vectors(data, make_gateway)
     return _run_spec_vectors(data, make_core)
@@ -269,6 +331,7 @@ def write_report(path: Path, body: str) -> None:
 def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
     make_core = lambda params: ReferenceCore(params=params)
     make_gateway = lambda limits: ReferenceGateway(limits=limits)
+    make_monitor = lambda max_age: ReferenceMonitor(max_age_s=max_age)
     port_name = "python-reference"
     if port == "sil":
         lib_path = find_cabi(root, lib_arg)
@@ -282,8 +345,9 @@ def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
             return None
         make_core = lambda params, _lib=lib: SilCore(_lib, params)
         make_gateway = lambda limits, _lib=lib: SilGateway(_lib, limits)
+        make_monitor = lambda max_age, _lib=lib: SilMonitor(_lib, max_age)
         port_name = "sil-cabi"
-    return port_name, make_core, make_gateway
+    return port_name, make_core, make_gateway, make_monitor
 
 
 def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
@@ -317,12 +381,12 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     factory = _port_factory(root, args.port, args.lib, err)
     if factory is None:
         return 1
-    port_name, make_core, make_gateway = factory
+    port_name, make_core, make_gateway, make_monitor = factory
 
     if args.cmd == "run":
         vectors = args.vectors if args.vectors is not None else default_vectors(root)
         try:
-            stats = run_vectors(vectors, make_core, make_gateway)
+            stats = run_vectors(vectors, make_core, make_gateway, make_monitor)
         except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
             print(f"FAIL ctk: {exc}", file=err)
             return 1
@@ -350,7 +414,7 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
             for f in files:
                 hasher.update(f.read_bytes())
                 names.append(f.name)
-                one = run_vectors(f, make_core, make_gateway)
+                one = run_vectors(f, make_core, make_gateway, make_monitor)
                 acc.n_ok += one.n_ok
                 acc.n_all += one.n_all
                 acc.n_ops += one.n_ops

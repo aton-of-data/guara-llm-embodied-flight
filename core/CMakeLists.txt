@@ -43,6 +43,7 @@ set(GUARA_CORE_SOURCES
   src/param_digest.cpp
   src/abi.cpp
   src/gateway_abi.cpp
+  src/monitor_abi.cpp
 )
 
 add_library(guara_core ${GUARA_CORE_SOURCES})
@@ -86,6 +87,10 @@ if(GUARA_CORE_STANDALONE)
   target_compile_definitions(test_gateway_vectors PRIVATE
     "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
   add_test(NAME conformance_adr0010_gateway COMMAND test_gateway_vectors)
+
+  add_executable(test_abi_monitor test/test_abi_monitor.c)
+  target_link_libraries(test_abi_monitor PRIVATE guara_core)
+  add_test(NAME abi_monitor COMMAND test_abi_monitor)
 
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE)
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)

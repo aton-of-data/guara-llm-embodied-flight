@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.2.0-provisional"
+#define GUARA_ABI_VERSION "0.3.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -133,6 +133,35 @@ GUARA_API int guara_gateway_on_core_state(void * storage, uint8_t state, double 
 GUARA_API int guara_gateway_on_cf_setpoint(void * storage, double t_recv_s, double stamp_s,
   const float velocity_ned_m_s[3], float yaw_ned_rad);
 GUARA_API int guara_gateway_compute(void * storage, double t_s, guara_gateway_output * out);
+
+#define GUARA_MONITOR_ID_MAX 47
+#define GUARA_MONITOR_ACCEPTED 0
+#define GUARA_MONITOR_INVALID_FIELD 1
+#define GUARA_MONITOR_TABLE_FULL 2
+
+typedef struct guara_monitor_sample {
+  const char * id;
+  uint8_t monitor_class;
+  uint8_t action;
+  uint8_t violated;
+  uint8_t inputs_complete;
+} guara_monitor_sample;
+
+typedef struct guara_monitor_eval {
+  uint8_t violation;
+  uint8_t action;
+  uint8_t invalid;
+  char first_violating_id[GUARA_MONITOR_ID_MAX + 1];
+  char first_invalid_id[GUARA_MONITOR_ID_MAX + 1];
+} guara_monitor_eval;
+
+GUARA_API size_t guara_monitor_storage_size(void);
+GUARA_API size_t guara_monitor_storage_align(void);
+GUARA_API int guara_monitor_init(void * storage, size_t n, double max_age_s);
+GUARA_API int guara_monitor_expect(void * storage, const char * id);
+GUARA_API int guara_monitor_observe(void * storage, const guara_monitor_sample * sample,
+  double t_recv_s);
+GUARA_API int guara_monitor_evaluate(void * storage, double t_s, guara_monitor_eval * out);
 
 #ifdef __cplusplus
 }

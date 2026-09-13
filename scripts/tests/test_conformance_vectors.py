@@ -46,3 +46,14 @@ def test_adr0010_vectors_cover_trusted_time_envelope_and_shadow():
     assert "shadow_guard_blocks" in ids
     tags = {tag for v in data for tag in v.get("adr", [])}
     assert tags == {"0010-1", "0010-2", "0010-3"}
+
+
+def test_monitor_table_vectors_cover_stale_incomplete_and_hostile_fields():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/monitor_table.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "stale_expected_is_invalid" in ids
+    assert "incomplete_inputs_are_invalid" in ids
+    assert "out_of_range_action_is_invalid" in ids
+    assert "log_class_never_switches" in ids

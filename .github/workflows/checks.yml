@@ -52,6 +52,7 @@ jobs:
           guara ctk run --port python --report /tmp/guara-ctk-report
           python3 scripts/check_ac.py AC-66 /tmp/guara-ctk-report
           guara ctk run --port python --vectors core/conformance/vectors/adr0010_gateway.json
+          guara ctk run --port python --vectors core/conformance/vectors/monitor_table.json
           ./scripts/ctk_mutation.sh
 
   core:
