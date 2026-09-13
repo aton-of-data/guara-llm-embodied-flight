@@ -61,6 +61,8 @@ if(BUILD_TESTING)
   target_link_libraries(decision_core_truth_table guara_core)
   ament_add_gtest(decision_core_no_alloc test/test_decision_core_no_alloc.cpp)
   target_link_libraries(decision_core_no_alloc guara_core)
+  # Release elides `delete new int` in the probe; the wrappers must actually run (AC-5).
+  target_compile_options(decision_core_no_alloc PRIVATE -O0)
   ament_add_gtest(decision_core_timing test/test_decision_core_timing.cpp TIMEOUT 300)
   target_link_libraries(decision_core_timing guara_core)
   target_compile_options(decision_core_timing PRIVATE -O2)
@@ -86,6 +88,18 @@ if(BUILD_TESTING)
   ament_add_gtest(gateway_fuzz test/test_gateway_fuzz.cpp TIMEOUT 300)
   target_link_libraries(gateway_fuzz guara_core)
   target_compile_options(gateway_fuzz PRIVATE -O2)
+
+  # Host headers live in this package; kernel headers come from guara_core.
+  # Tests must see both without edits to the test files (AC-58).
+  foreach(_guara_rta_test IN ITEMS
+      decision_core_truth_table decision_core_no_alloc decision_core_timing
+      hysteresis_dwell latch_policy gateway_blocks_cf gateway_envelope
+      monitor_table channel_gating actuator_confirmation return_policy
+      gateway_fuzz)
+    target_include_directories(${_guara_rta_test} PRIVATE
+      "${CMAKE_CURRENT_SOURCE_DIR}/include"
+      "${CMAKE_CURRENT_SOURCE_DIR}/test")
+  endforeach()
 endif()
 
 ament_export_include_directories(include)

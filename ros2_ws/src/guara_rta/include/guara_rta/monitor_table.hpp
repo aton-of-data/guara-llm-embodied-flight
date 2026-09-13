@@ -190,7 +190,10 @@ private:
     for (auto & s : slots_) {
       if (!s.used) {
         s.used = true;
-        std::strncpy(s.id.data(), id, s.id.size() - 1U);
+        s.id.fill('\0');
+        for (std::size_t i = 0; i < kMonitorIdCapacity && id[i] != '\0'; ++i) {
+          s.id[i] = id[i];
+        }
         return &s;
       }
     }
