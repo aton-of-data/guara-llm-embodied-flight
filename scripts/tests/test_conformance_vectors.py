@@ -24,6 +24,8 @@ def test_spec_s3_vectors_cover_every_kernel_transition():
             if trans:
                 seen.add(int(trans))
     assert seen == {1, 2, 3, 4, 5, 6, 7, 8, 9}
+    assert "hysteresis_band_blocks_return" in ids
+    assert "t5_blocked_by_cf_intent" in ids
 
 
 def test_conformance_readme_states_necessary_not_sufficient():

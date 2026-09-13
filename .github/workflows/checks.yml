@@ -50,6 +50,7 @@ jobs:
           python3 -m mission.compiler --stop 'land now' | grep -x land_now
           guara params check config/rta_params.yaml config/rta_params_flight.yaml
           guara ctk run --port python
+          ./scripts/ctk_mutation.sh
 
   core:
     name: host-free kernel
