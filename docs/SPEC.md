@@ -176,6 +176,19 @@ Required `DecisionCore` properties (unit-testable, AC-4..AC-6, AC-12, AC-13):
 - **P-5:** the core does not allocate dynamic memory after initialization and runs in maximum observed time ≤ `B_dec` = 1 ms [HYPOTHESIS] on the container's host CPU.
 - **P-6:** `¬IC(k)` ⇒ no command emitted from `k` on.
 
+### 3.6 Ambiguities recorded by the independent Python port (M19)
+
+Filed, not resolved. The C ABI and the Python reference take the same choice so the
+published vectors have a single meaning. [REVIEW]
+
+1. T5 omits `return_enabled` (ADR 0005) and `cf_intent_unsafe` (ADR 0010). Both are applied.
+2. `S(k)` is a history of CF→RF instants; T1 does not clear it. The table does not say so.
+3. Non-finite or non-monotonic `t_k`, and NaN `T_daa`/`T_gf`, are treated as `V(k)`.
+4. Persistence escalation to LAND after `T_esc` is ADR 0005, not a row of this table.
+5. Comparisons against `T_d` use a 1 ns epsilon so a tick nominally at `t_sw + T_d` is not
+   lost to binary rounding.
+6. The FM-7 actuation latch is not a numbered row; the ABI encodes it as transition 9.
+
 ---
 
 ## 4. Latency budget

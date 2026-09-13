@@ -7,6 +7,7 @@ import sys
 
 from . import doctor
 from . import params
+from .ctk import run as ctk
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -16,6 +17,8 @@ def main(argv: list[str] | None = None) -> int:
         return compile_main(argv[1:])
     if argv[:1] == ["params"]:
         return params.run(argv[1:])
+    if argv[:1] == ["ctk"]:
+        return ctk.run(argv[1:])
 
     parser = argparse.ArgumentParser(
         prog="guara",
@@ -32,6 +35,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "params",
         help="schema-check an arbiter parameter file and print the core digest",
+    )
+    sub.add_parser(
+        "ctk",
+        help="run published decision vectors against a port",
     )
     args = parser.parse_args(argv)
     if args.cmd == "doctor":

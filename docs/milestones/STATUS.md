@@ -61,6 +61,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-57 | K | M18 | in progress | `core/` CMake library and C ABI; `guara params check` against `config/rta_params.schema.json`; ROS node does not yet publish the digest |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan on ABI tests; clang-tidy; vector-suite coverage unmeasured |
 | AC-63 | K | M19 | in progress | `core/conformance/vectors/spec_s3.json` drives the C ABI for T1–T7, T2b and FM-7; gateway vectors absent |
+| AC-65 | K | M19 | in progress | `guara ctk run --port python` passes spec_s3; ambiguities filed in SPEC §3.6, not resolved |
 
 ## Planned criteria
 
