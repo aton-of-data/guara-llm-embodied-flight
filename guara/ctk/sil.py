@@ -216,6 +216,10 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_monitor_observe.restype = c_int
     lib.guara_monitor_evaluate.argtypes = [c_void_p, c_double, POINTER(CMonitorEval)]
     lib.guara_monitor_evaluate.restype = c_int
+    lib.guara_monitor_class_name.argtypes = [c_uint8]
+    lib.guara_monitor_class_name.restype = c_char_p
+    lib.guara_monitor_action_name.argtypes = [c_uint8]
+    lib.guara_monitor_action_name.restype = c_char_p
     lib.guara_gf_params_default.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.argtypes = [POINTER(CGfParams)]
     lib.guara_gf_params_error.restype = c_char_p
@@ -343,6 +347,8 @@ class SilCore:
             "recovery": self._lib.guara_recovery_name,
             "command": self._lib.guara_command_name,
             "transition": self._lib.guara_transition_name,
+            "monitor_class": self._lib.guara_monitor_class_name,
+            "monitor_action": self._lib.guara_monitor_action_name,
         }.get(kind)
         if fn is None:
             return "UNKNOWN"

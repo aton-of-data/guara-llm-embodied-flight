@@ -23,6 +23,9 @@ int main(void)
   const uintptr_t addr = (uintptr_t)raw;
   unsigned char *buf = (unsigned char *)((addr + (a - 1U)) & ~(uintptr_t)(a - 1U));
   const size_t cap = (size_t)((raw + sizeof raw) - buf);
+  CHECK(strcmp(guara_monitor_class_name(GUARA_MONITOR_CLASS_SWITCH), "SWITCH") == 0);
+  CHECK(strcmp(guara_monitor_action_name(GUARA_MONITOR_ACTION_HOLD), "HOLD") == 0);
+  CHECK(strcmp(guara_monitor_action_name(9), "UNKNOWN") == 0);
   CHECK(guara_monitor_init(buf, cap, 0.5) == GUARA_OK);
   CHECK(guara_monitor_expect(buf, "REQ-ALT-01") == GUARA_OK);
 

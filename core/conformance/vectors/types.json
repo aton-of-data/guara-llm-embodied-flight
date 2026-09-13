@@ -81,5 +81,24 @@
       {"op": "check_name", "kind": "polygon", "code": 6, "expect": {"name": "zero_area"}},
       {"op": "check_name", "kind": "polygon", "code": 7, "expect": {"name": "unknown"}}
     ]
+  },
+  {
+    "id": "monitor_class_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_class", "code": 0, "expect": {"name": "LOG"}},
+      {"op": "check_name", "kind": "monitor_class", "code": 1, "expect": {"name": "SWITCH"}},
+      {"op": "check_name", "kind": "monitor_class", "code": 2, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "monitor_action_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "monitor_action", "code": 0, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 1, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 2, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "monitor_action", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
   }
 ]

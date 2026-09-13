@@ -134,4 +134,23 @@ int guara_monitor_evaluate(void * storage, double t_s, guara_monitor_eval * out)
   return GUARA_OK;
 }
 
+const char * guara_monitor_class_name(uint8_t monitor_class)
+{
+  switch (monitor_class) {
+    case GUARA_MONITOR_CLASS_LOG: return "LOG";
+    case GUARA_MONITOR_CLASS_SWITCH: return "SWITCH";
+    default: return "UNKNOWN";
+  }
+}
+
+const char * guara_monitor_action_name(uint8_t action)
+{
+  switch (action) {
+    case GUARA_MONITOR_ACTION_HOLD: return "HOLD";
+    case GUARA_MONITOR_ACTION_RTL: return "RTL";
+    case GUARA_MONITOR_ACTION_LAND: return "LAND";
+    default: return "UNKNOWN";
+  }
+}
+
 }  // extern "C"

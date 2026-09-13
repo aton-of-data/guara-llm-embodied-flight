@@ -20,6 +20,23 @@ ACCEPTED = 0
 INVALID_FIELD = 1
 TABLE_FULL = 2
 
+CLASS_NAMES = ("LOG", "SWITCH")
+ACTION_NAMES = ("HOLD", "RTL", "LAND")
+
+
+def monitor_class_name(code: int) -> str:
+    n = int(code)
+    if 0 <= n < len(CLASS_NAMES):
+        return CLASS_NAMES[n]
+    return "UNKNOWN"
+
+
+def monitor_action_name(code: int) -> str:
+    n = int(code)
+    if 0 <= n < len(ACTION_NAMES):
+        return ACTION_NAMES[n]
+    return "UNKNOWN"
+
 
 @dataclass
 class MonitorEval:

@@ -154,6 +154,12 @@ static const char *lookup_name(const char *kind, unsigned code)
   if (strcmp(kind, "polygon") == 0) {
     return guara_gf_polygon_error_name((int)code);
   }
+  if (strcmp(kind, "monitor_class") == 0) {
+    return guara_monitor_class_name((uint8_t)code);
+  }
+  if (strcmp(kind, "monitor_action") == 0) {
+    return guara_monitor_action_name((uint8_t)code);
+  }
   return "UNKNOWN";
 }
 
@@ -190,7 +196,7 @@ static int check_name(const char *id, int step_i, Cursor *c, const char *got)
 static int run_step(Cursor *c, const char *id, int step_i)
 {
   char op[16] = {0};
-  char kind[16] = {0};
+  char kind[24] = {0};
   double code = 0.0;
   int has_expect = 0;
   Cursor expect_at;
@@ -378,8 +384,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 6) {
-    fprintf(stderr, "FAIL expected at least 6 vocabulary vectors, got %d\n", nvec);
+  if (nvec < 8) {
+    fprintf(stderr, "FAIL expected at least 8 vocabulary vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_types vectors=%d\n", nvec);
