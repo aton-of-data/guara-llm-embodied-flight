@@ -533,8 +533,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 12) {
-    fprintf(stderr, "FAIL expected at least 12 geofence vectors, got %d\n", nvec);
+  if (nvec < 18) {
+    fprintf(stderr, "FAIL expected at least 18 geofence vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_geofence vectors=%d\n", nvec);

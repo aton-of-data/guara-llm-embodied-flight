@@ -111,6 +111,28 @@ def test_a_t4_mutation_in_the_c_abi_is_rejected_when_cmake_is_present():
     assert "PASS ctk_mutation_sil" in r.stdout
 
 
+def test_a_geofence_band_mutation_is_rejected_by_the_kit():
+    r = subprocess.run(
+        ["bash", str(ROOT / "scripts/ctk_mutation_geofence.sh")],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "PASS ctk_mutation_geofence" in r.stdout
+
+
+def test_a_geofence_band_mutation_in_the_c_abi_is_rejected_when_cmake_is_present():
+    if shutil.which("cmake") is None:
+        pytest.skip("cmake is not on PATH")
+    env = _env()
+    env["PYTHON"] = sys.executable
+    r = subprocess.run(
+        ["bash", str(ROOT / "scripts/ctk_mutation_geofence_sil.sh")],
+        cwd=str(ROOT), capture_output=True, text=True, env=env,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "PASS ctk_mutation_geofence_sil" in r.stdout
+
+
 def test_spec_records_the_ambiguities_the_port_found():
     text = (ROOT / "docs/SPEC.md").read_text(encoding="utf-8")
     assert "### 3.6 Ambiguities recorded by the independent Python port" in text

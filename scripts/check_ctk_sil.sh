@@ -35,8 +35,11 @@ fi
 
 "${py}" -m guara ctk run --port sil
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/adr0010_gateway.json"
+"${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/monitor_table.json"
+"${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/geofence.json"
 bench="${TMPDIR:-/tmp}/guara-ctk-bench"
 "${py}" -m guara ctk bench --port sil --report "${bench}"
 "${py}" "${root}/scripts/check_ac.py" AC-60 "${bench}"
 bash "${root}/scripts/ctk_mutation_sil.sh"
+bash "${root}/scripts/ctk_mutation_geofence_sil.sh"
 echo "PASS ctk-sil: C ABI port matched the published vectors via ${lib}"
