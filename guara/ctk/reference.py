@@ -10,6 +10,7 @@ import math
 from dataclasses import dataclass, field
 
 from .geofence import polygon_error_name
+from .gateway import gateway_guard_name
 from .monitors import monitor_accept_name, monitor_action_name, monitor_class_name
 
 INACTIVE, CF, RF, LATCHED = 0, 1, 2, 3
@@ -65,6 +66,8 @@ def vocabulary_name(kind: str, code: int) -> str:
         if 0 <= n < len(ERR_NAMES):
             return ERR_NAMES[n]
         return "UNKNOWN"
+    if kind == "guard":
+        return gateway_guard_name(n)
     table = {
         "state": STATE_NAMES,
         "recovery": RECOVERY_NAMES,

@@ -201,6 +201,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_gateway_init.restype = c_int
     lib.guara_gateway_set_guard.argtypes = [c_void_p, c_uint8]
     lib.guara_gateway_set_guard.restype = c_int
+    lib.guara_gateway_guard_name.argtypes = [c_uint8]
+    lib.guara_gateway_guard_name.restype = c_char_p
     lib.guara_gateway_on_core_state.argtypes = [c_void_p, c_uint8, c_double]
     lib.guara_gateway_on_core_state.restype = c_int
     lib.guara_gateway_on_cf_setpoint.argtypes = [
@@ -355,6 +357,7 @@ class SilCore:
             "transition": self._lib.guara_transition_name,
             "monitor_class": self._lib.guara_monitor_class_name,
             "monitor_action": self._lib.guara_monitor_action_name,
+            "guard": self._lib.guara_gateway_guard_name,
         }.get(kind)
         if fn is None:
             if kind == "monitor_accept":

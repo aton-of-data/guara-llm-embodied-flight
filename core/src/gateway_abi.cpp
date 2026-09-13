@@ -208,4 +208,14 @@ int guara_gateway_compute(void * storage, double t_s, guara_gateway_output * out
   return GUARA_OK;
 }
 
+const char * guara_gateway_guard_name(uint8_t mode)
+{
+  switch (mode) {
+    case GUARA_GATEWAY_GUARD_OFF: return "OFF";
+    case GUARA_GATEWAY_GUARD_ALLOW: return "ALLOW";
+    case GUARA_GATEWAY_GUARD_DENY: return "DENY";
+    default: return "UNKNOWN";
+  }
+}
+
 }  // extern "C"

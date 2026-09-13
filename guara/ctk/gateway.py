@@ -39,6 +39,16 @@ def validate_gateway_limits(limits: GatewayLimits) -> str | None:
     return None
 
 
+GUARD_NAMES = ("OFF", "ALLOW", "DENY")
+
+
+def gateway_guard_name(code: int) -> str:
+    n = int(code)
+    if 0 <= n < len(GUARD_NAMES):
+        return GUARD_NAMES[n]
+    return "UNKNOWN"
+
+
 @dataclass
 class GatewayOutput:
     vx: float = 0.0

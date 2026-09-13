@@ -122,5 +122,15 @@
       {"op": "check_name", "kind": "err", "code": 4, "expect": {"name": "UNINIT"}},
       {"op": "check_name", "kind": "err", "code": 5, "expect": {"name": "UNKNOWN"}}
     ]
+  },
+  {
+    "id": "guard_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "guard", "code": 0, "expect": {"name": "OFF"}},
+      {"op": "check_name", "kind": "guard", "code": 1, "expect": {"name": "ALLOW"}},
+      {"op": "check_name", "kind": "guard", "code": 2, "expect": {"name": "DENY"}},
+      {"op": "check_name", "kind": "guard", "code": 3, "expect": {"name": "UNKNOWN"}}
+    ]
   }
 ]

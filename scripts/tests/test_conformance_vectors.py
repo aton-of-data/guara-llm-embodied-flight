@@ -137,6 +137,7 @@ def test_types_vectors_cover_state_recovery_and_command_names():
     assert "monitor_action_names" in ids
     assert "monitor_accept_names" in ids
     assert "err_names" in ids
+    assert "guard_names" in ids
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_types" in cmake
     assert "test_types_vectors.c" in cmake

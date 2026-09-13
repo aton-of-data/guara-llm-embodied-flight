@@ -166,6 +166,9 @@ static const char *lookup_name(const char *kind, unsigned code)
   if (strcmp(kind, "err") == 0) {
     return guara_err_name((int)code);
   }
+  if (strcmp(kind, "guard") == 0) {
+    return guara_gateway_guard_name((uint8_t)code);
+  }
   return "UNKNOWN";
 }
 
@@ -390,8 +393,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 10) {
-    fprintf(stderr, "FAIL expected at least 10 vocabulary vectors, got %d\n", nvec);
+  if (nvec < 11) {
+    fprintf(stderr, "FAIL expected at least 11 vocabulary vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_types vectors=%d\n", nvec);

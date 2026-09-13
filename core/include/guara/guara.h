@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.16.0-provisional"
+#define GUARA_ABI_VERSION "0.17.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -137,6 +137,7 @@ GUARA_API void guara_gateway_limits_default(guara_gateway_limits * limits);
 GUARA_API const char * guara_gateway_limits_error(const guara_gateway_limits * limits);
 GUARA_API int guara_gateway_init(void * storage, size_t n, const guara_gateway_limits * limits);
 GUARA_API int guara_gateway_set_guard(void * storage, uint8_t mode);
+GUARA_API const char * guara_gateway_guard_name(uint8_t mode);
 GUARA_API int guara_gateway_on_core_state(void * storage, uint8_t state, double t_s);
 GUARA_API int guara_gateway_on_cf_setpoint(void * storage, double t_recv_s, double stamp_s,
   const float velocity_ned_m_s[3], float yaw_ned_rad);
