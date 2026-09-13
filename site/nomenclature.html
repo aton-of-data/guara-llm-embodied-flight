@@ -44,7 +44,7 @@
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-04</dd></div>
     <div><dt>Title</dt><dd>Nomenclature and references</dd></div>
-    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
+    <div><dt>Describes commit</dt><dd>8a05cb6</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
     <div><dt>Status</dt><dd>Normative for this site</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
@@ -200,12 +200,15 @@
         <tbody>
           <tr><td>AC-n</td><td>Acceptance criterion. PASS requires an executed command and an excerpt of its output.</td><td><code>docs/milestones/STATUS.md</code></td></tr>
           <tr><td>FM-n</td><td>Failure mode of the runtime assurance implementation.</td><td><code>docs/SPEC.md</code> §8</td></tr>
-          <tr><td>R-n</td><td>Open risk, air thread.</td><td><code>docs/SPEC.md</code> §9</td></tr>
-          <tr><td>RS-n</td><td>Open risk, space thread.</td><td><code>docs/research/SPACE-AUTONOMY.md</code> §8</td></tr>
+          <tr><td>R-n</td><td>Open risk of the PX4 core: environment, toolchain, thresholds, pins.</td><td><code>docs/SPEC.md</code> §9.1</td></tr>
+          <tr><td>RP-n</td><td>Open risk of the LLM-embodiment programme: who wrote the corpus, what its size bounds.</td><td><code>docs/PLAN-M8-M16.md</code> §6</td></tr>
+          <tr><td>RS-n</td><td>Open risk of the space thread: the safe mode with no heritage, the pre-release sequencer, simulator fidelity.</td><td><code>docs/research/SPACE-AUTONOMY.md</code> §8</td></tr>
+          <tr><td>RH-n</td><td>Open risk of delivery and real hardware: end-of-life distributions, publishing posture, vendor capture, measured-versus-proven timing.</td><td><code>docs/PLAN-M17-M28.md</code> §7</td></tr>
           <tr><td>O-n</td><td>Design obligation that a parameter choice must satisfy.</td><td><code>docs/SPEC.md</code> §3</td></tr>
           <tr><td>P-n</td><td>Required property of the switching logic.</td><td><code>docs/SPEC.md</code> §3</td></tr>
           <tr><td>T-n</td><td>Transition of the switching state machine.</td><td><code>docs/SPEC.md</code> §3.5</td></tr>
-          <tr><td>G-n</td><td>Gap observation motivating the project, with a verification status.</td><td><code>docs/PROPOSAL.md</code> §11</td></tr>
+          <tr><td>G-n</td><td>Gap observation in the prior art that motivates the project, with a verification status. G1–G4 only; unrelated to the register below.</td><td><code>docs/PROPOSAL.md</code> §11</td></tr>
+          <tr><td>G-Sn, G-Kn, G-Mn, G-Hn, G-Zn</td><td>Row of the gap register: a known absence in this project — setup, the kernel, monitors and the specification, air hardware, space — each with exactly one owning milestone. A gap is an absence; a risk is something that could invalidate work already done.</td><td><code>docs/PLAN-M17-M28.md</code> §1</td></tr>
           <tr><td>RQ-n</td><td>Research question.</td><td><code>docs/PROPOSAL.md</code> §6</td></tr>
           <tr><td>M-n</td><td>Milestone.</td><td><code>docs/ROADMAP.md</code></td></tr>
           <tr><td>ADR n</td><td>Architecture decision record.</td><td><code>docs/adr/</code></td></tr>

@@ -64,7 +64,7 @@
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-05</dd></div>
     <div><dt>Title</dt><dd>Contribution and support</dd></div>
-    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
+    <div><dt>Describes commit</dt><dd>8a05cb6</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
     <div><dt>Status</dt><dd>Open to contribution</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
@@ -381,12 +381,38 @@
     <h2>4 · Getting set up</h2>
     <p>
       The trusted mission layer is pure Python and needs no container. This is enough to work on the
-      compiler, the corpus, the plan executor and the space keep-out predictor:
+      compiler, the corpus, the plan executor and the space keep-out predictor. <code>guara
+      doctor</code> is the workstation preflight: it prints the resolved pins, the platform and the
+      tier it reached, so a setup that cannot work says so before a run fails halfway.
     </p>
     <div class="code-head"><span>no container required</span><button class="copy" data-label="copy" type="button">copy</button></div>
-<pre><code class="language-bash">pip install -r requirements-dev.txt
-python3 -m pytest scripts/tests -q
-python3 -m mission.compiler --intent mission/intents/survey_north_3.json</code></pre>
+<pre><code class="language-bash">pip install -e .
+guara doctor
+
+guara compile --intent mission/intents/survey_north_3.json
+
+# the tests, which need the development extras
+pip install -r requirements-dev.txt
+python3 -m pytest scripts/tests -q</code></pre>
+
+    <p class="small muted">
+      The hermetic path is <code>pip install --require-hashes -r requirements.lock</code> followed by
+      <code>pip install -e . --no-deps</code>; the lock is generated on CPython 3.10 by
+      <code>scripts/lock_python.sh</code>. <code>pip install -r requirements.txt</code> still works
+      if you would rather not install the package.
+    </p>
+
+    <p>
+      The switching core itself needs neither ROS 2 nor a container — a C++17 compiler and nothing
+      else. Work on the kernel, the C ABI or the conformance kit starts here:
+    </p>
+    <div class="code-head"><span>the kernel and the conformance kit</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">cmake -S core -B build/core -DCMAKE_BUILD_TYPE=Release
+cmake --build build/core
+ctest --test-dir build/core --output-on-failure
+
+guara ctk run --port python   # the independent port, over the whole published set
+guara ctk run --port sil      # the same vectors through the C ABI</code></pre>
 
     <p>Everything else runs in Docker with the repository mounted at <code>/work</code>:</p>
     <div class="code-head"><span>the full bench</span><button class="copy" data-label="copy" type="button">copy</button></div>
