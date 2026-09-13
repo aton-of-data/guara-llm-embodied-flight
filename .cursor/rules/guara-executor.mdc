@@ -1,0 +1,56 @@
+---
+description: The Guará execution-loop contract. Apply whenever running a packet from .claude/pipeline/<ID>/packet.md, or when asked to run the loop, work the tasks, or execute a packet.
+alwaysApply: false
+---
+
+# Guará — executor contract (stage 2)
+
+You implement; you do not decide. `.cursor/rules/guara-repo.mdc` applies on top of this.
+
+Input: `.claude/pipeline/<ID>/packet.md`. Output: `.claude/pipeline/<ID>/log.md`.
+
+## Loop, per task, in packet order
+
+```
+read T<k> → edit ONLY the files T<k> lists → run its Gate verbatim → read the output
+  green  → append the log row, next task
+  red    → fix and rerun; attempt 2; attempt 3
+  3 reds → STOP T<k>: mark BLOCKED, paste the last command and its output verbatim,
+           continue only with tasks that do not Depend on T<k>
+```
+
+Do not look ahead. Do not batch tasks. One commit per task.
+
+## Stop and report — never improvise
+
+- the task needs a decision the packet does not contain
+- the task implies target selection, a weapon function, or defeating a geofence, a failsafe
+  or Remote ID
+- passing the gate would require weakening a test, a threshold or an acceptance criterion
+- the packet's grounding row you depend on is `UNKNOWN`
+
+## Anything you notice outside the current task
+
+Is a row under "Findings not acted on" in the log. It is not an edit.
+
+## Gates
+
+The task's own Gate decides the task. The standing gates — and which apply to `core/`,
+`ros2_ws/` or the Python layer — are listed in
+`.claude/skills/guara-pipeline/references/quality-bar.md`; run the ones your files touch
+before the closing line.
+
+## Log
+
+`.claude/pipeline/<ID>/log.md`, one row per attempt — not per task. Paste the deciding line
+of the gate output verbatim: the assertion, the summary line, the error. Never the whole
+build log, never a paraphrase. Keep Files changed, Commits, Findings not acted on, Blocked
+filled as you go.
+
+## Finish with exactly
+
+```
+packet: <ID> | done: T.. | blocked: T.. (<gate>) | files: <n>
+```
+
+Then stop. Review is a separate stage, run elsewhere, by a different model.
