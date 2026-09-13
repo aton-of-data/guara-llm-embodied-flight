@@ -397,6 +397,8 @@ generation only).
 | Regenerate monitors from FRETish | `./scripts/fm.sh ros2_ws/src/guara_monitors/scripts/generate.sh` |
 | Verify the licence boundary | `python3 scripts/check_license_isolation.py` |
 | Verify the SPDX headers and the document links | `python3 scripts/check_spdx.py` · `python3 scripts/check_links.py` |
+| Verify the site against the documents it restates | `python3 scripts/check_site_links.py` · `python3 scripts/check_site_claims.py` |
+| Verify the site against the documents it restates | `python3 scripts/check_site_links.py` · `python3 scripts/check_site_claims.py` |
 | Mission compiler, corpus and plan executor | `./scripts/dev.sh python3 -m pytest scripts/tests -q` |
 | LLM corpus against a local open-weight model | `ollama pull llama3.1:8b` then `python3 scripts/llm/eval.py --provider ollama --model llama3.1:8b` |
 | LLM corpus against any OpenAI-compatible server | `GUARA_OPENAI_BASE_URL=http://localhost:8000/v1 python3 scripts/llm/eval.py --provider openai-compat --model <id>` |

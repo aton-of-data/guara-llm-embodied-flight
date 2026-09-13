@@ -21,6 +21,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
   and a pull-request template.
 - CI (`.github/workflows/checks.yml`) over the checks that need no PX4 build, plus
   `scripts/check_spdx.py` and `scripts/check_links.py`.
+- `scripts/check_site_claims.py`, which fails when the published site stops agreeing with the
+  repository: a commit stamp that is not an ancestor of `HEAD`, that differs between pages or
+  that lags by more than 25 commits; an acceptance-criteria tally on `site/evidence.html` that
+  `docs/milestones/STATUS.md` does not support; an `AC-`, `FM-`, `R-`, `RP-`, `RS-`, `RH-` or
+  gap-register identifier cited on a page and absent from the document that owns it; and an
+  install path taught on the site that `README.md` §9 has moved off. It runs in the `boundaries`
+  job and again in the Pages workflow before anything is published.
 - A manual workflow publishing the dev image to GHCR, with a guard refusing to publish an
   image that references NOSA-licensed software.
 - Figures drawn from the published evidence by `scripts/plot_evidence.py`.
@@ -65,6 +72,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
   document that defines each. Previously the README and the roadmap pointed at two of the four.
 - `docs/site` carries a roadmap page: the four tracks, the ordering, Rule O / Rule D / Rule H and
   the gap register, which until now existed only in the repository.
+- The site now agrees with the documents it restates. `site/evidence.html` carried the pre-M17
+  tracker — 35 PASS, 2 in progress, 18 planned, "AC-1…AC-50 across four threads" — against a
+  `STATUS.md` recording 35, 16 and 30 over AC-1…AC-111 and seven threads; `site/contribute.html`
+  taught the superseded `python3 -m mission.compiler` entry path after `README.md` §9 and
+  `site/index.html` had moved to `pip install -e .`; `site/nomenclature.html`, which declares
+  itself normative for the site, defined neither the `RP-*` and `RH-*` risk families nor the gap
+  register's `G-S`/`G-K`/`G-M`/`G-H`/`G-Z` rows that the roadmap page had begun to cite.
+- `docs/SPEC.md` §9.0 indexed the LLM-embodiment risks as `RP-1..RP-3`;
+  `docs/PLAN-M8-M16.md` §6 defines five.
 
 ### Changed
 - The README is split: related work, architecture, roadmap and licensing move to `docs/`.
