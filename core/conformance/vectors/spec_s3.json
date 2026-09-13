@@ -1,0 +1,454 @@
+[
+  {
+    "id": "t2_enter_cf",
+    "spec": ["T2"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "recovery": 0, "command": 0, "transition": 2}
+      }
+    ]
+  },
+  {
+    "id": "t1_drop_charge",
+    "spec": ["T2", "T1"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "transition": 2}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 0,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 0, "recovery": 0, "command": 0, "transition": 1}
+      }
+    ]
+  },
+  {
+    "id": "t2b_activate_unsafe",
+    "spec": ["T2b"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "recovery": 1, "command": 1, "transition": 8, "unsafe_causes": 2}
+      }
+    ]
+  },
+  {
+    "id": "t3_cf_to_rf",
+    "spec": ["T2", "T3"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "transition": 2}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "recovery": 1, "command": 1, "transition": 3, "unsafe_causes": 2}
+      }
+    ]
+  },
+  {
+    "id": "t4_latch_nmax",
+    "spec": ["T2b", "T1", "T4"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 0,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 0, "transition": 1}
+      },
+      {
+        "in": {
+          "t_s": 3.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 4.0,
+          "in_charge": 0,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 0, "transition": 1}
+      },
+      {
+        "in": {
+          "t_s": 5.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 6.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 3, "recovery": 1, "transition": 4}
+      }
+    ]
+  },
+  {
+    "id": "t5_return_after_dwell",
+    "spec": ["T2", "T3", "T5"],
+    "params": {"dwell_s": 0.2},
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "transition": 2}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "recovery": 1, "transition": 3}
+      },
+      {
+        "in": {
+          "t_s": 2.2,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 0}
+      },
+      {
+        "in": {
+          "t_s": 2.5,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "recovery": 0, "command": 4, "transition": 5}
+      }
+    ]
+  },
+  {
+    "id": "t6_escalate_in_rf",
+    "spec": ["T2", "T3", "T6"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "transition": 2}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "recovery": 1, "transition": 3}
+      },
+      {
+        "in": {
+          "t_s": 3.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 1,
+          "monitor_action": 2,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "recovery": 2, "command": 2, "transition": 6}
+      }
+    ]
+  },
+  {
+    "id": "t7_escalate_while_latched",
+    "spec": ["T2b", "T1", "T4", "T7"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 0,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 0, "transition": 1}
+      },
+      {
+        "in": {
+          "t_s": 3.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 4.0,
+          "in_charge": 0,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 0, "transition": 1}
+      },
+      {
+        "in": {
+          "t_s": 5.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 8}
+      },
+      {
+        "in": {
+          "t_s": 6.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 3, "transition": 4}
+      },
+      {
+        "in": {
+          "t_s": 7.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 1,
+          "monitor_action": 2,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 3, "recovery": 2, "command": 2, "transition": 7}
+      }
+    ]
+  },
+  {
+    "id": "actuation_latch_fm7",
+    "spec": ["T2", "T3", "actuation_latch"],
+    "steps": [
+      {
+        "in": {
+          "t_s": 1.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": null,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 1, "transition": 2}
+      },
+      {
+        "in": {
+          "t_s": 2.0,
+          "in_charge": 1,
+          "owned_mode_active": 1,
+          "t_daa_s": null,
+          "t_gf_s": 0.5,
+          "monitor_violation": 0,
+          "monitor_action": 1,
+          "input_invalid": 0,
+          "cf_intent_unsafe": 0
+        },
+        "expect": {"state": 2, "transition": 3}
+      },
+      {
+        "action": "latch",
+        "t_s": 2.1,
+        "expect": {"state": 3, "recovery": 1, "transition": 9}
+      }
+    ]
+  }
+]

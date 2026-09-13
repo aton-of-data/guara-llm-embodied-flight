@@ -69,6 +69,13 @@ if(GUARA_CORE_STANDALONE)
   target_link_libraries(test_abi_digest PRIVATE guara_core)
   add_test(NAME abi_digest COMMAND test_abi_digest)
 
+  add_executable(test_conformance test/test_conformance.c)
+  target_link_libraries(test_conformance PRIVATE guara_core)
+  file(TO_CMAKE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/conformance/vectors" _guara_vectors_dir)
+  target_compile_definitions(test_conformance PRIVATE
+    "GUARA_VECTORS_DIR=\"${_guara_vectors_dir}\"")
+  add_test(NAME conformance_spec_s3 COMMAND test_conformance)
+
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND NOT GUARA_CORE_SANITIZE)
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)
     target_link_libraries(test_abi_no_alloc PRIVATE guara_core)
