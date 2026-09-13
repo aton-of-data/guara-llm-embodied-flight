@@ -53,6 +53,10 @@ if(GUARA_CORE_STANDALONE)
   target_link_libraries(test_abi_step PRIVATE guara_core)
   add_test(NAME abi_step COMMAND test_abi_step)
 
+  add_executable(test_abi_digest test/test_abi_digest.c)
+  target_link_libraries(test_abi_digest PRIVATE guara_core)
+  add_test(NAME abi_digest COMMAND test_abi_digest)
+
   if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     add_executable(test_abi_no_alloc test/test_abi_no_alloc.c test/malloc_trap.c)
     target_link_libraries(test_abi_no_alloc PRIVATE guara_core)

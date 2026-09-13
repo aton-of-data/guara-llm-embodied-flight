@@ -37,6 +37,8 @@ extern "C" {
 #define GUARA_ERR_PARAMS 3
 #define GUARA_ERR_UNINIT 4
 
+#define GUARA_PARAM_DIGEST_LEN 8
+
 typedef struct guara_params {
   double tau_daa_s;
   double tau_gf_s;
@@ -87,10 +89,12 @@ GUARA_API size_t guara_core_storage_align(void);
 GUARA_API const char * guara_core_version(void);
 GUARA_API const char * guara_abi_version(void);
 GUARA_API void guara_params_default(guara_params * params);
+GUARA_API void guara_params_digest(const guara_params * params, uint8_t out[GUARA_PARAM_DIGEST_LEN]);
 
 GUARA_API int guara_core_init(void * storage, size_t n, const guara_params * params);
 GUARA_API int guara_core_step(void * storage, const guara_inputs * in, guara_output * out);
 GUARA_API int guara_core_latch_on_actuation_failure(void * storage, double t_s, guara_output * out);
+GUARA_API int guara_core_param_digest(void * storage, uint8_t out[GUARA_PARAM_DIGEST_LEN]);
 
 #ifdef __cplusplus
 }

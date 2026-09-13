@@ -4,6 +4,7 @@
 // After init, this translation unit performs no heap allocation and no I/O.
 #include "guara/guara.h"
 
+#include <cstring>
 #include <new>
 
 #include "guara_rta/decision_core.hpp"
@@ -16,6 +17,7 @@ constexpr std::uint32_t kMagic = 0x47554152u;  // 'GUAR'
 struct Storage
 {
   std::uint32_t magic;
+  std::uint8_t digest[GUARA_PARAM_DIGEST_LEN];
   alignas(guara_rta::DecisionCore) unsigned char core[sizeof(guara_rta::DecisionCore)];
 };
 
@@ -88,6 +90,62 @@ int require_init(void * storage) noexcept
   return GUARA_OK;
 }
 
+constexpr std::uint64_t kFnvOffset = 14695981039346656037ULL;
+constexpr std::uint64_t kFnvPrime = 1099511628211ULL;
+
+void fnv1a(std::uint64_t & h, const void * p, std::size_t n) noexcept
+{
+  const auto * b = static_cast<const std::uint8_t *>(p);
+  for (std::size_t i = 0; i < n; ++i) {
+    h ^= b[i];
+    h *= kFnvPrime;
+  }
+}
+
+void write_le16(std::uint8_t * d, std::uint16_t v) noexcept
+{
+  d[0] = static_cast<std::uint8_t>(v);
+  d[1] = static_cast<std::uint8_t>(v >> 8U);
+}
+
+void write_le64(std::uint8_t * d, std::uint64_t v) noexcept
+{
+  for (int i = 0; i < 8; ++i) {
+    d[i] = static_cast<std::uint8_t>(v >> (8 * i));
+  }
+}
+
+void feed_f64(std::uint64_t & h, double x) noexcept
+{
+  std::uint64_t bits = 0;
+  static_assert(sizeof(double) == 8, "IEEE-754 double");
+  std::memcpy(&bits, &x, 8);
+#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  bits = __builtin_bswap64(bits);
+#endif
+  std::uint8_t buf[8];
+  write_le64(buf, bits);
+  fnv1a(h, buf, 8);
+}
+
+void digest_params(const guara_params & p, std::uint8_t out[GUARA_PARAM_DIGEST_LEN]) noexcept
+{
+  std::uint64_t h = kFnvOffset;
+  feed_f64(h, p.tau_daa_s);
+  feed_f64(h, p.tau_gf_s);
+  feed_f64(h, p.h_daa_s);
+  feed_f64(h, p.h_gf_s);
+  feed_f64(h, p.dwell_s);
+  std::uint8_t nmax[2];
+  write_le16(nmax, p.n_max);
+  fnv1a(h, nmax, 2);
+  feed_f64(h, p.window_s);
+  fnv1a(h, &p.return_enabled, 1);
+  fnv1a(h, &p.escalation_enabled, 1);
+  feed_f64(h, p.escalation_s);
+  write_le64(out, h);
+}
+
 }  // namespace
 
 extern "C" {
@@ -130,6 +188,14 @@ void guara_params_default(guara_params * params)
   params->escalation_s = d.escalation_s;
 }
 
+void guara_params_digest(const guara_params * params, uint8_t out[GUARA_PARAM_DIGEST_LEN])
+{
+  if (params == nullptr || out == nullptr) {
+    return;
+  }
+  digest_params(*params, out);
+}
+
 int guara_core_init(void * storage, size_t n, const guara_params * params)
 {
   if (storage == nullptr || params == nullptr) {
@@ -148,6 +214,7 @@ int guara_core_init(void * storage, size_t n, const guara_params * params)
   if (!core_of(s)->valid()) {
     return GUARA_ERR_PARAMS;
   }
+  digest_params(*params, s->digest);
   s->magic = kMagic;
   return GUARA_OK;
 }
@@ -178,6 +245,19 @@ int guara_core_latch_on_actuation_failure(void * storage, double t_s, guara_outp
   const guara_rta::Output result =
     core_of(as_storage(storage))->latchOnActuationFailure(t_s);
   to_c(result, out);
+  return GUARA_OK;
+}
+
+int guara_core_param_digest(void * storage, uint8_t out[GUARA_PARAM_DIGEST_LEN])
+{
+  const int rc = require_init(storage);
+  if (rc != GUARA_OK) {
+    return rc;
+  }
+  if (out == nullptr) {
+    return GUARA_ERR_NULL;
+  }
+  std::memcpy(out, as_storage(storage)->digest, GUARA_PARAM_DIGEST_LEN);
   return GUARA_OK;
 }
 

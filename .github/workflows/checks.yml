@@ -37,6 +37,8 @@ jobs:
         run: python3 scripts/check_reproducible.py --pins
       - name: Workstation preflight (AC-51 / G-S5)
         run: guara doctor
+      - name: C ABI symbol baseline (AC-61)
+        run: python3 scripts/check_abi.py --baseline core/abi_symbols.txt
       - name: Mission compiler, corpus, plan executor, space keep-out
         run: python3 -m pytest scripts/tests -q
       - name: The no-container path the README promises
