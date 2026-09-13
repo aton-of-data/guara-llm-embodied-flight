@@ -1,6 +1,6 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!doctype html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,38 +14,35 @@
 <link rel="stylesheet" href="assets/style.css">
 <style>
   :root { --figpfx: "O-"; }
-  /* ---- hero ---- */
-  .hero { padding-block: 4.5rem 4rem; position: relative; overflow: hidden; }
-  .hero::before {
-    content: ""; position: absolute; inset: -40% 30% 40% -20%; pointer-events: none;
-    background: radial-gradient(closest-side, var(--accent-dim), transparent 70%);
-  }
-  .hero .wrap { position: relative; }
-  .hero-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 3.5rem; align-items: center; }
-  @media (max-width: 950px) { .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
-  .hero h1 { margin-bottom: .7rem; }
-  .hero h1 .hl { color: var(--accent); }
-  .mascot { width: 100%; max-width: 420px; border-radius: 16px; display: block; margin-inline: auto; }
+  /* ---- title block ---- */
+  .hero { padding-block: 2.75rem 2rem; }
+  .hero-grid { display: grid; grid-template-columns: 1fr 232px; gap: 3rem; align-items: start; }
+  @media (max-width: 860px) { .hero-grid { grid-template-columns: 1fr; gap: 1.75rem; } }
+  .mascot { width: 100%; max-width: 232px; display: block; }
 
+  /* Summary of results, in the form a report states them. */
   .statbar {
-    display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1px;
-    background: var(--line); border: 1px solid var(--line); border-radius: var(--radius);
-    overflow: hidden; margin-top: 2.6rem;
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 0 1.75rem;
+    border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule);
+    margin-top: 2.25rem; padding: .9rem 0 1rem;
   }
-  .statbar > div { background: var(--bg-panel); padding: 1.1rem 1.2rem; }
-  @media (max-width: 760px) { .statbar { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 760px) { .statbar { grid-template-columns: 1fr 1fr; gap: 1rem 1.75rem; } }
+  .stat { display: block; }
+  .stat .v { display: block; font-family: var(--mono); font-size: 1.5rem; font-weight: 600; letter-spacing: -.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .stat .v .u { font-size: .55em; color: var(--ink-2); margin-left: .15em; font-weight: 500; }
+  .stat .k { display: block; font-family: var(--sans); font-size: .76rem; line-height: 1.35; color: var(--ink-2); margin-top: .2rem; }
 
   /* ---- chain diagram ---- */
   .chain { width: 100%; height: auto; display: block; }
-  .chain .box { fill: var(--bg-panel); stroke: var(--line); stroke-width: 1.5; }
-  .chain .box-untrusted { fill: color-mix(in srgb, var(--unsafe) 9%, var(--bg-panel)); stroke: color-mix(in srgb, var(--unsafe) 45%, transparent); }
-  .chain .box-trusted  { fill: color-mix(in srgb, var(--accent) 10%, var(--bg-panel)); stroke: color-mix(in srgb, var(--accent) 50%, transparent); }
-  .chain .box-platform { fill: color-mix(in srgb, var(--clear) 9%, var(--bg-panel)); stroke: color-mix(in srgb, var(--clear) 42%, transparent); }
-  .chain text { font-family: var(--sans); fill: var(--fg); }
+  .chain .box { fill: var(--paper-2); stroke: var(--rule); stroke-width: 1.5; }
+  .chain .box-untrusted { fill: color-mix(in srgb, var(--unsafe) 9%, var(--paper-2)); stroke: color-mix(in srgb, var(--unsafe) 45%, transparent); }
+  .chain .box-trusted  { fill: color-mix(in srgb, var(--accent) 10%, var(--paper-2)); stroke: color-mix(in srgb, var(--accent) 50%, transparent); }
+  .chain .box-platform { fill: color-mix(in srgb, var(--clear) 9%, var(--paper-2)); stroke: color-mix(in srgb, var(--clear) 42%, transparent); }
+  .chain text { font-family: var(--sans); fill: var(--ink); }
   .chain .lbl { font-size: 12.5px; font-weight: 620; }
-  .chain .sub { font-size: 10.5px; fill: var(--fg-muted); }
+  .chain .sub { font-size: 10.5px; fill: var(--ink-2); }
   .chain .tag { font-family: var(--mono); font-size: 9px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; }
-  .chain .flow { stroke: var(--fg-faint); stroke-width: 1.4; fill: none; }
+  .chain .flow { stroke: var(--ink-3); stroke-width: 1.4; fill: none; }
   .chain .flow-cut { stroke: var(--unsafe); stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; }
   .chain .flow-rec { stroke: var(--clear); stroke-width: 1.8; fill: none; }
 
@@ -54,7 +51,7 @@
   .domain .hd { display: flex; align-items: baseline; gap: .7rem; }
   .domain h3 { margin: 0; }
   .domain dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; font-size: .89rem; }
-  .domain dt { color: var(--fg-muted); font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: .15em; }
+  .domain dt { color: var(--ink-2); font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: .15em; }
   .domain dd { margin: 0; }
 
   /* ---- funding cards ---- */
@@ -87,7 +84,12 @@
     <div class="hero-grid">
       <div>
         <p class="eyebrow">Runtime assurance · ASTM F3269 · Apache-2.0</p>
-        <h1>The model proposes.<br>The arbiter <span class="hl">disposes</span>.</h1>
+        <h1>A measured safety boundary for autonomous
+            and LLM-embodied flight</h1>
+        <p class="lede" style="margin-bottom:1.1rem">
+          <strong>The complex function proposes, the arbiter disposes, the autopilot recovers,
+          the human commands.</strong> Authority is ordered, and the order does not invert.
+        </p>
         <p class="lede">
           Guará is an open, measured safety boundary between an unassured complex function — a
           language model, a neural policy or a classical planner — and a real vehicle. The complex
@@ -101,9 +103,9 @@
           In orbit the same core is specified against F´.
         </p>
         <div class="btn-row">
-          <a class="btn btn-primary" href="integrate.html">Put it in your operation →</a>
-          <a class="btn" href="#sixty">Run it in 60 seconds</a>
-          <a class="btn" href="evidence.html">See the measurements</a>
+          <a class="btn btn-primary" href="integrate.html">Integration guide</a>
+          <a class="btn" href="#sixty">Verify without a container</a>
+          <a class="btn" href="evidence.html">Measured results</a>
         </div>
       </div>
       <div>
@@ -153,7 +155,7 @@
     <p class="eyebrow">Why this exists</p>
     <div class="split">
       <div>
-        <h2>Current practice treats the prompt as the safety boundary</h2>
+        <h2>The gap</h2>
         <p>
           Talking to a drone is a crowded field — ChatGPT for Robotics, TypeFly, EchoPilot,
           MAVLinkMCP, AerialClaw. Survey them and the safety story is uniform:
@@ -212,7 +214,7 @@
 <section id="chain">
   <div class="wrap">
     <p class="eyebrow">The idea in one picture</p>
-    <h2>Authority is ordered, and the order never inverts</h2>
+    <h2>Ordering of authority</h2>
     <p class="lede" style="margin-bottom:2.2rem">
       The complex function proposes, the arbiter disposes, PX4 falls back, the human commands.
       Each box below is a real package in the repository, and each arrow is a real topic.
@@ -261,7 +263,7 @@
       <!-- arrows -->
       <defs>
         <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
-          <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--fg-faint)"/>
+          <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--ink-3)"/>
         </marker>
         <marker id="ahr" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
           <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--clear)"/>
@@ -272,11 +274,11 @@
       </defs>
 
       <path class="flow" d="M192,157 H246" marker-end="url(#ah)"/>
-      <text class="tag" x="196" y="148" fill="var(--fg-faint)">CfSetpoint</text>
+      <text class="tag" x="196" y="148" fill="var(--ink-3)">CfSetpoint</text>
 
       <path class="flow" d="M438,175 H494" marker-end="url(#ah)"/>
       <path class="flow" d="M593,70 V102" marker-end="url(#ah)"/>
-      <text class="tag" x="600" y="92" fill="var(--fg-faint)">verdicts</text>
+      <text class="tag" x="600" y="92" fill="var(--ink-3)">verdicts</text>
 
       <path class="flow-rec" d="M686,140 H742" marker-end="url(#ahr)"/>
       <text class="tag" x="714" y="98" fill="var(--clear)" text-anchor="middle">scheduleMode</text>
@@ -286,7 +288,7 @@
 
       <path class="flow" d="M840,252 V212" marker-end="url(#ah)"/>
       <path class="flow" d="M760,108 V60 H692" marker-end="url(#ah)" opacity=".55"/>
-      <text class="tag" x="706" y="48" fill="var(--fg-faint)">/fmu/out/*</text>
+      <text class="tag" x="706" y="48" fill="var(--ink-3)">/fmu/out/*</text>
     </svg>
 
     <div class="grid g3" style="margin-top:2.4rem">
@@ -323,7 +325,7 @@
     <p class="eyebrow">Try it now</p>
     <div class="split">
       <div>
-        <h2>The trusted layer between a model and an aircraft is pure Python</h2>
+        <h2>Verification without a container</h2>
         <p>
           You do not need ROS 2, a PX4 build, a container, a GPU, a model or an API key to see the
           boundary work. Two packages and one command.
@@ -339,7 +341,7 @@
           step a model is allowed to take.
         </p>
         <div class="btn-row">
-          <a class="btn" href="integrate.html#compiler">How the compiler decides →</a>
+          <a class="btn" href="integrate.html#compiler">Compiler checks</a>
         </div>
       </div>
       <div>
@@ -373,7 +375,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
 <section id="results">
   <div class="wrap">
     <p class="eyebrow">Measured, not asserted</p>
-    <h2>No number without a run</h2>
+    <h2>Measured results</h2>
     <p class="lede">
       Performance figures come only from <code>results/</code> via <code>scripts/aggregate.py</code>,
       and the reviewable part of each run is published verbatim. A milestone is not complete
@@ -403,7 +405,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
       </figure>
     </div>
 
-    <p class="tbl-cap">Principal measured quantities from the 30-run latency batch.</p>
+    <p class="tbl-cap">Principal measured quantities from the 30-run latency batch, seeds 1–30, with the switching thresholds they are required to satisfy.</p>
 <div class="table-scroll" style="margin-top:1rem">
       <table>
         <thead><tr><th>Quantity</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
@@ -448,7 +450,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
 <section id="domains">
   <div class="wrap">
     <p class="eyebrow">One switching core, two hosts</p>
-    <h2>Air is flying. Space is specified, and stated as such.</h2>
+    <h2>Domains: air and space</h2>
     <p class="lede">
       The space thread is a <em>rewrite</em> of the signals, not a port. An orbiting body cannot
       stop, so the braking model behind the air geofence does not transfer, and detect-and-avoid
@@ -504,14 +506,14 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
     <p class="eyebrow">Read this before citing anything</p>
     <div class="split">
       <div>
-        <h2>What Guará does <em>not</em> guarantee</h2>
+        <h2>Limits</h2>
         <p>
           This is a research prototype, not a product and not a certification. Its claims are
           limited to what an executed command supports. The limits below are the ones most often
           overclaimed by projects in this space, so they are stated first rather than last.
         </p>
         <div class="btn-row">
-          <a class="btn" href="evidence.html#limits">The full limit and failure-mode inventory →</a>
+          <a class="btn" href="evidence.html#limits">Limits and failure modes</a>
         </div>
       </div>
       <div>
@@ -534,7 +536,7 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
 <section id="involve">
   <div class="wrap">
     <p class="eyebrow">Where you come in</p>
-    <h2>The boundary is implemented. The remaining gaps are specific.</h2>
+    <h2>Open work</h2>
     <p class="lede">
       These are not &ldquo;good first issue&rdquo; placeholders. Each one blocks a named risk or a
       research question, and each is a self-contained contribution someone with the right
@@ -597,8 +599,8 @@ python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
           <code>mock</code> that needs no key and no network.
         </p>
         <div class="btn-row" style="margin-top:.8rem">
-          <a class="btn btn-primary" href="contribute.html">How to contribute →</a>
-          <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Star the repo</a>
+          <a class="btn btn-primary" href="contribute.html">Contribution guide</a>
+          <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Repository</a>
         </div>
       </div>
     </div>
