@@ -1,0 +1,644 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guará — a measured safety boundary for LLM-embodied flight</title>
+<meta name="description" content="Open-source runtime assurance (ASTM F3269) that bounds what a language model, neural policy or planner can do to an aircraft or a spacecraft. PX4 + ROS 2 today, F´ next. p99 switch latency measured at 61 ms.">
+<meta property="og:title" content="Guará — a measured safety boundary for LLM-embodied flight">
+<meta property="og:description" content="The model proposes. The arbiter disposes. The autopilot recovers. Measured, not asserted: p99 switch latency 61 ms over 30 seeded runs.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/guara-mascot.png">
+<link rel="icon" href="assets/guara-mascot.png">
+<link rel="stylesheet" href="assets/style.css">
+<style>
+  /* ---- hero ---- */
+  .hero { padding-block: 4.5rem 4rem; position: relative; overflow: hidden; }
+  .hero::before {
+    content: ""; position: absolute; inset: -40% 30% 40% -20%; pointer-events: none;
+    background: radial-gradient(closest-side, var(--accent-dim), transparent 70%);
+  }
+  .hero .wrap { position: relative; }
+  .hero-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 3.5rem; align-items: center; }
+  @media (max-width: 950px) { .hero-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
+  .hero h1 { margin-bottom: .7rem; }
+  .hero h1 .hl { color: var(--accent); }
+  .mascot { width: 100%; max-width: 420px; border-radius: 16px; display: block; margin-inline: auto; }
+
+  .statbar {
+    display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden; margin-top: 2.6rem;
+  }
+  .statbar > div { background: var(--bg-panel); padding: 1.1rem 1.2rem; }
+  @media (max-width: 760px) { .statbar { grid-template-columns: 1fr 1fr; } }
+
+  /* ---- chain diagram ---- */
+  .chain { width: 100%; height: auto; display: block; }
+  .chain .box { fill: var(--bg-panel); stroke: var(--line); stroke-width: 1.5; }
+  .chain .box-untrusted { fill: color-mix(in srgb, var(--unsafe) 9%, var(--bg-panel)); stroke: color-mix(in srgb, var(--unsafe) 45%, transparent); }
+  .chain .box-trusted  { fill: color-mix(in srgb, var(--accent) 10%, var(--bg-panel)); stroke: color-mix(in srgb, var(--accent) 50%, transparent); }
+  .chain .box-platform { fill: color-mix(in srgb, var(--clear) 9%, var(--bg-panel)); stroke: color-mix(in srgb, var(--clear) 42%, transparent); }
+  .chain text { font-family: var(--sans); fill: var(--fg); }
+  .chain .lbl { font-size: 12.5px; font-weight: 620; }
+  .chain .sub { font-size: 10.5px; fill: var(--fg-muted); }
+  .chain .tag { font-family: var(--mono); font-size: 9px; letter-spacing: .09em; text-transform: uppercase; font-weight: 600; }
+  .chain .flow { stroke: var(--fg-faint); stroke-width: 1.4; fill: none; }
+  .chain .flow-cut { stroke: var(--unsafe); stroke-width: 1.6; fill: none; stroke-dasharray: 4 3; }
+  .chain .flow-rec { stroke: var(--clear); stroke-width: 1.8; fill: none; }
+
+  /* ---- domain cards ---- */
+  .domain { display: flex; flex-direction: column; gap: .9rem; height: 100%; }
+  .domain .hd { display: flex; align-items: baseline; gap: .7rem; }
+  .domain h3 { margin: 0; }
+  .domain dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; font-size: .89rem; }
+  .domain dt { color: var(--fg-muted); font-family: var(--mono); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; padding-top: .15em; }
+  .domain dd { margin: 0; }
+
+  /* ---- funding cards ---- */
+  .ask { border-top: 2px solid var(--accent); }
+  .ask h3 { font-size: 1.03rem; }
+  .ask p { font-size: .92rem; margin-bottom: .7rem; }
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="wrap bar">
+    <a class="brand" href="index.html"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+    <nav class="site">
+      <a href="index.html" aria-current="page">Overview</a>
+      <a href="architecture.html">Architecture</a>
+      <a href="integrate.html">Integrate</a>
+      <a href="evidence.html">Evidence</a>
+      <a href="contribute.html">Contribute</a>
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight">GitHub&nbsp;↗</a>
+      <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-grid">
+      <div>
+        <p class="eyebrow">Runtime assurance · ASTM F3269 · Apache-2.0</p>
+        <h1>The model proposes.<br>The arbiter <span class="hl">disposes</span>.</h1>
+        <p class="lede">
+          Guará is an open, measured safety boundary between an untrusted flight brain — a language
+          model, a neural policy, a classical planner — and a real vehicle. The brain never touches
+          the actuators. It asks, through a gateway that clamps it, while formal monitors watch the
+          physics. When the next seconds are unsafe, authority is taken away and handed to the
+          platform&rsquo;s own assured recovery mode.
+        </p>
+        <p class="lede">
+          In the air this runs today on PX4 and ROS 2, and the switch is measured, not asserted.
+          In orbit the same core is specified against F´.
+        </p>
+        <div class="btn-row">
+          <a class="btn btn-primary" href="integrate.html">Put it in your operation →</a>
+          <a class="btn" href="#sixty">Run it in 60 seconds</a>
+          <a class="btn" href="evidence.html">See the measurements</a>
+        </div>
+      </div>
+      <div>
+        <img class="mascot" src="assets/guara-mascot.png"
+             alt="The Guará mascot: a maned-wolf flying a multirotor, and the same fox operating a satellite">
+      </div>
+    </div>
+
+    <div class="statbar">
+      <div class="stat accent">
+        <span class="v">61<span class="u">ms</span></span>
+        <span class="k">p99 unsafe sample → recovery mode effective</span>
+      </div>
+      <div class="stat clear">
+        <span class="v">0.000<span class="u">m</span></span>
+        <span class="k">geofence breach with the RTA on (47.178 m with it off)</span>
+      </div>
+      <div class="stat">
+        <span class="v">30</span>
+        <span class="k">seeded headless SITL runs behind that number</span>
+      </div>
+      <div class="stat">
+        <span class="v">14</span>
+        <span class="k">scenarios, including killing the arbiter mid-flight</span>
+      </div>
+    </div>
+    <p class="small muted" style="margin-top:.9rem">
+      Every figure above is re-derivable from a published run directory under
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/tree/main/docs/evidence"><code>docs/evidence/</code></a>.
+      Nothing on this site is a claim about certified or real flight — see
+      <a href="#limits">the limits</a>.
+    </p>
+  </div>
+</section>
+
+<!-- ================= THE GAP ================= -->
+<section id="gap">
+  <div class="wrap">
+    <p class="eyebrow">Why this exists</p>
+    <div class="split">
+      <div>
+        <h2>Today, &ldquo;safe&rdquo; LLM flight means a well-written prompt</h2>
+        <p>
+          Talking to a drone is a crowded field — ChatGPT for Robotics, TypeFly, EchoPilot,
+          MAVLinkMCP, AerialClaw. Survey them and the safety story is uniform:
+          <strong>prompt engineering, tool restriction, and a human with a kill switch.</strong>
+          All three live inside or beside the model, and all three fail together.
+        </p>
+        <p>
+          <a href="https://arxiv.org/abs/2410.13691">RoboPAIR</a> reports a
+          <strong>100% jailbreak rate</strong> against three LLM-controlled robots. A guardrail
+          constrains the <em>planner</em>. Guará constrains the <em>aircraft</em> — the one layer
+          a jailbreak has no words for, because it does not read them.
+        </p>
+        <p>
+          The parts to build that boundary already exist and are NASA-maintained: FRET for
+          requirements, Ogma to generate monitors, Copilot for verified C99, DAIDALUS for DO-365
+          detect-and-avoid. None of them reaches the dominant open autopilot, and nothing between
+          them closes the loop from <em>a property is about to break</em> to
+          <em>the aircraft changes mode</em>.
+        </p>
+      </div>
+      <div class="grid" style="gap:.8rem">
+        <div class="panel">
+          <span class="pill no">G2</span>
+          <p class="small" style="margin:.6rem 0 0">
+            Ogma generates monitors for cFS, ROS 2, F´ and standalone — <strong>no PX4 target</strong>,
+            though PX4&rsquo;s uXRCE-DDS bridge already exposes uORB as ROS 2 messages.
+          </p>
+        </div>
+        <div class="panel">
+          <span class="pill no">G3</span>
+          <p class="small" style="margin:.6rem 0 0">
+            PX4&rsquo;s external-mode fallback fires only when the mode <em>dies</em>. Nothing
+            switches mode because a <strong>safety property</strong> is about to break.
+          </p>
+        </div>
+        <div class="panel">
+          <span class="pill no">G4</span>
+          <p class="small" style="margin:.6rem 0 0">
+            The monitoring literature (Volocopter/DLR, CAV 2024; Platum, NFM 2026) explicitly
+            leaves &ldquo;trigger the contingency automatically&rdquo; as future work.
+          </p>
+        </div>
+        <div class="panel">
+          <span class="pill no">G1</span>
+          <p class="small" style="margin:.6rem 0 0">
+            NASA&rsquo;s integrated safe-drone stack, ICAROUS, stopped at V-2.2.6 in January 2022,
+            on cFS with an external autopilot.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= THE CHAIN ================= -->
+<section id="chain">
+  <div class="wrap">
+    <p class="eyebrow">The idea in one picture</p>
+    <h2>Authority is ordered, and the order never inverts</h2>
+    <p class="lede" style="margin-bottom:2.2rem">
+      The complex function proposes, the arbiter disposes, PX4 falls back, the human commands.
+      Each box below is a real package in the repository, and each arrow is a real topic.
+    </p>
+
+    <svg class="chain" viewBox="0 0 1040 330" role="img"
+         aria-label="Authority chain: an untrusted complex function proposes a setpoint to a gateway that clamps it; monitors, a geofence predictor and a DAA node feed the DecisionCore, which can cut the gateway and command PX4 into an assured recovery mode.">
+      <!-- untrusted -->
+      <rect class="box box-untrusted" x="8" y="108" width="184" height="98" rx="10"/>
+      <text class="tag" x="24" y="130" fill="var(--unsafe)">Untrusted</text>
+      <text class="lbl" x="24" y="152">Complex function</text>
+      <text class="sub" x="24" y="170">LLM · policy · planner</text>
+      <text class="sub" x="24" y="186">out of tree</text>
+
+      <!-- gateway -->
+      <rect class="box box-trusted" x="252" y="108" width="186" height="98" rx="10"/>
+      <text class="tag" x="268" y="130" fill="var(--accent)">Trusted</text>
+      <text class="lbl" x="268" y="152">GuaraCfGateway</text>
+      <text class="sub" x="268" y="170">freshness · envelope clamp</text>
+      <text class="sub" x="268" y="186">shadow fence check</text>
+
+      <!-- decision core -->
+      <rect class="box box-trusted" x="500" y="108" width="186" height="98" rx="10"/>
+      <text class="tag" x="516" y="130" fill="var(--accent)">Switching logic</text>
+      <text class="lbl" x="516" y="152">DecisionCore</text>
+      <text class="sub" x="516" y="170">pure · no allocation</text>
+      <text class="sub" x="516" y="186">fixed period T_s</text>
+
+      <!-- px4 -->
+      <rect class="box box-platform" x="748" y="108" width="184" height="98" rx="10"/>
+      <text class="tag" x="764" y="130" fill="var(--clear)">Assured</text>
+      <text class="lbl" x="764" y="152">PX4 v1.17</text>
+      <text class="sub" x="764" y="170">Hold · RTL · Land</text>
+      <text class="sub" x="764" y="186">failsafes left enabled</text>
+
+      <!-- monitors row -->
+      <rect class="box" x="500" y="8" width="186" height="62" rx="10"/>
+      <text class="lbl" x="516" y="32">Safety monitors</text>
+      <text class="sub" x="516" y="50">Copilot · geofence · DAIDALUS</text>
+
+      <!-- human -->
+      <rect class="box" x="748" y="252" width="184" height="62" rx="10"/>
+      <text class="lbl" x="764" y="276">Remote pilot</text>
+      <text class="sub" x="764" y="294">RC or GCS mode change wins</text>
+
+      <!-- arrows -->
+      <defs>
+        <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+          <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--fg-faint)"/>
+        </marker>
+        <marker id="ahr" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+          <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--clear)"/>
+        </marker>
+        <marker id="ahx" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+          <path d="M0,0 L7,3.2 L0,6.4 z" fill="var(--unsafe)"/>
+        </marker>
+      </defs>
+
+      <path class="flow" d="M192,157 H246" marker-end="url(#ah)"/>
+      <text class="tag" x="196" y="148" fill="var(--fg-faint)">CfSetpoint</text>
+
+      <path class="flow" d="M438,175 H494" marker-end="url(#ah)"/>
+      <path class="flow" d="M593,70 V102" marker-end="url(#ah)"/>
+      <text class="tag" x="600" y="92" fill="var(--fg-faint)">verdicts</text>
+
+      <path class="flow-rec" d="M686,140 H742" marker-end="url(#ahr)"/>
+      <text class="tag" x="714" y="98" fill="var(--clear)" text-anchor="middle">scheduleMode</text>
+
+      <path class="flow-cut" d="M593,206 V236 H345 V212" marker-end="url(#ahx)"/>
+      <text class="tag" x="392" y="252" fill="var(--unsafe)">state ≠ CF → the setpoint stops here</text>
+
+      <path class="flow" d="M840,252 V212" marker-end="url(#ah)"/>
+      <path class="flow" d="M760,108 V60 H692" marker-end="url(#ah)" opacity=".55"/>
+      <text class="tag" x="706" y="48" fill="var(--fg-faint)">/fmu/out/*</text>
+    </svg>
+
+    <div class="grid g3" style="margin-top:2.4rem">
+      <div class="panel">
+        <h3>Untrusted means bounded</h3>
+        <p class="small muted" style="margin:0">
+          Not merely unprivileged. The gateway states exactly what it accepts: freshness on the
+          receiver&rsquo;s clock, envelope clamps, and a shadow check of the <em>proposed</em>
+          velocity against the geofence predictor before forwarding it.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Asymmetry</h3>
+        <p class="small muted" style="margin:0">
+          Hysteresis and dwell time delay only the <em>return</em> to the complex function.
+          Nothing intentionally delays the switch away from it. Leaving is immediate; coming back
+          must be earned.
+        </p>
+      </div>
+      <div class="panel">
+        <h3>Fail closed, degrade loudly</h3>
+        <p class="small muted" style="margin:0">
+          An enabled channel that goes silent is treated as a violation. An undeclared omission
+          makes the flight safety profile refuse to start at all.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 60 SECONDS ================= -->
+<section id="sixty">
+  <div class="wrap">
+    <p class="eyebrow">Try it now</p>
+    <div class="split">
+      <div>
+        <h2>The trusted layer between a model and an aircraft is pure Python</h2>
+        <p>
+          You do not need ROS 2, a PX4 build, a container, a GPU, a model or an API key to see the
+          boundary work. Two packages and one command.
+        </p>
+        <p>
+          The second command is the whole point: an intent that is well-formed, schema-valid and
+          completely reasonable-sounding is refused by <strong>named, deterministic checks</strong>
+          before anything flies. It asks for 40&nbsp;cm/px, which would put the aircraft above the
+          regulatory ceiling with not enough battery to finish.
+        </p>
+        <p>
+          Turning an <em>utterance</em> into an intent is the untrusted step, and it is the only
+          step a model is allowed to take.
+        </p>
+        <div class="btn-row">
+          <a class="btn" href="integrate.html#compiler">How the compiler decides →</a>
+        </div>
+      </div>
+      <div>
+        <div class="code-head"><span>shell</span><button class="copy" data-label="copy" type="button">copy</button></div>
+<pre><code class="language-bash">git clone https://github.com/aton-of-data/guara-llm-embodied-flight
+cd guara-llm-embodied-flight
+pip install -r requirements.txt
+
+# an intent inside the envelope -> a flyable plan (exit 0)
+python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+
+# the same survey at 40 cm/px -> refused, with the checks named (exit 2)
+python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+# refused (checks): gsd_bounds, altitude_ceiling, energy
+
+# the stop path, which never reaches a model at all
+python3 -m mission.compiler --stop "land now"     # -> land_now
+python3 -m mission.compiler --stop "pouse agora"  # -> land_now</code></pre>
+        <p class="small muted">
+          The last two lines are the same grammar in two languages. <code>abort</code>,
+          <code>land_now</code> and <code>return_home</code> are exact-match patterns plus a
+          physical button, mapped straight to platform modes. A stop must never depend on a model
+          being reachable, correct, or fast.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULTS ================= -->
+<section id="results">
+  <div class="wrap">
+    <p class="eyebrow">Measured, not asserted</p>
+    <h2>No number without a run</h2>
+    <p class="lede">
+      Performance figures come only from <code>results/</code> via <code>scripts/aggregate.py</code>,
+      and the reviewable part of each run is published verbatim. A milestone is not complete
+      without an executed command and its output.
+    </p>
+
+    <div class="split" style="margin-top:2.5rem">
+      <figure>
+        <div class="plate">
+          <img src="assets/latency-distribution.svg"
+               alt="Thirty runs plotted on a millisecond axis; p50 at 44.8 ms and p99 at 61.0 ms, far below the 1000 ms geofence budget">
+        </div>
+        <figcaption>
+          All 30 runs of the latency batch. The budget line is τ_gf = 1000 ms; the measured p99 is
+          61 ms, so obligation O-1 holds with more than an order of magnitude of margin.
+        </figcaption>
+      </figure>
+      <figure>
+        <div class="plate">
+          <img src="assets/geofence-rta-pair.svg"
+               alt="Geofence breach depth: 0.000 metres with the RTA enabled, 47.178 metres with it disabled">
+        </div>
+        <figcaption>
+          The same plan, the same seed, the arbiter enabled and disabled. This is the paired run
+          behind AC-31 — the LLM-compiled survey deliberately aimed outside the fence.
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="table-scroll" style="margin-top:1rem">
+      <table>
+        <thead><tr><th>Quantity</th><th>p50</th><th>p99</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>δ_lat</code></td><td>0.0448 s</td><td><strong>0.0610 s</strong></td>
+            <td>Unsafe sample → recovery mode effective; sum of stages L0, L2–L6 on validated clocks</td>
+          </tr>
+          <tr>
+            <td><code>τ_rec</code></td><td>0.442 s</td><td>1.738 s</td>
+            <td>Hold entry until horizontal speed &lt; 0.5 m/s — a hover stop, not an avoidance manoeuvre</td>
+          </tr>
+          <tr>
+            <td>Clock alignment</td><td>—</td><td>4.894 s</td>
+            <td>PX4 ↔ ROS error on this SIH/uXRCE setup, far above the 10 ms hypothesis</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note" style="margin-top:1.4rem">
+      <span class="tag">What the project says about its own numbers</span>
+      <p>
+        <strong>Cross-process DDS latency is not publishable.</strong> Because the PX4 and ROS
+        clocks differ by seconds here, the mixed-clock stage L1 is recorded but excluded from
+        <code>δ_lat</code>, and AC-19 gates any cross-process number until alignment is under
+        10 ms. <strong><code>δ_lat</code> is optimistic by construction</strong>: the
+        <code>latency_hold</code> scenario injects the monitor verdict, so Copilot processing
+        time is zero on that path.
+      </p>
+    </div>
+    <p class="small muted">
+      The acceptance-criteria tracker is also honest about its own history: an internal review on
+      2026-09-11 invalidated one false PASS and eleven rows produced by a checker that had stopped
+      running. The latency batch above was discarded and re-measured from scratch on the corrected
+      build. <a href="evidence.html">Full evidence, criteria and re-run commands →</a>
+    </p>
+  </div>
+</section>
+
+<!-- ================= DOMAINS ================= -->
+<section id="domains">
+  <div class="wrap">
+    <p class="eyebrow">One switching core, two hosts</p>
+    <h2>Air is flying. Space is specified — and honest about it.</h2>
+    <p class="lede">
+      The space thread is a <em>rewrite</em> of the signals, not a port. An orbiting body cannot
+      stop, so the braking model behind the air geofence does not transfer, and detect-and-avoid
+      has no orbital analogue that belongs onboard.
+    </p>
+
+    <div class="grid g2" style="margin-top:2.2rem">
+      <div class="panel domain">
+        <div class="hd"><h3>Air</h3><span class="pill ok">implemented &amp; measured</span></div>
+        <dl>
+          <dt>Host</dt><dd>PX4 v1.17 + ROS 2 Humble; arbiter as a <code>ModeExecutor</code></dd>
+          <dt>Channels</dt><dd>DAA, geofence, requirements, inputs</dd>
+          <dt>Recovery</dt><dd>PX4 internal Hold / RTL / Land — assured and pre-existing</dd>
+          <dt>Operations</dt><dd>survey, inspect a point, abort, land now, return home, status</dd>
+          <dt>Evidence</dt><dd>30-run batch, p99 61 ms; paired RTA on/off run</dd>
+        </dl>
+        <p class="small muted" style="margin:.4rem 0 0">
+          Dispense, transport and cooperate classes are <strong>gated</strong>: a capability pack
+          refuses to load until every monitor it requires exists and passes.
+        </p>
+      </div>
+
+      <div class="panel domain">
+        <div class="hd"><h3>Space</h3><span class="pill warn">specified</span></div>
+        <dl>
+          <dt>Host</dt><dd>F´ v4.3.0; arbiter as an FPP component on a rate group</dd>
+          <dt>Channels</dt><dd>attitude keep-out, power margin, momentum, inputs, requirements</dd>
+          <dt>Recovery</dt><dd>A latched safe mode — <strong>F´ has none; it must be written</strong></dd>
+          <dt>Operations</dt><dd>slew, point hold, safe mode, abort, status</dd>
+          <dt>Built</dt><dd>Attitude keep-out predictor and closed intent schema (AC-47)</dd>
+        </dl>
+        <p class="small muted" style="margin:.4rem 0 0">
+          <strong>There will never be a DAA channel in orbit.</strong> Conjunction assessment is a
+          ground-based probabilistic process; porting DAIDALUS there would be overreach.
+        </p>
+      </div>
+    </div>
+
+    <div class="note ok" style="margin-top:1.6rem">
+      <span class="tag">Rule O</span>
+      <p>
+        No F´ or space work starts before the PX4 latency and batch results are complete. That rule
+        is why the space thread today is one carefully tested geometric predictor rather than a
+        half-finished port.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= LIMITS ================= -->
+<section id="limits">
+  <div class="wrap">
+    <p class="eyebrow">Read this before citing anything</p>
+    <div class="split">
+      <div>
+        <h2>What Guará does <em>not</em> guarantee</h2>
+        <p>
+          This is a research prototype, not a product and not a certification. Its claims are
+          limited to what an executed command supports. The limits below are the ones most often
+          overclaimed by projects in this space, so they are stated first rather than last.
+        </p>
+        <div class="btn-row">
+          <a class="btn" href="evidence.html#limits">The full limit and failure-mode inventory →</a>
+        </div>
+      </div>
+      <div>
+        <ul class="clean">
+          <li><strong>It is not certification.</strong> No compliance with F3269, DO-365 or RBAC 100 is shown.</li>
+          <li><strong>It does not guarantee collision avoidance.</strong> The v1 DAA recovery is Hold, and stopping does not move you away from a converging intruder.</li>
+          <li><strong>It does not survive all of its own failures.</strong> With an internal recovery mode active, the arbiter&rsquo;s death is invisible to PX4, and it cannot re-register in flight.</li>
+          <li><strong>It does not protect against spoofed inputs.</strong> DDS is unauthenticated in this phase.</li>
+          <li><strong>It cannot detect a wrong requirement.</strong> A bad FRETish formalisation passes silently.</li>
+          <li><strong>It runs outside the FMU</strong>, without the autopilot&rsquo;s real-time guarantees. Decision time is measured, not proven — there is no WCET analysis.</li>
+          <li><strong>SITL does not transfer.</strong> No result here is a claim about real flight.</li>
+          <li><strong>It does not make a language model correct.</strong> A mission-level mistake inside the safe envelope — wrong field, wrong dose, wrong photograph — is invisible to everything in this repository.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INVOLVEMENT ================= -->
+<section id="involve">
+  <div class="wrap">
+    <p class="eyebrow">Where you come in</p>
+    <h2>The boundary is built. The hard, specific gaps are open.</h2>
+    <p class="lede">
+      These are not &ldquo;good first issue&rdquo; placeholders. Each one blocks a named risk or a
+      research question, and each is a self-contained contribution someone with the right
+      background can finish.
+    </p>
+
+    <div class="grid g3" style="margin-top:2.2rem">
+      <div class="panel ask">
+        <h3>Unblock formal verification</h3>
+        <p class="muted">A working Haskell / LLVM / z3 environment for CopilotVerifier — the generated monitor C99 is currently trusted rather than proved.</p>
+        <span class="pill warn">risk R-11 · blocks RQ4</span>
+      </div>
+      <div class="panel ask">
+        <h3>Well-clear thresholds for small UAS</h3>
+        <p class="muted">DO-365B thresholds are written for larger aircraft. Sourced, citable values for small multirotors would replace a parameter that is currently a hypothesis.</p>
+        <span class="pill warn">risk R-5</span>
+      </div>
+      <div class="panel ask">
+        <h3>Traffic injection in PX4 SITL</h3>
+        <p class="muted">The DAA path has never faced a real converging intruder in simulation, because there is no injection path. Building one turns an untested branch into a measured one.</p>
+        <span class="pill warn">risk R-7</span>
+      </div>
+      <div class="panel ask">
+        <h3>Authenticate the transport</h3>
+        <p class="muted">An SROS2 profile for the complex-function and FMU topics. Until it exists, a hostile node on the DDS domain is an accepted limitation.</p>
+        <span class="pill warn">failure mode FM-12</span>
+      </div>
+      <div class="panel ask">
+        <h3>Orbital dynamics for the arbiter</h3>
+        <p class="muted">A Basilisk ↔ ROS 2 setup that lets the existing decision core face real orbital dynamics instead of an analytic predictor.</p>
+        <span class="pill info">AC-48 · space thread</span>
+      </div>
+      <div class="panel ask">
+        <h3>Review the safe mode</h3>
+        <p class="muted">Someone who has actually flown a spacecraft safe mode, reading the specification for what it gets wrong. This is the risk a reviewer should attack first.</p>
+        <span class="pill info">risk RS-1</span>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:3rem">
+      <div>
+        <h3>Fund the parts that cost money</h3>
+        <p>
+          Guará is Apache-2.0 and independent. The work that money unblocks is specific and
+          physical: hardware-in-the-loop benches, a reference airframe for the first real flight
+          campaign, licensed standards access (the ASTM F3269 text is not available to this
+          project), and the review time of people who have certified avionics before.
+        </p>
+        <p class="small muted">
+          Sponsorship, grants and institutional collaboration:
+          <a href="mailto:dornfeld.in@gmail.com">dornfeld.in@gmail.com</a>.
+        </p>
+      </div>
+      <div>
+        <h3>Use it, and say what broke</h3>
+        <p>
+          The most valuable early contribution is an honest report from a setup that is not the
+          author&rsquo;s: a different airframe, a different distro, a different model behind the
+          intent compiler. The evaluation harness ships four providers, including a
+          <code>mock</code> that needs no key and no network.
+        </p>
+        <div class="btn-row" style="margin-top:.8rem">
+          <a class="btn btn-primary" href="contribute.html">How to contribute →</a>
+          <a class="btn" href="https://github.com/aton-of-data/guara-llm-embodied-flight">Star the repo</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="site">
+  <div class="wrap cols">
+    <div>
+      <a class="brand" href="index.html" style="margin-bottom:.8rem"><img src="assets/guara-mascot.png" alt=""><span>Guará</span></a>
+      <p class="small" style="max-width:34ch">
+        An open, measured safety boundary for autonomous and LLM-embodied flight — in the air and
+        in orbit. Apache-2.0.
+      </p>
+      <p class="small">Copyright 2026 Aton Bertini Dornfeld and the Guará contributors.</p>
+    </div>
+    <div>
+      <h4>Docs</h4>
+      <ul class="small">
+        <li><a href="architecture.html">Architecture</a></li>
+        <li><a href="integrate.html">Integration guide</a></li>
+        <li><a href="evidence.html">Evidence &amp; limits</a></li>
+        <li><a href="contribute.html">Contributing</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Repository</h4>
+      <ul class="small">
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md">SPEC</a></li>
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/tree/main/docs/adr">ADRs</a></li>
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/tree/main/docs/operations">Operations</a></li>
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/GROUNDING.md">GROUNDING</a></li>
+      </ul>
+    </div>
+    <div>
+      <h4>Scope</h4>
+      <ul class="small">
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/SECURITY.md">Security policy</a></li>
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/LICENSING.md">Licensing &amp; NOSA</a></li>
+        <li><a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/CITATION.cff">How to cite</a></li>
+        <li><a href="mailto:dornfeld.in@gmail.com">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="wrap" style="margin-top:2rem">
+    <p class="small" style="margin:0">
+      Civil flight safety only. Contributions implementing weapons, target selection, or
+      surveillance of specific people will not be accepted.
+    </p>
+  </div>
+</footer>
+
+<script src="assets/site.js"></script>
+</body>
+</html>
