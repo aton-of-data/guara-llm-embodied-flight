@@ -22,7 +22,7 @@ from pathlib import Path
 from .geofence import GfParams, GfPrediction, GfState, Vec2
 from .gateway import GatewayLimits, GatewayOutput
 from .monitors import MonitorEval
-from .reference import Inputs, Output, Params
+from .reference import CoreRejected, Inputs, Output, Params
 
 GUARA_OK = 0
 
@@ -370,12 +370,16 @@ class SilCore:
         raw = fn(c_uint8(code))
         return "UNKNOWN" if raw is None else raw.decode("utf-8")
 
+    def _err_name(self, rc: int) -> str:
+        raw = self._lib.guara_err_name(c_int(rc))
+        return "UNKNOWN" if raw is None else raw.decode("utf-8")
+
     def step(self, inp: Inputs) -> Output:
         out = COutput()
         rc = self._lib.guara_core_step(
             self._buf.addr, ctypes.byref(_c_inputs(inp)), ctypes.byref(out))
         if rc != GUARA_OK:
-            raise OSError(f"guara_core_step returned {rc}")
+            raise CoreRejected(self._err_name(rc))
         return _py_output(out)
 
     def latch_on_actuation_failure(self, t_s: float) -> Output:
@@ -383,7 +387,7 @@ class SilCore:
         rc = self._lib.guara_core_latch_on_actuation_failure(
             self._buf.addr, c_double(t_s), ctypes.byref(out))
         if rc != GUARA_OK:
-            raise OSError(f"guara_core_latch_on_actuation_failure returned {rc}")
+            raise CoreRejected(self._err_name(rc))
         return _py_output(out)
 
 

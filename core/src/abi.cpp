@@ -189,6 +189,9 @@ int guara_core_step(void * storage, const guara_inputs * in, guara_output * out)
   if (in == nullptr || out == nullptr) {
     return GUARA_ERR_NULL;
   }
+  if (in->monitor_action > GUARA_RECOVERY_MAX) {
+    return GUARA_ERR_PARAMS;
+  }
   const guara_rta::Output result = core_of(as_storage(storage))->step(from_c(*in));
   to_c(result, out);
   return GUARA_OK;

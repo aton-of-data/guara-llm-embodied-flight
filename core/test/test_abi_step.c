@@ -60,6 +60,17 @@ int main(void)
   CHECK(strcmp(guara_cause_name(2u), "GEOFENCE") == 0);
   CHECK(strcmp(guara_state_name(255), "UNKNOWN") == 0);
 
+  in.t_s = 3.0;
+  in.monitor_violation = 1;
+  in.monitor_action = GUARA_RECOVERY_MAX + 1;
+  CHECK(guara_core_step(buf, &in, &out) == GUARA_ERR_PARAMS);
+  in.monitor_action = 200;
+  CHECK(guara_core_step(buf, &in, &out) == GUARA_ERR_PARAMS);
+  in.monitor_action = GUARA_RECOVERY_LAND;
+  CHECK(guara_core_step(buf, &in, &out) == GUARA_OK);
+  CHECK(out.recovery == GUARA_RECOVERY_LAND);
+  CHECK(out.command == GUARA_COMMAND_LAND);
+
   printf("PASS abi_step T2->T3 state=%u recovery=%u\n", out.state, out.recovery);
   return 0;
 }

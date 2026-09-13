@@ -50,6 +50,17 @@ CAUSE_NAMES = {
 ERR_NAMES = ("OK", "NULL", "STORAGE", "PARAMS", "UNINIT")
 
 
+class CoreRejected(ValueError):
+    """A kernel entry point refused its arguments and changed no state.
+
+    `code` is the GUARA_ERR_* name the C ABI returns for the same call.
+    """
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
 def vocabulary_name(kind: str, code: int) -> str:
     n = int(code)
     if kind == "cause":
@@ -221,6 +232,8 @@ class ReferenceCore:
         return r
 
     def step(self, inp: Inputs) -> Output:
+        if not NONE <= int(inp.monitor_action) <= LAND:
+            raise CoreRejected("PARAMS")
         time_valid = math.isfinite(inp.t_s) and inp.t_s > self.t_prev_s
         causes = self._causes(inp, time_valid)
         unsafe = causes != 0

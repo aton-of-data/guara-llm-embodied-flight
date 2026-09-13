@@ -256,3 +256,14 @@ def test_ac60_rejects_a_report_that_omits_the_measured_disclaimer(tmp_path):
     )
     assert chk.returncode == 1
     assert "measured, not a bound" in chk.stdout
+
+
+def test_a_monitor_action_outside_the_recovery_encoding_is_refused():
+    """Ranking an unrepresentable action would emit RF with no command at all."""
+    from guara.ctk.reference import CoreRejected, Inputs, ReferenceCore
+
+    core = ReferenceCore()
+    with pytest.raises(CoreRejected) as exc:
+        core.step(Inputs(t_s=1.0, in_charge=1, owned_mode_active=1,
+                         monitor_violation=1, monitor_action=200))
+    assert exc.value.code == "PARAMS"
