@@ -51,10 +51,11 @@ const char * transitionName(std::uint8_t id) noexcept
     case transition::kT7: return "T7";
     case transition::kT2b: return "T2B";
     case transition::kActuationLatch: return "ACTUATION";
+    default: return "UNKNOWN";
   }
-  return "UNKNOWN";
 }
 
+// Names a single cause bit, or zero. A union of bits has no name.
 const char * causeName(std::uint32_t bits) noexcept
 {
   switch (bits) {
@@ -68,8 +69,8 @@ const char * causeName(std::uint32_t bits) noexcept
     case cause::kNotInCharge: return "NOT_IN_CHARGE";
     case cause::kEscalation: return "ESCALATION";
     case cause::kActuation: return "ACTUATION";
+    default: return "UNKNOWN";
   }
-  return "UNKNOWN";
 }
 
 }  // namespace guara_rta
