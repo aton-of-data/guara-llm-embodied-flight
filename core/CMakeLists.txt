@@ -58,6 +58,8 @@ set(GUARA_CORE_SOURCES
   src/abi.cpp
   src/gateway_abi.cpp
   src/monitor_abi.cpp
+  src/geofence_predictor.cpp
+  src/geofence_abi.cpp
 )
 
 add_library(guara_core ${GUARA_CORE_SOURCES})
@@ -105,6 +107,10 @@ if(GUARA_CORE_STANDALONE)
   add_executable(test_abi_monitor test/test_abi_monitor.c)
   target_link_libraries(test_abi_monitor PRIVATE guara_core)
   add_test(NAME abi_monitor COMMAND test_abi_monitor)
+
+  add_executable(test_abi_geofence test/test_abi_geofence.c)
+  target_link_libraries(test_abi_geofence PRIVATE guara_core)
+  add_test(NAME abi_geofence COMMAND test_abi_geofence)
 
   add_executable(test_monitor_vectors test/test_monitor_vectors.c)
   target_link_libraries(test_monitor_vectors PRIVATE guara_core)

@@ -21,11 +21,14 @@
 - No filesystem, network, threads or locale.
 - No `std::string`, containers that allocate, or `new`/`delete` in `src/`.
 - The only loop in `DecisionCore::step` walks a fixed-capacity switch history
-  (`kSwitchHistoryCapacity == 32`).
+  (`kSwitchHistoryCapacity == 32`). The geofence predictor walks at most
+  `kMaxVertices == 64` vertices, O(N^2).
+- `<algorithm>` is used only for `std::clamp` / `std::min` / `std::max` in the
+  geofence predictor.
 
 ## Allowed library
 
-- `<array>`, `<cstddef>`, `<cstdint>`, `<cstring>`, `<cmath>`, `<limits>`, `<new>`
+- `<array>`, `<algorithm>`, `<cstddef>`, `<cstdint>`, `<cstring>`, `<cmath>`, `<limits>`, `<new>`
   (placement new at init only).
 - C ABI: `<stddef.h>`, `<stdint.h>`.
 

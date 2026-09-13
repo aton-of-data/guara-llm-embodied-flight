@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.3.0-provisional"
+#define GUARA_ABI_VERSION "0.4.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -162,6 +162,40 @@ GUARA_API int guara_monitor_expect(void * storage, const char * id);
 GUARA_API int guara_monitor_observe(void * storage, const guara_monitor_sample * sample,
   double t_recv_s);
 GUARA_API int guara_monitor_evaluate(void * storage, double t_s, guara_monitor_eval * out);
+
+#define GUARA_GF_MAX_VERTICES 64
+
+typedef struct guara_gf_params {
+  double a_brake_h_m_s2;
+  double a_brake_v_m_s2;
+  double k_sigma;
+  double v_min_m_s;
+  double horizon_s;
+} guara_gf_params;
+
+typedef struct guara_gf_state {
+  double north_m;
+  double east_m;
+  double altitude_m;
+  double vn_m_s;
+  double ve_m_s;
+  double climb_rate_m_s;
+  double eph_m;
+  double epv_m;
+} guara_gf_state;
+
+typedef struct guara_gf_prediction {
+  double t_gf_s;
+  double t_horizontal_s;
+  double t_vertical_s;
+  uint8_t inside;
+  double exit_distance_m;
+} guara_gf_prediction;
+
+GUARA_API void guara_gf_params_default(guara_gf_params * p);
+GUARA_API int guara_gf_predict(const double * vertices_ne, size_t n_vertices, double alt_min_m,
+  double alt_max_m, const guara_gf_params * params, const guara_gf_state * state,
+  guara_gf_prediction * out);
 
 #ifdef __cplusplus
 }

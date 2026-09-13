@@ -11,6 +11,7 @@ namespace
 
 constexpr double kGeomEps = 1e-9;       // [m] geometric tolerance for intersection tests
 constexpr double kEarthRadiusM = 6371000.0;  // px4_ros2_cpp/src/utils/map_projection_impl.hpp:15
+constexpr double kPi = 3.14159265358979323846;
 
 double cross(const Vec2 & a, const Vec2 & b) noexcept {return a.x * b.y - a.y * b.x;}
 double dot(const Vec2 & a, const Vec2 & b) noexcept {return a.x * b.x + a.y * b.y;}
@@ -262,7 +263,7 @@ Prediction predict(
 Vec2 projectToLocal(double lat_deg, double lon_deg, double ref_lat_deg, double ref_lon_deg) noexcept
 {
   // Azimuthal equidistant projection, px4_ros2_cpp/src/utils/map_projection_impl.cpp:28-58.
-  const double deg2rad = M_PI / 180.0;
+  const double deg2rad = kPi / 180.0;
   const double lat = lat_deg * deg2rad;
   const double lon = lon_deg * deg2rad;
   const double ref_lat = ref_lat_deg * deg2rad;

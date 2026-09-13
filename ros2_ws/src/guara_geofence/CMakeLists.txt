@@ -12,14 +12,18 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 
-add_library(guara_geofence src/predictor.cpp)
+# Host-free predictor (ADR 0004) lives in core/. The include path
+# guara_geofence/predictor.hpp is unchanged so the existing unit tests
+# need no edits (AC-58).
+set(GUARA_CORE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../core")
+add_library(guara_geofence ${GUARA_CORE_DIR}/src/geofence_predictor.cpp)
 target_include_directories(guara_geofence PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${GUARA_CORE_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
 set_target_properties(guara_geofence PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY "${GUARA_CORE_DIR}/include/guara_geofence" DESTINATION include)
 install(TARGETS guara_geofence EXPORT export_guara_geofence
   ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
 
