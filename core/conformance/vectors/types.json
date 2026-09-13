@@ -1,0 +1,36 @@
+[
+  {
+    "id": "state_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "state", "code": 0, "expect": {"name": "INACTIVE"}},
+      {"op": "check_name", "kind": "state", "code": 1, "expect": {"name": "CF"}},
+      {"op": "check_name", "kind": "state", "code": 2, "expect": {"name": "RF"}},
+      {"op": "check_name", "kind": "state", "code": 3, "expect": {"name": "LATCHED"}},
+      {"op": "check_name", "kind": "state", "code": 255, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "recovery_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "recovery", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "recovery", "code": 1, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "recovery", "code": 2, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "recovery", "code": 3, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "recovery", "code": 4, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "command_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "command", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "command", "code": 1, "expect": {"name": "HOLD"}},
+      {"op": "check_name", "kind": "command", "code": 2, "expect": {"name": "RTL"}},
+      {"op": "check_name", "kind": "command", "code": 3, "expect": {"name": "LAND"}},
+      {"op": "check_name", "kind": "command", "code": 4, "expect": {"name": "OWNED_MODE"}},
+      {"op": "check_name", "kind": "command", "code": 5, "expect": {"name": "UNKNOWN"}}
+    ]
+  }
+]

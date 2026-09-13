@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.8.0-provisional"
+#define GUARA_ABI_VERSION "0.9.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -92,6 +92,9 @@ GUARA_API size_t guara_core_storage_size(void);
 GUARA_API size_t guara_core_storage_align(void);
 GUARA_API const char * guara_core_version(void);
 GUARA_API const char * guara_abi_version(void);
+GUARA_API const char * guara_state_name(uint8_t state);
+GUARA_API const char * guara_recovery_name(uint8_t recovery);
+GUARA_API const char * guara_command_name(uint8_t command);
 GUARA_API void guara_params_default(guara_params * params);
 GUARA_API const char * guara_params_error(const guara_params * params);
 GUARA_API void guara_params_digest(const guara_params * params, uint8_t out[GUARA_PARAM_DIGEST_LEN]);

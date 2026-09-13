@@ -94,5 +94,16 @@ def test_core_params_vectors_cover_every_validate_branch():
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_core_params" in cmake
     assert "test_core_params_vectors.c" in cmake
+
+
+def test_types_vectors_cover_state_recovery_and_command_names():
+    data = json.loads(
+        (ROOT / "core/conformance/vectors/types.json").read_text(encoding="utf-8")
+    )
+    ids = {v["id"] for v in data}
+    assert "state_names" in ids
+    assert "recovery_names" in ids
+    assert "command_names" in ids
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
-    assert "conformance_geofence" in cmake
+    assert "conformance_types" in cmake
+    assert "test_types_vectors.c" in cmake

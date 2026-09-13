@@ -27,6 +27,20 @@ CAUSE_ACTUATION = 1 << 8
 SWITCH_HISTORY_CAPACITY = 32
 TIME_EPS_S = 1e-9
 
+STATE_NAMES = ("INACTIVE", "CF", "RF", "LATCHED")
+RECOVERY_NAMES = ("NONE", "HOLD", "RTL", "LAND")
+COMMAND_NAMES = ("NONE", "HOLD", "RTL", "LAND", "OWNED_MODE")
+
+
+def vocabulary_name(kind: str, code: int) -> str:
+    table = {"state": STATE_NAMES, "recovery": RECOVERY_NAMES, "command": COMMAND_NAMES}.get(kind)
+    if table is None:
+        return "UNKNOWN"
+    n = int(code)
+    if 0 <= n < len(table):
+        return table[n]
+    return "UNKNOWN"
+
 
 def command_for(recovery: int) -> int:
     return {HOLD: CMD_HOLD, RTL: CMD_RTL, LAND: CMD_LAND}.get(recovery, CMD_NONE)
@@ -111,6 +125,9 @@ class ReferenceCore:
 
     def params_error(self, params: Params) -> str | None:
         return validate_params(params)
+
+    def vocabulary_name(self, kind: str, code: int) -> str:
+        return vocabulary_name(kind, code)
 
     def _switches(self, t_s: float) -> int:
         w = self.params.window_s

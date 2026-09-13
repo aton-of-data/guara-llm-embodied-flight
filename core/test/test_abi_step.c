@@ -49,6 +49,11 @@ int main(void)
   CHECK(out.command == 1); /* HOLD */
   CHECK((out.unsafe_causes & 2u) != 0); /* geofence */
 
+  CHECK(strcmp(guara_state_name(out.state), "RF") == 0);
+  CHECK(strcmp(guara_recovery_name(out.recovery), "HOLD") == 0);
+  CHECK(strcmp(guara_command_name(out.command), "HOLD") == 0);
+  CHECK(strcmp(guara_state_name(255), "UNKNOWN") == 0);
+
   printf("PASS abi_step T2->T3 state=%u recovery=%u\n", out.state, out.recovery);
   return 0;
 }

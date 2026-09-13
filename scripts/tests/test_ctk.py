@@ -87,6 +87,19 @@ def test_python_port_passes_core_params_vectors():
     assert "core_params.json" in r.stdout
 
 
+def test_python_port_passes_types_vectors():
+    vectors = ROOT / "core/conformance/vectors/types.json"
+    n = len(json.loads(vectors.read_text()))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(vectors)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert "types.json" in r.stdout
+
+
 def test_sil_port_passes_when_cabi_is_built():
     from guara.ctk.sil import find_cabi
     lib = find_cabi(ROOT)

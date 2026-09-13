@@ -170,6 +170,12 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_core_storage_align.restype = c_size_t
     lib.guara_core_version.restype = c_char_p
     lib.guara_abi_version.restype = c_char_p
+    lib.guara_state_name.argtypes = [c_uint8]
+    lib.guara_state_name.restype = c_char_p
+    lib.guara_recovery_name.argtypes = [c_uint8]
+    lib.guara_recovery_name.restype = c_char_p
+    lib.guara_command_name.argtypes = [c_uint8]
+    lib.guara_command_name.restype = c_char_p
     lib.guara_params_default.argtypes = [POINTER(CParams)]
     lib.guara_params_error.argtypes = [POINTER(CParams)]
     lib.guara_params_error.restype = c_char_p
@@ -316,6 +322,17 @@ class SilCore:
     def params_error(self, params: Params) -> str | None:
         raw = self._lib.guara_params_error(ctypes.byref(_c_params(params)))
         return None if raw is None else raw.decode("utf-8")
+
+    def vocabulary_name(self, kind: str, code: int) -> str:
+        fn = {
+            "state": self._lib.guara_state_name,
+            "recovery": self._lib.guara_recovery_name,
+            "command": self._lib.guara_command_name,
+        }.get(kind)
+        if fn is None:
+            return "UNKNOWN"
+        raw = fn(c_uint8(code))
+        return "UNKNOWN" if raw is None else raw.decode("utf-8")
 
     def step(self, inp: Inputs) -> Output:
         out = COutput()

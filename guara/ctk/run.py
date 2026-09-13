@@ -238,6 +238,34 @@ def _mark(stats: VectorRun, t0: int) -> None:
         stats.max_step_ns = dt
 
 
+def _looks_like_types(data: list) -> bool:
+    if not data:
+        return False
+    ops = {step.get("op") for step in (data[0].get("steps") or [])}
+    return "check_name" in ops
+
+
+def _run_types_vectors(data: list, make_core) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
+    core = make_core(Params())
+    for vec in data:
+        vec_id = vec["id"]
+        for i, step in enumerate(vec["steps"]):
+            op = step.get("op")
+            t0 = time.perf_counter_ns()
+            if op != "check_name":
+                raise CtkError(f"{vec_id} step {i}: unknown op {op}")
+            got = core.vocabulary_name(str(step["kind"]), int(step["code"]))
+            _mark(stats, t0)
+            want = (step.get("expect") or {}).get("name")
+            if want is None:
+                raise CtkError(f"{vec_id} step {i}: check_name missing name")
+            if got != want:
+                raise CtkError(f"{vec_id} step {i}: name got {got!r} want {want!r}")
+        stats.n_ok += 1
+    return stats
+
+
 def _looks_like_core_params(data: list) -> bool:
     if not data:
         return False
@@ -420,6 +448,8 @@ def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None
         return _run_gateway_vectors(data, make_gateway)
     if _looks_like_core_params(data):
         return _run_core_params_vectors(data, make_core)
+    if _looks_like_types(data):
+        return _run_types_vectors(data, make_core)
     return _run_spec_vectors(data, make_core)
 
 
