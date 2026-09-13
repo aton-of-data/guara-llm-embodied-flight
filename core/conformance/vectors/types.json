@@ -67,5 +67,19 @@
       {"op": "check_name", "kind": "cause", "code": 3, "expect": {"name": "UNKNOWN"}},
       {"op": "check_name", "kind": "cause", "code": 512, "expect": {"name": "UNKNOWN"}}
     ]
+  },
+  {
+    "id": "polygon_error_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "polygon", "code": 0, "expect": {"name": "none"}},
+      {"op": "check_name", "kind": "polygon", "code": 1, "expect": {"name": "too_few_vertices"}},
+      {"op": "check_name", "kind": "polygon", "code": 2, "expect": {"name": "too_many_vertices"}},
+      {"op": "check_name", "kind": "polygon", "code": 3, "expect": {"name": "non_finite_vertex"}},
+      {"op": "check_name", "kind": "polygon", "code": 4, "expect": {"name": "degenerate_edge"}},
+      {"op": "check_name", "kind": "polygon", "code": 5, "expect": {"name": "self_intersecting"}},
+      {"op": "check_name", "kind": "polygon", "code": 6, "expect": {"name": "zero_area"}},
+      {"op": "check_name", "kind": "polygon", "code": 7, "expect": {"name": "unknown"}}
+    ]
   }
 ]

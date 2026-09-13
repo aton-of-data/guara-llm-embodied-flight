@@ -19,7 +19,7 @@ from ctypes import (
 )
 from pathlib import Path
 
-from .geofence import GfParams, GfPrediction, GfState, Vec2, polygon_error_name
+from .geofence import GfParams, GfPrediction, GfState, Vec2
 from .gateway import GatewayLimits, GatewayOutput
 from .monitors import MonitorEval
 from .reference import Inputs, Output, Params
@@ -228,6 +228,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_gf_project_to_local.restype = c_int
     lib.guara_gf_polygon_error.argtypes = [POINTER(c_double), c_size_t]
     lib.guara_gf_polygon_error.restype = c_int
+    lib.guara_gf_polygon_error_name.argtypes = [c_int]
+    lib.guara_gf_polygon_error_name.restype = c_char_p
     return lib
 
 
@@ -333,6 +335,9 @@ class SilCore:
         if kind == "cause":
             raw = self._lib.guara_cause_name(c_uint32(code))
             return "UNKNOWN" if raw is None else raw.decode("utf-8")
+        if kind == "polygon":
+            raw = self._lib.guara_gf_polygon_error_name(c_int(code))
+            return "unknown" if raw is None else raw.decode("utf-8")
         fn = {
             "state": self._lib.guara_state_name,
             "recovery": self._lib.guara_recovery_name,
@@ -540,7 +545,8 @@ class SilGeofence:
         else:
             arr = (c_double * len(vertices_ne))(*vertices_ne)
             rc = int(self._lib.guara_gf_polygon_error(arr, n))
-        return polygon_error_name(rc)
+        raw = self._lib.guara_gf_polygon_error_name(c_int(rc))
+        return "unknown" if raw is None else raw.decode("utf-8")
 
     def params_error(self, params: GfParams) -> str | None:
         cp = CGfParams(

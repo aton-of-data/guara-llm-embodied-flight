@@ -326,20 +326,6 @@ static int check_project(const char *id, int step_i, Cursor *c, double north, do
   }
 }
 
-static const char *poly_error_name(int code)
-{
-  switch (code) {
-    case GUARA_GF_POLY_NONE: return "none";
-    case GUARA_GF_POLY_TOO_FEW: return "too_few_vertices";
-    case GUARA_GF_POLY_TOO_MANY: return "too_many_vertices";
-    case GUARA_GF_POLY_NON_FINITE: return "non_finite_vertex";
-    case GUARA_GF_POLY_DEGENERATE: return "degenerate_edge";
-    case GUARA_GF_POLY_SELF_INTERSECT: return "self_intersecting";
-    case GUARA_GF_POLY_ZERO_AREA: return "zero_area";
-    default: return "unknown";
-  }
-}
-
 static int check_classify(const char *id, int step_i, Cursor *c, int code)
 {
   if (!take(c, '{')) {
@@ -356,10 +342,10 @@ static int check_classify(const char *id, int step_i, Cursor *c, int code)
     int ok = 1;
     if (strcmp(key, "polygon_error") == 0) {
       char want[32] = {0};
-      ok = parse_string(c, want, sizeof want) && strcmp(want, poly_error_name(code)) == 0;
+      ok = parse_string(c, want, sizeof want) && strcmp(want, guara_gf_polygon_error_name(code)) == 0;
       if (!ok) {
         fprintf(stderr, "FAIL %s step %d polygon_error got %s want %s\n",
-                id, step_i, poly_error_name(code), want);
+                id, step_i, guara_gf_polygon_error_name(code), want);
         return 0;
       }
     } else if (!skip_value(c)) {

@@ -54,6 +54,8 @@ int main(void)
     const double nanv[] = {0.0, 0.0, NAN, 0.0, 0.0, 10.0};
     CHECK(guara_gf_polygon_error(nanv, 3) == GUARA_GF_POLY_NON_FINITE);
     CHECK(guara_gf_polygon_error(NULL, 3) == GUARA_GF_POLY_NON_FINITE);
+    CHECK(strcmp(guara_gf_polygon_error_name(GUARA_GF_POLY_TOO_FEW), "too_few_vertices") == 0);
+    CHECK(strcmp(guara_gf_polygon_error_name(99), "unknown") == 0);
     {
       guara_gf_params gp;
       guara_gf_params_default(&gp);

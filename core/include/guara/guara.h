@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.11.0-provisional"
+#define GUARA_ABI_VERSION "0.12.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -214,6 +214,7 @@ GUARA_API int guara_gf_predict(const double * vertices_ne, size_t n_vertices, do
 GUARA_API int guara_gf_project_to_local(double lat_deg, double lon_deg, double ref_lat_deg,
   double ref_lon_deg, double * north_m, double * east_m);
 GUARA_API int guara_gf_polygon_error(const double * vertices_ne, size_t n_vertices);
+GUARA_API const char * guara_gf_polygon_error_name(int code);
 
 #ifdef __cplusplus
 }

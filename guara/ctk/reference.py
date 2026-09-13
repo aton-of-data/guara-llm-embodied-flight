@@ -9,6 +9,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from .geofence import polygon_error_name
+
 INACTIVE, CF, RF, LATCHED = 0, 1, 2, 3
 NONE, HOLD, RTL, LAND = 0, 1, 2, 3
 CMD_NONE, CMD_HOLD, CMD_RTL, CMD_LAND, CMD_OWNED = 0, 1, 2, 3, 4
@@ -49,6 +51,8 @@ def vocabulary_name(kind: str, code: int) -> str:
     n = int(code)
     if kind == "cause":
         return CAUSE_NAMES.get(n, "UNKNOWN")
+    if kind == "polygon":
+        return polygon_error_name(n)
     table = {
         "state": STATE_NAMES,
         "recovery": RECOVERY_NAMES,

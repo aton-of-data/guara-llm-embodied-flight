@@ -118,6 +118,7 @@ def test_types_vectors_cover_state_recovery_and_command_names():
     assert "command_names" in ids
     assert "transition_names" in ids
     assert "cause_names" in ids
+    assert "polygon_error_names" in ids
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_types" in cmake
     assert "test_types_vectors.c" in cmake

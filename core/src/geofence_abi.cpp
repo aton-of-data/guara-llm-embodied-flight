@@ -126,4 +126,18 @@ int guara_gf_polygon_error(const double * vertices_ne, size_t n_vertices)
   return static_cast<int>(poly.set(verts, n_vertices));
 }
 
+const char * guara_gf_polygon_error_name(int code)
+{
+  switch (code) {
+    case GUARA_GF_POLY_NONE: return "none";
+    case GUARA_GF_POLY_TOO_FEW: return "too_few_vertices";
+    case GUARA_GF_POLY_TOO_MANY: return "too_many_vertices";
+    case GUARA_GF_POLY_NON_FINITE: return "non_finite_vertex";
+    case GUARA_GF_POLY_DEGENERATE: return "degenerate_edge";
+    case GUARA_GF_POLY_SELF_INTERSECT: return "self_intersecting";
+    case GUARA_GF_POLY_ZERO_AREA: return "zero_area";
+    default: return "unknown";
+  }
+}
+
 }  // extern "C"

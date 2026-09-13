@@ -151,6 +151,9 @@ static const char *lookup_name(const char *kind, unsigned code)
   if (strcmp(kind, "cause") == 0) {
     return guara_cause_name((uint32_t)code);
   }
+  if (strcmp(kind, "polygon") == 0) {
+    return guara_gf_polygon_error_name((int)code);
+  }
   return "UNKNOWN";
 }
 
@@ -375,8 +378,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 5) {
-    fprintf(stderr, "FAIL expected at least 5 vocabulary vectors, got %d\n", nvec);
+  if (nvec < 6) {
+    fprintf(stderr, "FAIL expected at least 6 vocabulary vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_types vectors=%d\n", nvec);
