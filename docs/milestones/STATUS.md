@@ -60,6 +60,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-55 | S | M17 | in progress | `core` job in `.github/workflows/checks.yml`; matrix evidence not yet recorded |
 | AC-57 | K | M18 | in progress | `core/` CMake library and C ABI; `guara params check`; coding subset [REVIEW]; digest logged at arbiter start; ROS does not yet publish it on RtaState |
 | AC-58 | K | M18 | in progress | `colcon test --packages-select guara_rta --ctest-args -R 'decision_core\|hysteresis\|latch\|gateway'`: 8/8 on arm64 in `guara-dev:m1`; no milestone report yet |
+| AC-60 | K | M18 | in progress | conformance runner prints `max_step_ns` (measured, not a bound); x86 + results/ record absent |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan on ABI tests; clang-tidy; vector-suite coverage unmeasured |
 | AC-63 | K | M19 | in progress | spec_s3.json: T1–T7, T2b, FM-7, hysteresis band, intent-aware T5; gateway vectors absent |
 | AC-64 | K | M19 | in progress | `scripts/ctk_mutation.sh` rejects a T4-disabled Python port; ROS/F´/SIL mutations untested |

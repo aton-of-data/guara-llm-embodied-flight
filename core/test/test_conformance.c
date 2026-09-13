@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <time.h>
+#endif
 
 #ifndef GUARA_VECTORS_DIR
 #error "GUARA_VECTORS_DIR must be the source conformance/vectors directory"
@@ -22,6 +27,29 @@
       return 1; \
     } \
   } while (0)
+
+static long long g_max_step_ns;
+
+static long long now_ns(void)
+{
+#ifdef _WIN32
+  static LARGE_INTEGER freq;
+  static int ready;
+  LARGE_INTEGER t;
+  if (!ready) {
+    QueryPerformanceFrequency(&freq);
+    ready = 1;
+  }
+  QueryPerformanceCounter(&t);
+  return (long long)((double)t.QuadPart * 1.0e9 / (double)freq.QuadPart);
+#else
+  struct timespec ts;
+  if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+    return 0;
+  }
+  return (long long)ts.tv_sec * 1000000000LL + (long long)ts.tv_nsec;
+#endif
+}
 
 typedef struct {
   const char *s;
@@ -434,22 +462,29 @@ static int parse_step_and_run(Cursor *c, void *storage, const char *id, int step
 
   guara_output out;
   memset(&out, 0, sizeof out);
-  if (strcmp(action, "latch") == 0) {
-    if (!has_latch_t) {
-      fprintf(stderr, "FAIL %s step %d: latch needs t_s\n", id, step_i);
-      return 0;
+  {
+    const long long t0 = now_ns();
+    int rc;
+    if (strcmp(action, "latch") == 0) {
+      if (!has_latch_t) {
+        fprintf(stderr, "FAIL %s step %d: latch needs t_s\n", id, step_i);
+        return 0;
+      }
+      rc = guara_core_latch_on_actuation_failure(storage, latch_t, &out);
+    } else {
+      if (!has_in) {
+        fprintf(stderr, "FAIL %s step %d: missing in\n", id, step_i);
+        return 0;
+      }
+      rc = guara_core_step(storage, &in, &out);
     }
-    if (guara_core_latch_on_actuation_failure(storage, latch_t, &out) != GUARA_OK) {
-      fprintf(stderr, "FAIL %s step %d: latch rejected\n", id, step_i);
-      return 0;
+    const long long dt = now_ns() - t0;
+    if (dt > g_max_step_ns) {
+      g_max_step_ns = dt;
     }
-  } else {
-    if (!has_in) {
-      fprintf(stderr, "FAIL %s step %d: missing in\n", id, step_i);
-      return 0;
-    }
-    if (guara_core_step(storage, &in, &out) != GUARA_OK) {
-      fprintf(stderr, "FAIL %s step %d: step rejected\n", id, step_i);
+    if (rc != GUARA_OK) {
+      fprintf(stderr, "FAIL %s step %d: %s rejected\n",
+              id, step_i, action[0] ? action : "step");
       return 0;
     }
   }
@@ -617,6 +652,7 @@ int main(void)
     fprintf(stderr, "FAIL missing SPEC transitions seen=0x%x need=0x%x\n", seen, need);
     return 1;
   }
-  printf("PASS conformance_spec_s3 vectors=%d transitions=1..9\n", nvec);
+  printf("PASS conformance_spec_s3 vectors=%d transitions=1..9 max_step_ns=%lld (measured, not a bound)\n",
+         nvec, g_max_step_ns);
   return 0;
 }
