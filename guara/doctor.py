@@ -71,7 +71,10 @@ def _module_ok(name: str) -> tuple[bool, str]:
         return False, f"{type(exc).__name__}: {exc}"
 
 
-def run(out=sys.stdout, err=sys.stderr) -> int:
+def run(out=None, err=None) -> int:
+    """Print the workstation preflight. Streams resolve at call time."""
+    out = sys.stdout if out is None else out
+    err = sys.stderr if err is None else err
     plat = sys.platform
     machine = platform.machine() or "unknown"
     py = platform.python_version()

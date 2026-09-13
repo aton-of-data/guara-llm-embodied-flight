@@ -145,7 +145,10 @@ def load(path: Path | str, root: Path | None = None) -> ParamSet:
     )
 
 
-def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
+def run(argv: list[str] | None = None, out=None, err=None) -> int:
+    """Run the `guara params` subcommand. Streams resolve at call time."""
+    out = sys.stdout if out is None else out
+    err = sys.stderr if err is None else err
     parser = argparse.ArgumentParser(
         prog="guara params",
         description="Validate an arbiter parameter file and print its core digest.",

@@ -638,7 +638,10 @@ def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
     return port_name, make_core, make_gateway, make_monitor, make_geofence
 
 
-def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
+def run(argv: list[str] | None = None, out=None, err=None) -> int:
+    """Run the `guara ctk` subcommand. Streams resolve at call time."""
+    out = sys.stdout if out is None else out
+    err = sys.stderr if err is None else err
     parser = argparse.ArgumentParser(
         prog="guara ctk",
         description="Run published decision vectors against a port.",
