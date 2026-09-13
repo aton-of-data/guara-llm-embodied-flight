@@ -203,6 +203,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_monitor_evaluate.argtypes = [c_void_p, c_double, POINTER(CMonitorEval)]
     lib.guara_monitor_evaluate.restype = c_int
     lib.guara_gf_params_default.argtypes = [POINTER(CGfParams)]
+    lib.guara_gf_params_error.argtypes = [POINTER(CGfParams)]
+    lib.guara_gf_params_error.restype = c_char_p
     lib.guara_gf_predict.argtypes = [
         POINTER(c_double), c_size_t, c_double, c_double,
         POINTER(CGfParams), POINTER(CGfState), POINTER(CGfPrediction)]
@@ -494,3 +496,14 @@ class SilGeofence:
             arr = (c_double * len(vertices_ne))(*vertices_ne)
             rc = int(self._lib.guara_gf_polygon_error(arr, n))
         return polygon_error_name(rc)
+
+    def params_error(self, params: GfParams) -> str | None:
+        cp = CGfParams(
+            a_brake_h_m_s2=params.a_brake_h_m_s2,
+            a_brake_v_m_s2=params.a_brake_v_m_s2,
+            k_sigma=params.k_sigma,
+            v_min_m_s=params.v_min_m_s,
+            horizon_s=params.horizon_s,
+        )
+        raw = self._lib.guara_gf_params_error(ctypes.byref(cp))
+        return None if raw is None else raw.decode("utf-8")

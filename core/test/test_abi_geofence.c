@@ -54,6 +54,14 @@ int main(void)
     const double nanv[] = {0.0, 0.0, NAN, 0.0, 0.0, 10.0};
     CHECK(guara_gf_polygon_error(nanv, 3) == GUARA_GF_POLY_NON_FINITE);
     CHECK(guara_gf_polygon_error(NULL, 3) == GUARA_GF_POLY_NON_FINITE);
+    {
+      guara_gf_params gp;
+      guara_gf_params_default(&gp);
+      CHECK(guara_gf_params_error(&gp) == NULL);
+      gp.a_brake_h_m_s2 = 0.0;
+      CHECK(strcmp(guara_gf_params_error(&gp), "a_brake_h_m_s2 must be > 0") == 0);
+      CHECK(guara_gf_params_error(NULL) != NULL);
+    }
   }
   printf("PASS abi_geofence\n");
   return 0;

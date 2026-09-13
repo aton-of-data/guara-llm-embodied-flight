@@ -20,6 +20,20 @@ void guara_gf_params_default(guara_gf_params * p)
   p->horizon_s = d.horizon_s;
 }
 
+const char * guara_gf_params_error(const guara_gf_params * p)
+{
+  if (p == nullptr) {
+    return "params is null";
+  }
+  guara_geofence::PredictorParameters gp;
+  gp.a_brake_h_m_s2 = p->a_brake_h_m_s2;
+  gp.a_brake_v_m_s2 = p->a_brake_v_m_s2;
+  gp.k_sigma = p->k_sigma;
+  gp.v_min_m_s = p->v_min_m_s;
+  gp.horizon_s = p->horizon_s;
+  return guara_geofence::validate(gp);
+}
+
 int guara_gf_predict(const double * vertices_ne, size_t n_vertices, double alt_min_m,
   double alt_max_m, const guara_gf_params * params, const guara_gf_state * state,
   guara_gf_prediction * out)

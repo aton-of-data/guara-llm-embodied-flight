@@ -213,9 +213,8 @@ static int parse_vertices(Cursor *c, double *out, size_t cap, size_t *n)
   }
 }
 
-static int parse_params(Cursor *c, guara_gf_params *p)
+static int parse_params_fields(Cursor *c, guara_gf_params *p)
 {
-  guara_gf_params_default(p);
   if (!take(c, '{')) {
     return 0;
   }
@@ -244,6 +243,12 @@ static int parse_params(Cursor *c, guara_gf_params *p)
     }
     return take(c, '}');
   }
+}
+
+static int parse_params(Cursor *c, guara_gf_params *p)
+{
+  guara_gf_params_default(p);
+  return parse_params_fields(c, p);
 }
 
 static int check_expect(const char *id, int step_i, Cursor *c, const guara_gf_prediction *got)
@@ -371,12 +376,58 @@ static int check_classify(const char *id, int step_i, Cursor *c, int code)
   }
 }
 
+static int check_params_error(const char *id, int step_i, Cursor *c, const char *got)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "params_error") == 0) {
+      if (parse_null(c)) {
+        ok = got == NULL;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d params_error got %s want null\n",
+                  id, step_i, got ? got : "null");
+          return 0;
+        }
+      } else {
+        char want[80] = {0};
+        ok = parse_string(c, want, sizeof want) && got != NULL && strcmp(got, want) == 0;
+        if (!ok) {
+          fprintf(stderr, "FAIL %s step %d params_error got %s want %s\n",
+                  id, step_i, got ? got : "null", want);
+          return 0;
+        }
+      }
+    } else if (!skip_value(c)) {
+      ok = 0;
+    }
+    if (!ok) {
+      fprintf(stderr, "FAIL %s step %d field %s\n", id, step_i, key);
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
 static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min,
                     double alt_max, const guara_gf_params *params, const char *id,
                     int step_i)
 {
   guara_gf_state st;
   memset(&st, 0, sizeof st);
+  guara_gf_params step_p = *params;
   double lat_deg = 0.0;
   double lon_deg = 0.0;
   double ref_lat_deg = 0.0;
@@ -384,7 +435,7 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
   int has_expect = 0;
   Cursor expect_at;
   memset(&expect_at, 0, sizeof expect_at);
-  char op[16] = {0};
+  char op[24] = {0};
   if (!take(c, '{')) {
     return 0;
   }
@@ -440,6 +491,8 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
       expect_at = *c;
       ok = skip_value(c);
       has_expect = 1;
+    } else if (strcmp(key, "params") == 0) {
+      ok = parse_params_fields(c, &step_p);
     } else {
       ok = skip_value(c);
     }
@@ -476,6 +529,16 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
     if (has_expect) {
       Cursor ec = expect_at;
       if (!check_classify(id, step_i, &ec, code)) {
+        return 0;
+      }
+    }
+    return 1;
+  }
+  if (strcmp(op, "check_params") == 0) {
+    const char *err = guara_gf_params_error(&step_p);
+    if (has_expect) {
+      Cursor ec = expect_at;
+      if (!check_params_error(id, step_i, &ec, err)) {
         return 0;
       }
     }
@@ -654,8 +717,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 25) {
-    fprintf(stderr, "FAIL expected at least 25 geofence vectors, got %d\n", nvec);
+  if (nvec < 31) {
+    fprintf(stderr, "FAIL expected at least 31 geofence vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_geofence vectors=%d\n", nvec);

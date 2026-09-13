@@ -9,7 +9,7 @@ import math
 import platform
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .. import doctor, params
@@ -106,12 +106,12 @@ def _looks_like_geofence(data: list) -> bool:
     if not data:
         return False
     return "vertices" in data[0] or bool(
-        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict", "project", "classify"}
+        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict", "project", "classify", "check_params"}
     )
 
 
-def _gf_params(raw: dict | None) -> GfParams:
-    p = GfParams()
+def _gf_params(raw: dict | None, base: GfParams | None = None) -> GfParams:
+    p = GfParams() if base is None else replace(base)
     if not raw:
         return p
     for key in ("a_brake_h_m_s2", "a_brake_v_m_s2", "k_sigma", "v_min_m_s", "horizon_s"):
@@ -202,6 +202,15 @@ def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
                 want = (step.get("expect") or {}).get("polygon_error")
                 if want is not None and got != want:
                     raise CtkError(f"{vec_id} step {i}: polygon_error got {got} want {want}")
+            elif op == "check_params":
+                p = _gf_params(step.get("params"), params)
+                got = table.params_error(p)
+                _mark(stats, t0)
+                if "params_error" not in (step.get("expect") or {}):
+                    raise CtkError(f"{vec_id} step {i}: check_params missing params_error")
+                want = step["expect"]["params_error"]
+                if got != want:
+                    raise CtkError(f"{vec_id} step {i}: params_error got {got!r} want {want!r}")
             else:
                 raise CtkError(f"{vec_id} step {i}: unknown op {op}")
         stats.n_ok += 1

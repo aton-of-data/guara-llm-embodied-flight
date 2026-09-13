@@ -264,5 +264,40 @@
     "spec": ["AC-8"],
     "vertices": [0, 0, 5, 0, 10, 0],
     "steps": [{"op": "classify", "expect": {"polygon_error": "zero_area"}}]
+  },
+  {
+    "id": "default_predictor_params_are_valid",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "expect": {"params_error": null}}]
+  },
+  {
+    "id": "a_brake_h_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"a_brake_h_m_s2": 0.0},
+               "expect": {"params_error": "a_brake_h_m_s2 must be > 0"}}]
+  },
+  {
+    "id": "a_brake_v_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"a_brake_v_m_s2": 0.0},
+               "expect": {"params_error": "a_brake_v_m_s2 must be > 0"}}]
+  },
+  {
+    "id": "k_sigma_must_be_non_negative",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"k_sigma": -1.0},
+               "expect": {"params_error": "k_sigma must be >= 0"}}]
+  },
+  {
+    "id": "v_min_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"v_min_m_s": 0.0},
+               "expect": {"params_error": "v_min_m_s must be > 0"}}]
+  },
+  {
+    "id": "horizon_must_be_positive",
+    "spec": ["AC-8"],
+    "steps": [{"op": "check_params", "params": {"horizon_s": 0.0},
+               "expect": {"params_error": "horizon_s must be > 0"}}]
   }
 ]

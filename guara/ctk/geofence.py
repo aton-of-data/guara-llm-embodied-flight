@@ -144,6 +144,20 @@ def classify_polygon(vertices_ne: list[float]) -> str:
     return "none"
 
 
+def validate_params(params: GfParams) -> str | None:
+    if not (math.isfinite(params.a_brake_h_m_s2) and params.a_brake_h_m_s2 > 0.0):
+        return "a_brake_h_m_s2 must be > 0"
+    if not (math.isfinite(params.a_brake_v_m_s2) and params.a_brake_v_m_s2 > 0.0):
+        return "a_brake_v_m_s2 must be > 0"
+    if not (math.isfinite(params.k_sigma) and params.k_sigma >= 0.0):
+        return "k_sigma must be >= 0"
+    if not (math.isfinite(params.v_min_m_s) and params.v_min_m_s > 0.0):
+        return "v_min_m_s must be > 0"
+    if not (params.horizon_s > 0.0):
+        return "horizon_s must be > 0"
+    return None
+
+
 def _point_segment_distance(q: Vec2, a: Vec2, b: Vec2) -> float:
     ab = _sub(b, a)
     len2 = _dot(ab, ab)
@@ -175,6 +189,9 @@ class ReferenceGeofence:
 
     def polygon_error(self, vertices_ne: list[float]) -> str:
         return classify_polygon(vertices_ne)
+
+    def params_error(self, params: GfParams) -> str | None:
+        return validate_params(params)
 
     def predict(self, params: GfParams, state: GfState) -> GfPrediction:
         out = GfPrediction()

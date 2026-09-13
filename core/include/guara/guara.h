@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.6.0-provisional"
+#define GUARA_ABI_VERSION "0.7.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -200,6 +200,7 @@ typedef struct guara_gf_prediction {
 } guara_gf_prediction;
 
 GUARA_API void guara_gf_params_default(guara_gf_params * p);
+GUARA_API const char * guara_gf_params_error(const guara_gf_params * p);
 GUARA_API int guara_gf_predict(const double * vertices_ne, size_t n_vertices, double alt_min_m,
   double alt_max_m, const guara_gf_params * params, const guara_gf_state * state,
   guara_gf_prediction * out);
