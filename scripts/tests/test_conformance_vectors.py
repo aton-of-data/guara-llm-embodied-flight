@@ -57,3 +57,4 @@ def test_monitor_table_vectors_cover_stale_incomplete_and_hostile_fields():
     assert "incomplete_inputs_are_invalid" in ids
     assert "out_of_range_action_is_invalid" in ids
     assert "log_class_never_switches" in ids
+    assert "seventeenth_id_is_rejected" in ids

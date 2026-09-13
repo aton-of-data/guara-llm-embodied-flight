@@ -81,5 +81,30 @@
       {"op": "observe", "id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "violated": 1, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 1},
       {"op": "evaluate", "t_s": 1.0, "expect": {"invalid": 1}}
     ]
+  },
+  {
+    "id": "seventeenth_id_is_rejected",
+    "spec": ["H-4"],
+    "max_age_s": 0.5,
+    "steps": [
+      {"op": "observe", "id": "REQ-00", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-01", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-02", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-03", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-04", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-05", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-06", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-07", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-08", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-09", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-10", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-11", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-12", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-13", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-14", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-15", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 0},
+      {"op": "observe", "id": "REQ-16", "violated": 0, "action": 0, "class": 1, "complete": 1, "t_recv_s": 1.0, "expect_accept": 2},
+      {"op": "evaluate", "t_s": 1.0, "expect": {"invalid": 1}}
+    ]
   }
 ]

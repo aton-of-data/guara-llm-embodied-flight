@@ -62,7 +62,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-58 | K | M18 | in progress | `colcon test --packages-select guara_rta --ctest-args -R 'decision_core\|hysteresis\|latch\|gateway'`: 8/8 on arm64 in `guara-dev:m1`; no milestone report yet |
 | AC-60 | K | M18 | in progress | `guara ctk bench` records `max_step_ns` as measured, not a bound; x86 evidence unrecorded |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan on ABI tests; clang-tidy; vector-suite coverage unmeasured |
-| AC-63 | K | M19 | in progress | spec_s3 T1–T9; adr0010 rules 1–3; monitor_table H-4/H-6; rules 6–7 and coverage PARAMETER TBD |
+| AC-63 | K | M19 | in progress | spec_s3 T1–T9; adr0010 rules 1–3; monitor_table H-4/H-6 including 17th-id overflow; rules 6–7 and coverage PARAMETER TBD |
 | AC-64 | K | M19 | in progress | SIL ctypes port; T4 mutation rejected in Python and C ABI; ROS/F´ ports absent |
 | AC-65 | K | M19 | in progress | `guara ctk run --port python` passes spec_s3; ambiguities filed in SPEC §3.6, not resolved |
 | AC-66 | K | M19 | in progress | `--report` + `check_ac.py AC-66`; not signed; only the Python port |
