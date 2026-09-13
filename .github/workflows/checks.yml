@@ -39,10 +39,11 @@ jobs:
         run: python3 -m pytest scripts/tests -q
       - name: The no-container path the README promises
         run: |
-          python3 -m mission.compiler --intent mission/intents/survey_north_3.json
-          ! python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
-          test "$(python3 -m mission.compiler --stop 'land now')" = land_now
-          test "$(python3 -m mission.compiler --stop 'pouse agora')" = land_now
+          guara compile --intent mission/intents/survey_north_3.json
+          ! guara compile --intent mission/intents/survey_north_3_out_of_envelope.json
+          test "$(guara compile --stop 'land now')" = land_now
+          test "$(guara compile --stop 'pouse agora')" = land_now
+          python3 -m mission.compiler --stop 'land now' | grep -x land_now
 
   boundaries:
     name: licence, headers and links

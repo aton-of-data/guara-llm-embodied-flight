@@ -317,15 +317,15 @@ pip install -e .
 guara doctor
 
 # a Mission Intent inside the envelope -> a flyable plan (exit 0)
-python3 -m mission.compiler --intent mission/intents/survey_north_3.json
+guara compile --intent mission/intents/survey_north_3.json
 
 # the same intent asking for 40 cm/px -> a refusal that names the checks (exit 2)
-python3 -m mission.compiler --intent mission/intents/survey_north_3_out_of_envelope.json
+guara compile --intent mission/intents/survey_north_3_out_of_envelope.json
 # refused (checks): gsd_bounds, altitude_ceiling, energy
 
 # the stop path, which never reaches a model at all (AC-29), in both shipped languages
-python3 -m mission.compiler --stop "land now"     # -> land_now
-python3 -m mission.compiler --stop "pouse agora"  # -> land_now
+guara compile --stop "land now"     # -> land_now
+guara compile --stop "pouse agora"  # -> land_now
 ```
 
 The second command is the point: an intent that is well-formed, schema-valid and completely

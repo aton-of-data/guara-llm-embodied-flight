@@ -9,6 +9,11 @@ from . import doctor
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if argv[:1] == ["compile"]:
+        from mission.compiler.__main__ import main as compile_main
+        return compile_main(argv[1:])
+
     parser = argparse.ArgumentParser(
         prog="guara",
         description="Guará trusted-layer tools. Nothing here commands a vehicle.")
@@ -16,6 +21,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser(
         "doctor",
         help="workstation preflight: pins, platform and the reachable install tier",
+    )
+    sub.add_parser(
+        "compile",
+        help="compile a Mission Intent, or match the model-free stop grammar",
     )
     args = parser.parse_args(argv)
     if args.cmd == "doctor":

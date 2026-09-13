@@ -8,6 +8,7 @@ and the stop grammar resolves without a model in either shipped language.
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import subprocess
 import sys
@@ -79,3 +80,24 @@ def test_a_non_stop_utterance_is_not_resolved_by_the_grammar():
     r = run("--stop", "survey the north field")
     assert r.returncode == 2
     assert "no stop verb" in r.stderr
+
+
+def _guara(*args: str) -> subprocess.CompletedProcess:
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT)
+    return subprocess.run([sys.executable, "-m", "guara", "compile", *args],
+                          capture_output=True, text=True, cwd=str(ROOT), env=env)
+
+
+def test_guara_compile_is_the_same_stop_path_as_the_module():
+    r = _guara("--stop", "pouse agora")
+    assert r.returncode == 0, r.stderr
+    assert r.stdout.strip() == "land_now"
+
+
+def test_guara_compile_refuses_an_out_of_envelope_intent(tmp_path):
+    r = _guara("--intent", intent(tmp_path, gsd_cm=40.0))
+    assert r.returncode == 2
+    assert "refused (checks):" in r.stderr
+    for name in ("gsd_bounds", "altitude_ceiling"):
+        assert name in r.stderr
