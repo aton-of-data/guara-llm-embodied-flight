@@ -33,14 +33,13 @@ void write_le64(std::uint8_t * d, std::uint64_t v) noexcept
   }
 }
 
+// Feeds the IEEE-754 bit pattern of x, serialised little-endian. The digest of a
+// parameter set is the same on every byte order.
 void feed_f64(std::uint64_t & h, double x) noexcept
 {
   std::uint64_t bits = 0;
   static_assert(sizeof(double) == 8, "IEEE-754 double");
   std::memcpy(&bits, &x, 8);
-#if defined(__BYTE_ORDER__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-  bits = __builtin_bswap64(bits);
-#endif
   std::uint8_t buf[8];
   write_le64(buf, bits);
   fnv1a(h, buf, 8);
