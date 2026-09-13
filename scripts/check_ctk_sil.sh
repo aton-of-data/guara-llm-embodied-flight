@@ -35,4 +35,7 @@ fi
 
 "${py}" -m guara ctk run --port sil
 "${py}" -m guara ctk run --port sil --vectors "${root}/core/conformance/vectors/adr0010_gateway.json"
+bench="${TMPDIR:-/tmp}/guara-ctk-bench"
+"${py}" -m guara ctk bench --port sil --report "${bench}"
+"${py}" "${root}/scripts/check_ac.py" AC-60 "${bench}"
 echo "PASS ctk-sil: C ABI port matched the published vectors via ${lib}"

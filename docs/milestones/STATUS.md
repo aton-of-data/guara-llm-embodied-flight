@@ -60,7 +60,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-55 | S | M17 | in progress | `core` job in `.github/workflows/checks.yml`; matrix evidence not yet recorded |
 | AC-57 | K | M18 | in progress | `scripts/check_core_consumer.sh` installs a package config and links `guara::core`; CI matrix not yet green on this commit |
 | AC-58 | K | M18 | in progress | `colcon test --packages-select guara_rta --ctest-args -R 'decision_core\|hysteresis\|latch\|gateway'`: 8/8 on arm64 in `guara-dev:m1`; no milestone report yet |
-| AC-60 | K | M18 | in progress | conformance runner prints `max_step_ns` (measured, not a bound); x86 + results/ record absent |
+| AC-60 | K | M18 | in progress | `guara ctk bench` records `max_step_ns` as measured, not a bound; x86 evidence unrecorded |
 | AC-62 | K | M18 | in progress | `scripts/core_qa.sh`: ASan/UBSan on ABI tests; clang-tidy; vector-suite coverage unmeasured |
 | AC-63 | K | M19 | in progress | spec_s3.json T1–T9; adr0010_gateway.json rules 1–3; rules 6–7 not vectorised; coverage PARAMETER TBD |
 | AC-64 | K | M19 | in progress | SIL ctypes port through `guara_cabi`; python T4 mutation still the only injected fault; ROS/F´ ports absent |

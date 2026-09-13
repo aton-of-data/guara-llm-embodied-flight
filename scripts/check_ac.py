@@ -11,12 +11,15 @@ import re
 import subprocess
 import sys
 
-import yaml
-
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # The line the arbiter logs once registration with PX4 succeeded (arbiter_node.cpp).
 REGISTERED_RE = re.compile(r"registered '.*' \(executor id \d+, nav_state \d+\)")
+
+
+def _yaml_load(path: pathlib.Path):
+    import yaml
+    return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
 def check_ac20(_path: pathlib.Path) -> list[str]:
@@ -360,7 +363,7 @@ def check_ac15c(run_dir: pathlib.Path) -> list[str]:
     errors = []
     config_path = run_dir / "config.yaml"
     if config_path.is_file():
-        config = yaml.safe_load(config_path.read_text()) or {}
+        config = _yaml_load(config_path) or {}
         entry = (config.get("px4_params") or {}).get("COM_MODE_ARM_CHK")
         if entry is None or entry.get("read_back") != 0:
             errors.append(
@@ -558,7 +561,7 @@ def _max_violation_depth(run_dir: pathlib.Path, flat_lat_lon: list[float]) -> tu
     xs, ys = data["x"], data["y"]
     ref_lat = data["ref_lat"] if "ref_lat" in data else None
     ref_lon = data["ref_lon"] if "ref_lon" in data else None
-    home = yaml.safe_load((run_dir / "config.yaml").read_text())["simulator"]["home"]
+    home = _yaml_load(run_dir / "config.yaml")["simulator"]["home"]
     pairs = list(zip(flat_lat_lon[0::2], flat_lat_lon[1::2]))
     max_depth = 0.0
     for i, (x, y) in enumerate(zip(xs, ys)):
@@ -585,7 +588,7 @@ def check_ac9(pair_dir: pathlib.Path) -> list[str]:
     off_dir = pair_dir / "rta_off"
     if not on_dir.exists() or not off_dir.exists():
         return [f"pair directory {pair_dir} needs rta_on/ and rta_off/"]
-    cfg = yaml.safe_load((on_dir / "config.yaml").read_text())
+    cfg = _yaml_load(on_dir / "config.yaml")
     flat = cfg.get("expect", {}).get("geofence", {}).get("polygon_lat_lon_deg")
     if not flat or len(flat) < 6:
         return ["rta_on config.yaml missing expect.geofence.polygon_lat_lon_deg"]
@@ -699,7 +702,7 @@ def _llm_run(run_dir: pathlib.Path) -> tuple[dict, list[dict], list[str]]:
             errors.append(f"missing {path}")
     if errors:
         return {}, [], errors
-    config = yaml.safe_load(config_path.read_text()) or {}
+    config = _yaml_load(config_path) or {}
     if config.get("kind") != "llm_eval":
         return {}, [], [f"{run_dir} is not an llm_eval run (kind={config.get('kind')!r})"]
     metrics = json.loads(metrics_path.read_text())
@@ -805,7 +808,7 @@ def check_ac31(path: pathlib.Path) -> list[str]:
     cfg_path = path / "config.yaml"
     if not cfg_path.is_file():
         return [f"missing {cfg_path}"]
-    cfg = yaml.safe_load(cfg_path.read_text()) or {}
+    cfg = _yaml_load(cfg_path) or {}
     flat = cfg.get("expect", {}).get("geofence", {}).get("polygon_lat_lon_deg")
     if not flat or len(flat) < 6:
         return ["config.yaml missing expect.geofence.polygon_lat_lon_deg"]
@@ -830,6 +833,29 @@ def check_ac47(_path: pathlib.Path) -> list[str]:
     if result.returncode != 0:
         return [result.stdout + result.stderr]
     return []
+
+
+def check_ac60(path: pathlib.Path) -> list[str]:
+    """Worst observed kernel-entry time is recorded as measured, not a bound."""
+    report = path / "report.txt" if path.is_dir() else path
+    if not report.is_file():
+        return ["missing report.txt"]
+    text = report.read_text(encoding="utf-8")
+    errors: list[str] = []
+    for key in ("port", "host", "arch", "n_ops", "max_step_ns"):
+        if not re.search(rf"^{re.escape(key)}\s+\S", text, re.MULTILINE):
+            errors.append(f"missing field {key}")
+    m_ops = re.search(r"^n_ops\s+(\d+)\s*$", text, re.MULTILINE)
+    m_ns = re.search(r"^max_step_ns\s+(\d+)\s*$", text, re.MULTILINE)
+    if m_ops and int(m_ops.group(1)) < 1:
+        errors.append("n_ops is zero")
+    if m_ns and int(m_ns.group(1)) < 1:
+        errors.append("max_step_ns is zero")
+    if "measured, not a bound" not in text:
+        errors.append("report does not say the time is measured, not a bound")
+    if re.search(r"\bWCET\b", text) and "not a bound" not in text:
+        errors.append("report mentions WCET without stating it is not a bound")
+    return errors
 
 
 def check_ac66(path: pathlib.Path) -> list[str]:
@@ -872,6 +898,7 @@ CHECKERS = {
     "AC-29": check_ac29,
     "AC-31": check_ac31,
     "AC-47": check_ac47,
+    "AC-60": check_ac60,
     "AC-66": check_ac66,
 }
 

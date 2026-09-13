@@ -109,3 +109,36 @@ def test_ac66_rejects_a_report_without_the_decision_4_sentence(tmp_path):
     )
     assert chk.returncode == 1
     assert "necessary and not sufficient" in chk.stdout
+
+
+def test_bench_report_satisfies_ac60(tmp_path):
+    dest = tmp_path / "latest_bench"
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "bench", "--port", "python",
+         "--report", str(dest)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    text = (dest / "report.txt").read_text()
+    assert "measured, not a bound" in text
+    assert "max_step_ns" in text
+    assert "n_ops" in text
+    chk = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_ac.py"), "AC-60", str(dest)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert chk.returncode == 0, chk.stdout + chk.stderr
+    assert "PASS AC-60" in chk.stdout
+
+
+def test_ac60_rejects_a_report_that_omits_the_measured_disclaimer(tmp_path):
+    (tmp_path / "report.txt").write_text(
+        "port python\nhost z\narch a\nn_ops 3\nmax_step_ns 9\n",
+        encoding="utf-8",
+    )
+    chk = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/check_ac.py"), "AC-60", str(tmp_path)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert chk.returncode == 1
+    assert "measured, not a bound" in chk.stdout

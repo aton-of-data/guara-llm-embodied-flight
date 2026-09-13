@@ -8,6 +8,8 @@ import json
 import math
 import platform
 import sys
+import time
+from dataclasses import dataclass
 from pathlib import Path
 
 from .. import doctor, params
@@ -20,6 +22,18 @@ NOTE = (
     "behavioural equivalence to the published vectors and nothing about the "
     "safety of the system that contains it."
 )
+BENCH_NOTE = (
+    "max_step_ns is the worst observed wall-clock time of one kernel entry "
+    "on this host; it is measured, not a bound (G-K4 stays open until a WCET tool)."
+)
+
+
+@dataclass
+class VectorRun:
+    n_ok: int
+    n_all: int
+    n_ops: int
+    max_step_ns: int
 
 
 class CtkError(Exception):
@@ -93,19 +107,28 @@ def _looks_like_gateway(data: list) -> bool:
     return bool(steps) and "op" in steps[0]
 
 
-def _run_spec_vectors(data: list, make_core) -> tuple[int, int]:
-    n_ok = 0
+def _mark(stats: VectorRun, t0: int) -> None:
+    dt = time.perf_counter_ns() - t0
+    stats.n_ops += 1
+    if dt > stats.max_step_ns:
+        stats.max_step_ns = dt
+
+
+def _run_spec_vectors(data: list, make_core) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
     for vec in data:
         core = make_core(_params(vec.get("params")))
         vec_id = vec["id"]
         for i, step in enumerate(vec["steps"]):
+            t0 = time.perf_counter_ns()
             if step.get("action") == "latch":
                 got = core.latch_on_actuation_failure(float(step["t_s"]))
             else:
                 got = core.step(_inputs(step["in"]))
+            _mark(stats, t0)
             _check(vec_id, i, step.get("expect") or {}, got)
-        n_ok += 1
-    return n_ok, len(data)
+        stats.n_ok += 1
+    return stats
 
 
 def _check_gateway(vec_id: str, step_i: int, expect: dict, got) -> None:
@@ -142,8 +165,8 @@ def _check_gateway(vec_id: str, step_i: int, expect: dict, got) -> None:
             raise CtkError(f"{vec_id} step {step_i}: {key} got {got_v} want {want}")
 
 
-def _run_gateway_vectors(data: list, make_gateway) -> tuple[int, int]:
-    n_ok = 0
+def _run_gateway_vectors(data: list, make_gateway) -> VectorRun:
+    stats = VectorRun(n_ok=0, n_all=len(data), n_ops=0, max_step_ns=0)
     for vec in data:
         limits = GatewayLimits()
         if "timeout_s" in vec:
@@ -152,24 +175,29 @@ def _run_gateway_vectors(data: list, make_gateway) -> tuple[int, int]:
         vec_id = vec["id"]
         for i, step in enumerate(vec["steps"]):
             op = step["op"]
+            t0 = time.perf_counter_ns()
             if op == "state":
                 gw.on_core_state(int(step["state"]), float(step["t_s"]))
+                _mark(stats, t0)
             elif op == "guard":
                 gw.set_guard(int(step["mode"]))
+                _mark(stats, t0)
             elif op == "setpoint":
                 v = tuple(_num(x) for x in step["v"])
                 gw.on_cf_setpoint(float(step["t_recv_s"]), float(step["stamp_s"]), v,
                                   _num(step.get("yaw")))
+                _mark(stats, t0)
             elif op == "compute":
                 got = gw.compute(float(step["t_s"]))
+                _mark(stats, t0)
                 _check_gateway(vec_id, i, step.get("expect") or {}, got)
             else:
                 raise CtkError(f"{vec_id} step {i}: unknown op {op}")
-        n_ok += 1
-    return n_ok, len(data)
+        stats.n_ok += 1
+    return stats
 
 
-def run_vectors(path: Path, make_core=None, make_gateway=None) -> tuple[int, int]:
+def run_vectors(path: Path, make_core=None, make_gateway=None) -> VectorRun:
     if make_core is None:
         make_core = lambda params: ReferenceCore(params=params)
     if make_gateway is None:
@@ -180,8 +208,21 @@ def run_vectors(path: Path, make_core=None, make_gateway=None) -> tuple[int, int
     return _run_spec_vectors(data, make_core)
 
 
+def vector_files(path: Path) -> list[Path]:
+    if path.is_dir():
+        files = sorted(p for p in path.glob("*.json") if p.is_file())
+        if not files:
+            raise CtkError(f"no JSON vectors in {path}")
+        return files
+    return [path]
+
+
 def default_vectors(root: Path) -> Path:
     return root / "core" / "conformance" / "vectors" / "spec_s3.json"
+
+
+def default_vector_dir(root: Path) -> Path:
+    return root / "core" / "conformance" / "vectors"
 
 
 def _report_lines(port: str, core_ver: str, abi_ver: str, digest: str,
@@ -199,6 +240,23 @@ def _report_lines(port: str, core_ver: str, abi_ver: str, digest: str,
     ]
 
 
+def _bench_lines(port: str, core_ver: str, abi_ver: str, names: str,
+                 digest: str, stats: VectorRun) -> list[str]:
+    return [
+        f"port           {port}",
+        f"core           {core_ver}",
+        f"abi            {abi_ver}",
+        f"host           {sys.platform}",
+        f"arch           {platform.machine() or 'unknown'}",
+        f"vectors        {names}",
+        f"vectors_sha256 {digest}",
+        f"n_ops          {stats.n_ops}",
+        f"max_step_ns    {stats.max_step_ns}",
+        f"result         PASS {stats.n_ok}/{stats.n_all}",
+        f"note           {BENCH_NOTE}",
+    ]
+
+
 def write_report(path: Path, body: str) -> None:
     if path.suffix:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -206,6 +264,26 @@ def write_report(path: Path, body: str) -> None:
         return
     path.mkdir(parents=True, exist_ok=True)
     (path / "report.txt").write_text(body, encoding="utf-8")
+
+
+def _port_factory(root: Path, port: str, lib_arg: Path | None, err):
+    make_core = lambda params: ReferenceCore(params=params)
+    make_gateway = lambda limits: ReferenceGateway(limits=limits)
+    port_name = "python-reference"
+    if port == "sil":
+        lib_path = find_cabi(root, lib_arg)
+        if lib_path is None:
+            print("FAIL ctk: C ABI library not found (build core/ or pass --lib)", file=err)
+            return None
+        try:
+            lib = load_cabi(lib_path)
+        except OSError as exc:
+            print(f"FAIL ctk: cannot load {lib_path}: {exc}", file=err)
+            return None
+        make_core = lambda params, _lib=lib: SilCore(_lib, params)
+        make_gateway = lambda limits, _lib=lib: SilGateway(_lib, limits)
+        port_name = "sil-cabi"
+    return port_name, make_core, make_gateway
 
 
 def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
@@ -221,48 +299,77 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
                       help="shared C ABI library for --port sil (or set GUARA_CABI)")
     runp.add_argument("--report", type=Path, default=None,
                       help="write the report to a file, or to report.txt in this directory")
+    benchp = sub.add_parser(
+        "bench",
+        help="record worst observed step time (measured, not a bound)",
+    )
+    benchp.add_argument("--port", required=True, choices=("python", "sil"))
+    benchp.add_argument("--vectors", type=Path, default=None)
+    benchp.add_argument("--lib", type=Path, default=None)
+    benchp.add_argument("--report", type=Path, required=True,
+                        help="write the bench record (directory or file)")
     args = parser.parse_args(argv)
-    if args.cmd != "run":
-        parser.error(f"unknown command {args.cmd}")
-        return 1
 
     root = doctor.repo_root()
     if root is None:
         print("FAIL ctk: versions.env not found; run from a clone", file=err)
         return 1
-    vectors = args.vectors if args.vectors is not None else default_vectors(root)
-    make_core = lambda params: ReferenceCore(params=params)
-    make_gateway = lambda limits: ReferenceGateway(limits=limits)
-    port_name = "python-reference"
-    if args.port == "sil":
-        lib_path = find_cabi(root, args.lib)
-        if lib_path is None:
-            print("FAIL ctk: C ABI library not found (build core/ or pass --lib)", file=err)
-            return 1
-        try:
-            lib = load_cabi(lib_path)
-        except OSError as exc:
-            print(f"FAIL ctk: cannot load {lib_path}: {exc}", file=err)
-            return 1
-        make_core = lambda params, _lib=lib: SilCore(_lib, params)
-        make_gateway = lambda limits, _lib=lib: SilGateway(_lib, limits)
-        port_name = "sil-cabi"
-    try:
-        n_ok, n_all = run_vectors(vectors, make_core, make_gateway)
-    except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
-        print(f"FAIL ctk: {exc}", file=err)
+    factory = _port_factory(root, args.port, args.lib, err)
+    if factory is None:
         return 1
+    port_name, make_core, make_gateway = factory
 
-    digest = hashlib.sha256(vectors.read_bytes()).hexdigest()
-    core_ver, abi_ver = params.versions_from_header(root)
-    body = "\n".join(_report_lines(
-        port_name, core_ver, abi_ver, digest, vectors.name, n_ok, n_all,
-    )) + "\n"
-    print(body, file=out, end="")
-    if args.report is not None:
+    if args.cmd == "run":
+        vectors = args.vectors if args.vectors is not None else default_vectors(root)
+        try:
+            stats = run_vectors(vectors, make_core, make_gateway)
+        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
+            print(f"FAIL ctk: {exc}", file=err)
+            return 1
+        digest = hashlib.sha256(vectors.read_bytes()).hexdigest()
+        core_ver, abi_ver = params.versions_from_header(root)
+        body = "\n".join(_report_lines(
+            port_name, core_ver, abi_ver, digest, vectors.name, stats.n_ok, stats.n_all,
+        )) + "\n"
+        print(body, file=out, end="")
+        if args.report is not None:
+            try:
+                write_report(args.report, body)
+            except OSError as exc:
+                print(f"FAIL ctk: cannot write report: {exc}", file=err)
+                return 1
+        return 0
+
+    if args.cmd == "bench":
+        vectors = args.vectors if args.vectors is not None else default_vector_dir(root)
+        try:
+            files = vector_files(vectors)
+            acc = VectorRun(n_ok=0, n_all=0, n_ops=0, max_step_ns=0)
+            hasher = hashlib.sha256()
+            names: list[str] = []
+            for f in files:
+                hasher.update(f.read_bytes())
+                names.append(f.name)
+                one = run_vectors(f, make_core, make_gateway)
+                acc.n_ok += one.n_ok
+                acc.n_all += one.n_all
+                acc.n_ops += one.n_ops
+                if one.max_step_ns > acc.max_step_ns:
+                    acc.max_step_ns = one.max_step_ns
+        except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
+            print(f"FAIL ctk: {exc}", file=err)
+            return 1
+        core_ver, abi_ver = params.versions_from_header(root)
+        body = "\n".join(_bench_lines(
+            port_name, core_ver, abi_ver, ",".join(names), hasher.hexdigest(), acc,
+        )) + "\n"
+        print(body, file=out, end="")
         try:
             write_report(args.report, body)
         except OSError as exc:
             print(f"FAIL ctk: cannot write report: {exc}", file=err)
             return 1
-    return 0
+        return 0
+
+    parser.error(f"unknown command {args.cmd}")
+    return 1
