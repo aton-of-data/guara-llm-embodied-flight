@@ -12,7 +12,7 @@ if [[ -f /.dockerenv && "${GUARA_IN_CONTAINER:-}" == "1" ]]; then
 fi
 
 if ! docker image inspect "${image}" >/dev/null 2>&1; then
-  docker build -t "${image}" -f "${root}/docker/Dockerfile" "${root}/docker"
+  docker build -t "${image}" -f "${root}/docker/Dockerfile" "${root}"
 fi
 
 for dep in px4_msgs px4-ros2-interface-lib; do

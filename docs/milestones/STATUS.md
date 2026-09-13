@@ -1,12 +1,13 @@
 # Acceptance criteria status
 
-Updated: 2026-09-12. An AC is PASS only with an executed command and an excerpt in the
+Updated: 2026-09-13. An AC is PASS only with an executed command and an excerpt in the
 milestone report. This table is a tracker, not a substitute for those reports.
 
-Threads (`docs/PLAN-M8-M16.md` §1): **core** = the PX4 RTA of M1–M7 · **A** = air / LLM
-embodiment · **B** = the F´ host · **C** = the space domain. Statuses are `PASS`,
-`in progress` (code exists, the criterion is not met yet) and `planned` (specified, no code).
-Every `planned` row is a promise in the plan, not work in flight.
+Threads (`docs/PLAN-M8-M16.md` §1, `docs/PLAN-M17-M28.md`): **core** = the PX4 RTA of
+M1–M7 · **A** = air / LLM embodiment · **B** = the F´ host · **C** = the space domain ·
+**S** = setup and delivery. Statuses are `PASS`, `in progress` (code exists, the criterion
+is not met yet) and `planned` (specified, no code). Every `planned` row is a promise in
+the plan, not work in flight.
 
 The review `docs/reviews/2026-09-11-m1-m5-review.md` invalidated part of the evidence behind this
 table (one false PASS, and eleven rows produced by a checker that no longer ran). Every finding was
@@ -54,6 +55,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-30 | A | M9 | PASS | `scripts/tests/test_llm_eval.py` (no key, no network) |
 | AC-31 | A | M9 | PASS | pair on=0.000 m off=47.178 m (`docs/evidence/20260912T134907Z_llm_survey_outside_s42_pair/`); nominal member also PASS |
 | AC-47 | C | M13c | PASS | `docs/milestones/M13c.md` (analytic cases, ±0.05 s, clean tree at `696c4ed`) |
+| AC-52 | S | M17 | in progress | pin-drift check (`scripts/check_reproducible.py --pins`); hash lock (G-S1) still open |
 
 ## Planned criteria
 
@@ -80,5 +82,12 @@ place as the evidence for it.
 | AC-48 | C | M13c | An orbital run: keep-out channel on = zero cone violation, channel off = violation | a simulator in the loop (Basilisk ↔ ROS 2) |
 | AC-49 | C | M16 | Latency budget in the orbital profile with the F´ host, reported as AC-18 reports PX4 | M13, M14 |
 | AC-50 | C | M16 | Zero adversarial utterances produce a sequence that passes both sequencer validation and the gate | the intent → sequence compiler |
+| AC-51 | S | M17 | Tier 0 installs; `guara doctor` exits 0 on Linux, macOS and Windows/WSL | `pyproject.toml` and the CLI |
+| AC-53 | S | M17 | Multi-arch `guara-dev` pull; a scenario runs from the digest with no PX4 source build | GHCR publish of linux/amd64 and linux/arm64 |
+| AC-54 | S | M17 | Cold clone → first green SITL measured on a declared reference machine | `scripts/bench_setup.sh` |
+| AC-55 | S | M17 | CI builds and unit-tests `guara-core` with no ROS, PX4 or Docker | M18 `core/` extraction |
+| AC-56 | S | M17 | Tier-2 path runs with the network disabled when the image and clones are cached | `GUARA_OFFLINE=1` |
+
+M18–M28 (AC-57..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §3–§6 and are not yet inventoried here as in-progress work.
 
 Operation-level view of the same scope: [`docs/operations/`](../operations/README.md).

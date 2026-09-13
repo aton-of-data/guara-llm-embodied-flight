@@ -1,0 +1,6 @@
+# The image build copies only the pin files. PX4 and the XRCE agent are cloned
+# inside the image, not taken from the host, so the rest of the tree is excluded.
+*
+!versions.env
+!requirements.txt
+!requirements-dev.txt

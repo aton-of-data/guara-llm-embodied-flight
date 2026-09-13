@@ -2,7 +2,8 @@
 # Guará formal-methods toolchain image: FRET formalizer (FRETish -> ptLTL), Ogma (ptLTL -> Copilot
 # specification and ROS 2 application) and Copilot (specification -> C99). It is a generation-time
 # image only; its outputs are committed under ros2_ws/src/guara_monitors/generated/ and compiled by
-# the ROS 2 development image (docker/Dockerfile). Pinned commits must equal third_party/VERSIONS.md.
+# the ROS 2 development image (docker/Dockerfile). ARG defaults must equal versions.env
+# (scripts/check_reproducible.py --pins); those values match third_party/VERSIONS.md.
 FROM ubuntu:22.04
 
 ARG GHC_VERSION=9.10.1

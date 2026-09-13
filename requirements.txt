@@ -8,6 +8,10 @@
 #
 #     pip install -r requirements.txt
 #
+# Pins are declared in versions.env (M17 / G-S2). Do not edit a version here
+# without editing that file; `python3 scripts/check_reproducible.py --pins`
+# fails on drift.
+#
 # The SITL scenarios, the C++ arbiter and the monitor generation need the
 # containers instead; see README "Reproduce it".
 PyYAML>=6.0

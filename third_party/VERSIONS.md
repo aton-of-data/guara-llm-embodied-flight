@@ -1,8 +1,10 @@
 # third_party — pinned versions
 
-Single API source of the project (see CLAUDE.md). Repositories are shallow
-clones (`--depth 1`, no submodules) recreated by `scripts/fetch_third_party.sh`.
-Clone contents are not versioned; only this file and the script.
+Single API source of the project (see CLAUDE.md). The machine-readable pins
+live in [`versions.env`](../versions.env); this file is the human table and the
+licence record. `python3 scripts/check_reproducible.py --pins` fails if they
+drift. Repositories are shallow clones (`--depth 1`, no submodules) recreated
+by `scripts/fetch_third_party.sh`. Clone contents are not versioned.
 
 Cloned on 2026-09-11.
 

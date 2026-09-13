@@ -62,7 +62,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: docker
+          context: .
           file: docker/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/guara-dev:${{ inputs.tag }}
