@@ -38,4 +38,38 @@ const char * toString(Command c) noexcept
   return "UNKNOWN";
 }
 
+const char * transitionName(std::uint8_t id) noexcept
+{
+  switch (id) {
+    case transition::kNone: return "NONE";
+    case transition::kT1: return "T1";
+    case transition::kT2: return "T2";
+    case transition::kT3: return "T3";
+    case transition::kT4: return "T4";
+    case transition::kT5: return "T5";
+    case transition::kT6: return "T6";
+    case transition::kT7: return "T7";
+    case transition::kT2b: return "T2B";
+    case transition::kActuationLatch: return "ACTUATION";
+  }
+  return "UNKNOWN";
+}
+
+const char * causeName(std::uint32_t bits) noexcept
+{
+  switch (bits) {
+    case 0U: return "NONE";
+    case cause::kDaa: return "DAA";
+    case cause::kGeofence: return "GEOFENCE";
+    case cause::kMonitor: return "MONITOR";
+    case cause::kInput: return "INPUT";
+    case cause::kLatch: return "LATCH";
+    case cause::kReturn: return "RETURN";
+    case cause::kNotInCharge: return "NOT_IN_CHARGE";
+    case cause::kEscalation: return "ESCALATION";
+    case cause::kActuation: return "ACTUATION";
+  }
+  return "UNKNOWN";
+}
+
 }  // namespace guara_rta

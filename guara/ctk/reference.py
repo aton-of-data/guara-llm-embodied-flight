@@ -30,13 +30,33 @@ TIME_EPS_S = 1e-9
 STATE_NAMES = ("INACTIVE", "CF", "RF", "LATCHED")
 RECOVERY_NAMES = ("NONE", "HOLD", "RTL", "LAND")
 COMMAND_NAMES = ("NONE", "HOLD", "RTL", "LAND", "OWNED_MODE")
+TRANSITION_NAMES = ("NONE", "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T2B", "ACTUATION")
+CAUSE_NAMES = {
+    0: "NONE",
+    CAUSE_DAA: "DAA",
+    CAUSE_GF: "GEOFENCE",
+    CAUSE_MONITOR: "MONITOR",
+    CAUSE_INPUT: "INPUT",
+    CAUSE_LATCH: "LATCH",
+    CAUSE_RETURN: "RETURN",
+    CAUSE_NOT_IN_CHARGE: "NOT_IN_CHARGE",
+    CAUSE_ESCALATION: "ESCALATION",
+    CAUSE_ACTUATION: "ACTUATION",
+}
 
 
 def vocabulary_name(kind: str, code: int) -> str:
-    table = {"state": STATE_NAMES, "recovery": RECOVERY_NAMES, "command": COMMAND_NAMES}.get(kind)
+    n = int(code)
+    if kind == "cause":
+        return CAUSE_NAMES.get(n, "UNKNOWN")
+    table = {
+        "state": STATE_NAMES,
+        "recovery": RECOVERY_NAMES,
+        "command": COMMAND_NAMES,
+        "transition": TRANSITION_NAMES,
+    }.get(kind)
     if table is None:
         return "UNKNOWN"
-    n = int(code)
     if 0 <= n < len(table):
         return table[n]
     return "UNKNOWN"

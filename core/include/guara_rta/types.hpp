@@ -83,5 +83,7 @@ constexpr Command commandFor(Recovery r) noexcept
 const char * toString(State s) noexcept;
 const char * toString(Recovery r) noexcept;
 const char * toString(Command c) noexcept;
+const char * transitionName(std::uint8_t id) noexcept;
+const char * causeName(std::uint32_t bits) noexcept;
 
 }  // namespace guara_rta

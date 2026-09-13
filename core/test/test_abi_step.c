@@ -52,6 +52,8 @@ int main(void)
   CHECK(strcmp(guara_state_name(out.state), "RF") == 0);
   CHECK(strcmp(guara_recovery_name(out.recovery), "HOLD") == 0);
   CHECK(strcmp(guara_command_name(out.command), "HOLD") == 0);
+  CHECK(strcmp(guara_transition_name(out.transition.id), "T3") == 0);
+  CHECK(strcmp(guara_cause_name(2u), "GEOFENCE") == 0);
   CHECK(strcmp(guara_state_name(255), "UNKNOWN") == 0);
 
   printf("PASS abi_step T2->T3 state=%u recovery=%u\n", out.state, out.recovery);

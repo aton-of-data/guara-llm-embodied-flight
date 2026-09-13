@@ -249,4 +249,14 @@ const char * guara_command_name(uint8_t command)
   }
 }
 
+const char * guara_transition_name(uint8_t id)
+{
+  return guara_rta::transitionName(id);
+}
+
+const char * guara_cause_name(uint32_t bits)
+{
+  return guara_rta::causeName(bits);
+}
+
 }  // extern "C"

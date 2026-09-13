@@ -32,5 +32,40 @@
       {"op": "check_name", "kind": "command", "code": 4, "expect": {"name": "OWNED_MODE"}},
       {"op": "check_name", "kind": "command", "code": 5, "expect": {"name": "UNKNOWN"}}
     ]
+  },
+  {
+    "id": "transition_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "transition", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "transition", "code": 1, "expect": {"name": "T1"}},
+      {"op": "check_name", "kind": "transition", "code": 2, "expect": {"name": "T2"}},
+      {"op": "check_name", "kind": "transition", "code": 3, "expect": {"name": "T3"}},
+      {"op": "check_name", "kind": "transition", "code": 4, "expect": {"name": "T4"}},
+      {"op": "check_name", "kind": "transition", "code": 5, "expect": {"name": "T5"}},
+      {"op": "check_name", "kind": "transition", "code": 6, "expect": {"name": "T6"}},
+      {"op": "check_name", "kind": "transition", "code": 7, "expect": {"name": "T7"}},
+      {"op": "check_name", "kind": "transition", "code": 8, "expect": {"name": "T2B"}},
+      {"op": "check_name", "kind": "transition", "code": 9, "expect": {"name": "ACTUATION"}},
+      {"op": "check_name", "kind": "transition", "code": 10, "expect": {"name": "UNKNOWN"}}
+    ]
+  },
+  {
+    "id": "cause_names",
+    "spec": ["AC-61"],
+    "steps": [
+      {"op": "check_name", "kind": "cause", "code": 0, "expect": {"name": "NONE"}},
+      {"op": "check_name", "kind": "cause", "code": 1, "expect": {"name": "DAA"}},
+      {"op": "check_name", "kind": "cause", "code": 2, "expect": {"name": "GEOFENCE"}},
+      {"op": "check_name", "kind": "cause", "code": 4, "expect": {"name": "MONITOR"}},
+      {"op": "check_name", "kind": "cause", "code": 8, "expect": {"name": "INPUT"}},
+      {"op": "check_name", "kind": "cause", "code": 16, "expect": {"name": "LATCH"}},
+      {"op": "check_name", "kind": "cause", "code": 32, "expect": {"name": "RETURN"}},
+      {"op": "check_name", "kind": "cause", "code": 64, "expect": {"name": "NOT_IN_CHARGE"}},
+      {"op": "check_name", "kind": "cause", "code": 128, "expect": {"name": "ESCALATION"}},
+      {"op": "check_name", "kind": "cause", "code": 256, "expect": {"name": "ACTUATION"}},
+      {"op": "check_name", "kind": "cause", "code": 3, "expect": {"name": "UNKNOWN"}},
+      {"op": "check_name", "kind": "cause", "code": 512, "expect": {"name": "UNKNOWN"}}
+    ]
   }
 ]

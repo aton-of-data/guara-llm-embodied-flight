@@ -176,6 +176,10 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_recovery_name.restype = c_char_p
     lib.guara_command_name.argtypes = [c_uint8]
     lib.guara_command_name.restype = c_char_p
+    lib.guara_transition_name.argtypes = [c_uint8]
+    lib.guara_transition_name.restype = c_char_p
+    lib.guara_cause_name.argtypes = [c_uint32]
+    lib.guara_cause_name.restype = c_char_p
     lib.guara_params_default.argtypes = [POINTER(CParams)]
     lib.guara_params_error.argtypes = [POINTER(CParams)]
     lib.guara_params_error.restype = c_char_p
@@ -324,10 +328,14 @@ class SilCore:
         return None if raw is None else raw.decode("utf-8")
 
     def vocabulary_name(self, kind: str, code: int) -> str:
+        if kind == "cause":
+            raw = self._lib.guara_cause_name(c_uint32(code))
+            return "UNKNOWN" if raw is None else raw.decode("utf-8")
         fn = {
             "state": self._lib.guara_state_name,
             "recovery": self._lib.guara_recovery_name,
             "command": self._lib.guara_command_name,
+            "transition": self._lib.guara_transition_name,
         }.get(kind)
         if fn is None:
             return "UNKNOWN"
