@@ -32,7 +32,7 @@ extern "C" {
 #define GUARA_API __attribute__((visibility("default")))
 #endif
 
-#define GUARA_ABI_VERSION "0.5.0-provisional"
+#define GUARA_ABI_VERSION "0.6.0-provisional"
 #define GUARA_CORE_VERSION "0.17.0-dev"
 
 #define GUARA_OK 0
@@ -164,6 +164,13 @@ GUARA_API int guara_monitor_observe(void * storage, const guara_monitor_sample *
 GUARA_API int guara_monitor_evaluate(void * storage, double t_s, guara_monitor_eval * out);
 
 #define GUARA_GF_MAX_VERTICES 64
+#define GUARA_GF_POLY_NONE 0
+#define GUARA_GF_POLY_TOO_FEW 1
+#define GUARA_GF_POLY_TOO_MANY 2
+#define GUARA_GF_POLY_NON_FINITE 3
+#define GUARA_GF_POLY_DEGENERATE 4
+#define GUARA_GF_POLY_SELF_INTERSECT 5
+#define GUARA_GF_POLY_ZERO_AREA 6
 
 typedef struct guara_gf_params {
   double a_brake_h_m_s2;
@@ -198,6 +205,7 @@ GUARA_API int guara_gf_predict(const double * vertices_ne, size_t n_vertices, do
   guara_gf_prediction * out);
 GUARA_API int guara_gf_project_to_local(double lat_deg, double lon_deg, double ref_lat_deg,
   double ref_lon_deg, double * north_m, double * east_m);
+GUARA_API int guara_gf_polygon_error(const double * vertices_ne, size_t n_vertices);
 
 #ifdef __cplusplus
 }

@@ -14,6 +14,22 @@ INF = math.inf
 EARTH_RADIUS_M = 6371000.0
 PI = 3.14159265358979323846
 
+POLY_ERROR_NAMES = (
+    "none",
+    "too_few_vertices",
+    "too_many_vertices",
+    "non_finite_vertex",
+    "degenerate_edge",
+    "self_intersecting",
+    "zero_area",
+)
+
+
+def polygon_error_name(code: int) -> str:
+    if 0 <= code < len(POLY_ERROR_NAMES):
+        return POLY_ERROR_NAMES[code]
+    return "unknown"
+
 
 @dataclass
 class Vec2:
@@ -67,6 +83,67 @@ def _norm(a: Vec2) -> float:
     return math.hypot(a.x, a.y)
 
 
+def _orientation(a: Vec2, b: Vec2, c: Vec2) -> int:
+    v = _cross(_sub(b, a), _sub(c, a))
+    if v > GEOM_EPS:
+        return 1
+    if v < -GEOM_EPS:
+        return -1
+    return 0
+
+
+def _on_segment(a: Vec2, b: Vec2, q: Vec2) -> bool:
+    return (q.x <= max(a.x, b.x) + GEOM_EPS and q.x >= min(a.x, b.x) - GEOM_EPS and
+            q.y <= max(a.y, b.y) + GEOM_EPS and q.y >= min(a.y, b.y) - GEOM_EPS)
+
+
+def _segments_touch(p1: Vec2, p2: Vec2, q1: Vec2, q2: Vec2) -> bool:
+    o1 = _orientation(p1, p2, q1)
+    o2 = _orientation(p1, p2, q2)
+    o3 = _orientation(q1, q2, p1)
+    o4 = _orientation(q1, q2, p2)
+    if o1 != o2 and o3 != o4:
+        return True
+    if o1 == 0 and _on_segment(p1, p2, q1):
+        return True
+    if o2 == 0 and _on_segment(p1, p2, q2):
+        return True
+    if o3 == 0 and _on_segment(q1, q2, p1):
+        return True
+    if o4 == 0 and _on_segment(q1, q2, p2):
+        return True
+    return False
+
+
+def classify_polygon(vertices_ne: list[float]) -> str:
+    n = len(vertices_ne) // 2
+    if n < 3:
+        return "too_few_vertices"
+    if n > MAX_VERTICES:
+        return "too_many_vertices"
+    verts = [Vec2(vertices_ne[2 * i], vertices_ne[2 * i + 1]) for i in range(n)]
+    for v in verts:
+        if not math.isfinite(v.x) or not math.isfinite(v.y):
+            return "non_finite_vertex"
+    twice_area = 0.0
+    for i in range(n):
+        a = verts[i]
+        b = verts[(i + 1) % n]
+        if _norm(_sub(b, a)) <= GEOM_EPS:
+            return "degenerate_edge"
+        twice_area += _cross(a, b)
+    for i in range(n):
+        for j in range(i + 1, n):
+            adjacent = j == i + 1 or (i == 0 and j == n - 1)
+            if adjacent:
+                continue
+            if _segments_touch(verts[i], verts[(i + 1) % n], verts[j], verts[(j + 1) % n]):
+                return "self_intersecting"
+    if abs(twice_area) <= GEOM_EPS:
+        return "zero_area"
+    return "none"
+
+
 def _point_segment_distance(q: Vec2, a: Vec2, b: Vec2) -> float:
     ab = _sub(b, a)
     len2 = _dot(ab, ab)
@@ -95,6 +172,9 @@ class ReferenceGeofence:
         self.verts = [Vec2(vertices_ne[2 * i], vertices_ne[2 * i + 1]) for i in range(n)]
         self.alt_min_m = alt_min_m
         self.alt_max_m = alt_max_m
+
+    def polygon_error(self, vertices_ne: list[float]) -> str:
+        return classify_polygon(vertices_ne)
 
     def predict(self, params: GfParams, state: GfState) -> GfPrediction:
         out = GfPrediction()

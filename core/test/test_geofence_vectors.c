@@ -26,7 +26,7 @@
 
 #define TIME_TOL 0.05
 #define DIST_TOL 1e-6
-#define MAX_VERTS 64
+#define MAX_VERTS 80
 
 typedef struct {
   const char *s;
@@ -321,6 +321,56 @@ static int check_project(const char *id, int step_i, Cursor *c, double north, do
   }
 }
 
+static const char *poly_error_name(int code)
+{
+  switch (code) {
+    case GUARA_GF_POLY_NONE: return "none";
+    case GUARA_GF_POLY_TOO_FEW: return "too_few_vertices";
+    case GUARA_GF_POLY_TOO_MANY: return "too_many_vertices";
+    case GUARA_GF_POLY_NON_FINITE: return "non_finite_vertex";
+    case GUARA_GF_POLY_DEGENERATE: return "degenerate_edge";
+    case GUARA_GF_POLY_SELF_INTERSECT: return "self_intersecting";
+    case GUARA_GF_POLY_ZERO_AREA: return "zero_area";
+    default: return "unknown";
+  }
+}
+
+static int check_classify(const char *id, int step_i, Cursor *c, int code)
+{
+  if (!take(c, '{')) {
+    return 0;
+  }
+  if (take(c, '}')) {
+    return 1;
+  }
+  for (;;) {
+    char key[32];
+    if (!parse_string(c, key, sizeof key) || !take(c, ':')) {
+      return 0;
+    }
+    int ok = 1;
+    if (strcmp(key, "polygon_error") == 0) {
+      char want[32] = {0};
+      ok = parse_string(c, want, sizeof want) && strcmp(want, poly_error_name(code)) == 0;
+      if (!ok) {
+        fprintf(stderr, "FAIL %s step %d polygon_error got %s want %s\n",
+                id, step_i, poly_error_name(code), want);
+        return 0;
+      }
+    } else if (!skip_value(c)) {
+      ok = 0;
+    }
+    if (!ok) {
+      fprintf(stderr, "FAIL %s step %d field %s\n", id, step_i, key);
+      return 0;
+    }
+    if (take(c, ',')) {
+      continue;
+    }
+    return take(c, '}');
+  }
+}
+
 static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min,
                     double alt_max, const guara_gf_params *params, const char *id,
                     int step_i)
@@ -421,6 +471,16 @@ static int run_step(Cursor *c, const double *verts, size_t nflat, double alt_min
     }
     return 1;
   }
+  if (strcmp(op, "classify") == 0) {
+    const int code = guara_gf_polygon_error(nflat == 0U ? NULL : verts, nflat / 2U);
+    if (has_expect) {
+      Cursor ec = expect_at;
+      if (!check_classify(id, step_i, &ec, code)) {
+        return 0;
+      }
+    }
+    return 1;
+  }
   if (strcmp(op, "predict") != 0) {
     fprintf(stderr, "FAIL %s step %d: unknown op %s\n", id, step_i, op);
     return 0;
@@ -500,7 +560,7 @@ static int run_vector(Cursor *c)
     }
     break;
   }
-  if (!has_steps || (nflat != 0U && (nflat < 6U || (nflat % 2U) != 0U))) {
+  if (!has_steps || (nflat % 2U) != 0U) {
     fprintf(stderr, "FAIL %s: missing vertices or steps\n", id);
     return 0;
   }
@@ -594,8 +654,8 @@ int main(void)
     return 1;
   }
   free(text);
-  if (nvec < 19) {
-    fprintf(stderr, "FAIL expected at least 19 geofence vectors, got %d\n", nvec);
+  if (nvec < 25) {
+    fprintf(stderr, "FAIL expected at least 25 geofence vectors, got %d\n", nvec);
     return 1;
   }
   printf("PASS conformance_geofence vectors=%d\n", nvec);

@@ -46,6 +46,15 @@ int main(void)
     CHECK(fabs(north + 111.195) < 0.01);
     CHECK(fabs(east) < 1e-6);
   }
+  {
+    const double two[] = {0.0, 0.0, 1.0, 0.0};
+    CHECK(guara_gf_polygon_error(two, 2) == GUARA_GF_POLY_TOO_FEW);
+    const double bowtie[] = {0.0, 0.0, 10.0, 10.0, 10.0, 0.0, 0.0, 10.0};
+    CHECK(guara_gf_polygon_error(bowtie, 4) == GUARA_GF_POLY_SELF_INTERSECT);
+    const double nanv[] = {0.0, 0.0, NAN, 0.0, 0.0, 10.0};
+    CHECK(guara_gf_polygon_error(nanv, 3) == GUARA_GF_POLY_NON_FINITE);
+    CHECK(guara_gf_polygon_error(NULL, 3) == GUARA_GF_POLY_NON_FINITE);
+  }
   printf("PASS abi_geofence\n");
   return 0;
 }

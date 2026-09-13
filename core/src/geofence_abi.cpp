@@ -79,4 +79,37 @@ int guara_gf_project_to_local(double lat_deg, double lon_deg, double ref_lat_deg
   return GUARA_OK;
 }
 
+int guara_gf_polygon_error(const double * vertices_ne, size_t n_vertices)
+{
+  static_assert(static_cast<int>(guara_geofence::PolygonError::kNone) == GUARA_GF_POLY_NONE);
+  static_assert(
+    static_cast<int>(guara_geofence::PolygonError::kTooFewVertices) == GUARA_GF_POLY_TOO_FEW);
+  static_assert(
+    static_cast<int>(guara_geofence::PolygonError::kTooManyVertices) == GUARA_GF_POLY_TOO_MANY);
+  static_assert(
+    static_cast<int>(guara_geofence::PolygonError::kNonFiniteVertex) == GUARA_GF_POLY_NON_FINITE);
+  static_assert(
+    static_cast<int>(guara_geofence::PolygonError::kDegenerateEdge) == GUARA_GF_POLY_DEGENERATE);
+  static_assert(static_cast<int>(guara_geofence::PolygonError::kSelfIntersecting) ==
+    GUARA_GF_POLY_SELF_INTERSECT);
+  static_assert(
+    static_cast<int>(guara_geofence::PolygonError::kZeroArea) == GUARA_GF_POLY_ZERO_AREA);
+  if (n_vertices == 0U) {
+    return GUARA_GF_POLY_TOO_FEW;
+  }
+  if (vertices_ne == nullptr) {
+    return GUARA_GF_POLY_NON_FINITE;
+  }
+  if (n_vertices > GUARA_GF_MAX_VERTICES) {
+    return GUARA_GF_POLY_TOO_MANY;
+  }
+  guara_geofence::Vec2 verts[GUARA_GF_MAX_VERTICES];
+  for (size_t i = 0; i < n_vertices; ++i) {
+    verts[i].x = vertices_ne[2U * i];
+    verts[i].y = vertices_ne[2U * i + 1U];
+  }
+  guara_geofence::Polygon poly;
+  return static_cast<int>(poly.set(verts, n_vertices));
+}
+
 }  // extern "C"

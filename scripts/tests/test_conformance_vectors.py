@@ -75,5 +75,8 @@ def test_geofence_vectors_cover_ac8_and_uncertainty_band():
     assert "concave_tangent_reflex_stays_inside" in ids
     assert "zero_k_sigma_disables_the_band" in ids
     assert "projection_small_distance" in ids
+    assert "too_few_vertices" in ids
+    assert "self_intersecting_bowtie" in ids
+    assert "too_many_vertices" in ids
     cmake = (ROOT / "core/CMakeLists.txt").read_text(encoding="utf-8")
     assert "conformance_geofence" in cmake

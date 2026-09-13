@@ -19,7 +19,7 @@ from ctypes import (
 )
 from pathlib import Path
 
-from .geofence import GfParams, GfPrediction, GfState, Vec2
+from .geofence import GfParams, GfPrediction, GfState, Vec2, polygon_error_name
 from .gateway import GatewayLimits, GatewayOutput
 from .monitors import MonitorEval
 from .reference import Inputs, Output, Params
@@ -210,6 +210,8 @@ def _bind(lib: ctypes.CDLL) -> ctypes.CDLL:
     lib.guara_gf_project_to_local.argtypes = [
         c_double, c_double, c_double, c_double, POINTER(c_double), POINTER(c_double)]
     lib.guara_gf_project_to_local.restype = c_int
+    lib.guara_gf_polygon_error.argtypes = [POINTER(c_double), c_size_t]
+    lib.guara_gf_polygon_error.restype = c_int
     return lib
 
 
@@ -483,3 +485,12 @@ class SilGeofence:
         if rc != GUARA_OK:
             raise OSError(f"guara_gf_project_to_local returned {rc}")
         return Vec2(float(north.value), float(east.value))
+
+    def polygon_error(self, vertices_ne: list[float]) -> str:
+        n = len(vertices_ne) // 2
+        if n == 0:
+            rc = int(self._lib.guara_gf_polygon_error(None, 0))
+        else:
+            arr = (c_double * len(vertices_ne))(*vertices_ne)
+            rc = int(self._lib.guara_gf_polygon_error(arr, n))
+        return polygon_error_name(rc)

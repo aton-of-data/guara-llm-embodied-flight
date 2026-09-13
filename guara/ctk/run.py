@@ -106,7 +106,7 @@ def _looks_like_geofence(data: list) -> bool:
     if not data:
         return False
     return "vertices" in data[0] or bool(
-        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict", "project"}
+        {step.get("op") for step in (data[0].get("steps") or [])} & {"predict", "project", "classify"}
     )
 
 
@@ -195,6 +195,13 @@ def _run_geofence_vectors(data: list, make_geofence) -> VectorRun:
                     float(step["ref_lat_deg"]), float(step["ref_lon_deg"]))
                 _mark(stats, t0)
                 _check_project(vec_id, i, step.get("expect") or {}, got.x, got.y)
+            elif op == "classify":
+                verts = step.get("vertices", vec.get("vertices") or [])
+                got = table.polygon_error([float(x) for x in verts])
+                _mark(stats, t0)
+                want = (step.get("expect") or {}).get("polygon_error")
+                if want is not None and got != want:
+                    raise CtkError(f"{vec_id} step {i}: polygon_error got {got} want {want}")
             else:
                 raise CtkError(f"{vec_id} step {i}: unknown op {op}")
         stats.n_ok += 1

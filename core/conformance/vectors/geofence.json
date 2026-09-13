@@ -228,5 +228,41 @@
       {"op": "project", "lat_deg": -22.0, "lon_deg": -47.889, "ref_lat_deg": -22.0, "ref_lon_deg": -47.89,
        "expect": {"east_m": 103.099}}
     ]
+  },
+  {
+    "id": "triangle_is_simple",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "none"}}]
+  },
+  {
+    "id": "too_few_vertices",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 1, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "too_few_vertices"}}]
+  },
+  {
+    "id": "too_many_vertices",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "too_many_vertices"}}]
+  },
+  {
+    "id": "self_intersecting_bowtie",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 10, 10, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "self_intersecting"}}]
+  },
+  {
+    "id": "degenerate_edge",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 0, 0, 10, 0, 0, 10],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "degenerate_edge"}}]
+  },
+  {
+    "id": "zero_area_collinear",
+    "spec": ["AC-8"],
+    "vertices": [0, 0, 5, 0, 10, 0],
+    "steps": [{"op": "classify", "expect": {"polygon_error": "zero_area"}}]
   }
 ]
