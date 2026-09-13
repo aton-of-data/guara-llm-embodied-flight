@@ -21,8 +21,19 @@ def _env() -> dict[str, str]:
     return env
 
 
-def test_python_port_passes_spec_s3_vectors():
-    n = len(json.loads((ROOT / "core/conformance/vectors/spec_s3.json").read_text()))
+VECTOR_DIR = ROOT / "core/conformance/vectors"
+
+
+def _published_vector_count() -> int:
+    return sum(
+        len(json.loads(p.read_text(encoding="utf-8")))
+        for p in sorted(VECTOR_DIR.glob("*.json"))
+    )
+
+
+def test_python_port_passes_the_whole_published_set_by_default():
+    """`ctk run` with no --vectors is a claim about the published set, not one file."""
+    n = _published_vector_count()
     r = subprocess.run(
         [sys.executable, "-m", "guara", "ctk", "run", "--port", "python"],
         cwd=str(ROOT), capture_output=True, text=True, env=_env(),
@@ -31,8 +42,37 @@ def test_python_port_passes_spec_s3_vectors():
     assert f"PASS {n}/{n}" in r.stdout
     assert "python-reference" in r.stdout
     assert "vectors_sha256" in r.stdout
+    assert "spec_s3.json" in r.stdout
+    assert "geofence.json" in r.stdout
     assert "necessary and not sufficient" in r.stdout
     assert "nothing about the safety of the system that contains it" in r.stdout
+
+
+def test_a_named_vector_directory_equals_the_default_run():
+    a = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python"],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    b = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(VECTOR_DIR)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert a.returncode == 0 and b.returncode == 0, a.stderr + b.stderr
+    assert a.stdout == b.stdout
+
+
+def test_spec_s3_alone_still_runs_and_is_a_strict_subset():
+    vectors = VECTOR_DIR / "spec_s3.json"
+    n = len(json.loads(vectors.read_text(encoding="utf-8")))
+    r = subprocess.run(
+        [sys.executable, "-m", "guara", "ctk", "run", "--port", "python",
+         "--vectors", str(vectors)],
+        cwd=str(ROOT), capture_output=True, text=True, env=_env(),
+    )
+    assert r.returncode == 0, r.stderr
+    assert f"PASS {n}/{n}" in r.stdout
+    assert n < _published_vector_count()
 
 
 def test_python_port_passes_adr0010_gateway_vectors():

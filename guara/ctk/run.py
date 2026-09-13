@@ -525,6 +525,33 @@ def run_vectors(path: Path, make_core=None, make_gateway=None, make_monitor=None
     return _run_spec_vectors(data, make_core)
 
 
+def run_suite(path: Path, make_core=None, make_gateway=None, make_monitor=None,
+              make_geofence=None) -> tuple[VectorRun, list[Path]]:
+    """Run one vector file, or every vector file in a directory.
+
+    Returns the aggregate result and the files it covers, in name order.
+    """
+    files = vector_files(path)
+    acc = VectorRun(n_ok=0, n_all=0, n_ops=0, max_step_ns=0)
+    for f in files:
+        one = run_vectors(f, make_core, make_gateway, make_monitor, make_geofence)
+        acc.n_ok += one.n_ok
+        acc.n_all += one.n_all
+        acc.n_ops += one.n_ops
+        acc.max_step_ns = max(acc.max_step_ns, one.max_step_ns)
+    return acc, files
+
+
+def suite_digest(files: list[Path]) -> str:
+    """sha256 over each file's name and bytes, in name order."""
+    hasher = hashlib.sha256()
+    for f in files:
+        hasher.update(f.name.encode("utf-8"))
+        hasher.update(b"\0")
+        hasher.update(f.read_bytes())
+    return hasher.hexdigest()
+
+
 def vector_files(path: Path) -> list[Path]:
     if path.is_dir():
         files = sorted(p for p in path.glob("*.json") if p.is_file())
@@ -615,7 +642,9 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
     runp = sub.add_parser("run", help="execute vectors and print a report")
     runp.add_argument("--port", required=True, choices=("python", "sil"))
-    runp.add_argument("--vectors", type=Path, default=None)
+    runp.add_argument("--vectors", type=Path, default=None,
+                      help="a vector file, or a directory of them "
+                           "(default: the whole published set)")
     runp.add_argument("--lib", type=Path, default=None,
                       help="shared C ABI library for --port sil (or set GUARA_CABI)")
     runp.add_argument("--report", type=Path, default=None,
@@ -641,16 +670,18 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     port_name, make_core, make_gateway, make_monitor, make_geofence = factory
 
     if args.cmd == "run":
-        vectors = args.vectors if args.vectors is not None else default_vectors(root)
+        vectors = args.vectors if args.vectors is not None else default_vector_dir(root)
         try:
-            stats = run_vectors(vectors, make_core, make_gateway, make_monitor, make_geofence)
+            stats, files = run_suite(
+                vectors, make_core, make_gateway, make_monitor, make_geofence)
         except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
             print(f"FAIL ctk: {exc}", file=err)
             return 1
-        digest = hashlib.sha256(vectors.read_bytes()).hexdigest()
+        digest = suite_digest(files)
         core_ver, abi_ver = params.versions_from_header(root)
         body = "\n".join(_report_lines(
-            port_name, core_ver, abi_ver, digest, vectors.name, stats.n_ok, stats.n_all,
+            port_name, core_ver, abi_ver, digest, ",".join(f.name for f in files),
+            stats.n_ok, stats.n_all,
         )) + "\n"
         print(body, file=out, end="")
         if args.report is not None:
@@ -664,25 +695,15 @@ def run(argv: list[str] | None = None, out=sys.stdout, err=sys.stderr) -> int:
     if args.cmd == "bench":
         vectors = args.vectors if args.vectors is not None else default_vector_dir(root)
         try:
-            files = vector_files(vectors)
-            acc = VectorRun(n_ok=0, n_all=0, n_ops=0, max_step_ns=0)
-            hasher = hashlib.sha256()
-            names: list[str] = []
-            for f in files:
-                hasher.update(f.read_bytes())
-                names.append(f.name)
-                one = run_vectors(f, make_core, make_gateway, make_monitor, make_geofence)
-                acc.n_ok += one.n_ok
-                acc.n_all += one.n_all
-                acc.n_ops += one.n_ops
-                if one.max_step_ns > acc.max_step_ns:
-                    acc.max_step_ns = one.max_step_ns
+            acc, files = run_suite(
+                vectors, make_core, make_gateway, make_monitor, make_geofence)
         except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, CtkError) as exc:
             print(f"FAIL ctk: {exc}", file=err)
             return 1
         core_ver, abi_ver = params.versions_from_header(root)
         body = "\n".join(_bench_lines(
-            port_name, core_ver, abi_ver, ",".join(names), hasher.hexdigest(), acc,
+            port_name, core_ver, abi_ver, ",".join(f.name for f in files),
+            suite_digest(files), acc,
         )) + "\n"
         print(body, file=out, end="")
         try:
