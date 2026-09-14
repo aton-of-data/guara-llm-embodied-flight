@@ -61,9 +61,9 @@
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-03</dd></div>
     <div><dt>Title</dt><dd>Evidence and limits</dd></div>
-    <div><dt>Describes commit</dt><dd>300a8b8</dd></div>
+    <div><dt>Describes commit</dt><dd>8a05cb6</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
-    <div><dt>Status</dt><dd>35 AC PASS · 2 in progress · 18 planned</dd></div>
+    <div><dt>Status</dt><dd>35 AC PASS · 16 in progress · 30 planned</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
   </dl>
 </div>
@@ -258,7 +258,9 @@ python3 scripts/plot_evidence.py               # regenerates both figures, print
     <div class="code-head"><span>verify the project's own boundaries</span><button class="copy" data-label="copy" type="button">copy</button></div>
 <pre><code class="language-bash">python3 scripts/check_license_isolation.py     # no NOSA-licensed code outside nosa/
 python3 scripts/check_spdx.py                  # every tracked source file carries a tag
-python3 scripts/check_links.py                 # every relative document link resolves</code></pre>
+python3 scripts/check_links.py                 # every relative document link resolves
+python3 scripts/check_site_links.py            # every internal reference on this site resolves
+python3 scripts/check_site_claims.py           # this site still says what the repository says</code></pre>
 
     <p class="small muted">
       The SITL scenarios, the latency batch and the monitor generation are excluded from
@@ -283,23 +285,27 @@ python3 scripts/check_links.py                 # every relative document link re
         <span class="k">PASS — with an executed command and output</span>
       </div>
       <div class="stat accent">
-        <span class="v">2</span>
+        <span class="v">16</span>
         <span class="k">in progress — code exists, criterion not met</span>
       </div>
       <div class="stat">
-        <span class="v">18</span>
+        <span class="v">30</span>
         <span class="k">planned — specified, no code</span>
       </div>
     </div>
 
     <p>
-      Of the 35 passing, <strong>14 are marked &ldquo;re-run 2026-09-11&rdquo;</strong>. That suffix
+      Of the 35 passing, <strong>15 are marked &ldquo;re-run 2026-09-11&rdquo;</strong>. That suffix
       is not decoration; it is the residue of the review below.
     </p>
     <p class="small muted">
       Full tracker:
       <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/milestones/STATUS.md"><code>docs/milestones/STATUS.md</code></a>,
-      covering AC-1…AC-50 across four threads.
+      covering AC-1…AC-111 across seven threads — <b>core</b>, <b>A</b> air and LLM
+      embodiment, <b>B</b> the F´ host, <b>C</b> space, <b>S</b> setup, <b>K</b> the kernel and
+      its delivery, <b>M</b> monitors and the specification. The sixteen in progress are the
+      kernel, the C ABI and the conformance kit; what is missing rather than in flight is the
+      <a href="roadmap.html#register">gap register</a>.
     </p>
   </section>
 
@@ -379,9 +385,20 @@ python3 scripts/check_links.py                 # every relative document link re
           <tr><td><strong>R-7</strong> · No traffic injection in SITL</td><td>The DAA path has never faced a real converging intruder in simulation</td></tr>
           <tr><td><strong>R-8</strong> · The ASTM F3269 text is unavailable</td><td>The role mapping is marked [REVIEW] and unchecked against the standard</td></tr>
           <tr><td><strong>RS-1</strong> · A safe mode with no heritage</td><td>The entire space recovery function — the risk a reviewer should attack first</td></tr>
+          <tr><td><strong>RH-9</strong> · Measured is not proven</td><td>Every timing figure here is a worst <em>observed</em> value on a general-purpose kernel; a bound would need a WCET tool and an RTOS, and neither is in scope</td></tr>
         </tbody>
       </table>
     </div>
+    <p class="small muted">
+      Six of the seven rows above are the load-bearing ones, not the register. Risks are numbered in
+      four families — <code>R-*</code> the PX4 core, <code>RP-*</code> the LLM-embodiment programme,
+      <code>RS-*</code> the space thread, <code>RH-*</code> delivery and hardware — and the index
+      naming the document that defines each is
+      <a href="https://github.com/aton-of-data/guara-llm-embodied-flight/blob/main/docs/SPEC.md"><code>docs/SPEC.md</code> §9.0</a>,
+      restated on the <a href="roadmap.html#risks">roadmap page</a>. A risk is something that could
+      invalidate work already done; a known <em>absence</em> is a gap, and those are in the
+      <a href="roadmap.html#register">gap register</a> instead.
+    </p>
   </section>
 
   <!-- ============ LIMITS ============ -->

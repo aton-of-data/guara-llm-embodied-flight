@@ -346,7 +346,7 @@ individual risks is restated here.
 | Family | Covers | Defined in |
 |---|---|---|
 | `R-1`..`R-14` | The PX4 RTA core: environment, toolchain, thresholds, pins | §9.1 below |
-| `RP-1`..`RP-3` | The LLM-embodiment programme: who wrote the corpus, what the corpus size bounds | [`PLAN-M8-M16.md`](PLAN-M8-M16.md) §6 |
+| `RP-1`..`RP-5` | The LLM-embodiment programme: who wrote the corpus, what the corpus size bounds, the trusted plan executor | [`PLAN-M8-M16.md`](PLAN-M8-M16.md) §6 |
 | `RS-1`..`RS-6` | The space thread: the safe mode with no heritage, the pre-release sequencer, simulator fidelity | [`research/SPACE-AUTONOMY.md`](research/SPACE-AUTONOMY.md) §8 |
 | `RH-1`..`RH-9` | Delivery and real hardware: EOL distros, publishing posture, vendor capture, measured-versus-proven timing | [`PLAN-M17-M28.md`](PLAN-M17-M28.md) §7 |
 
