@@ -166,10 +166,31 @@ def _check_admissible(proposal: Proposal, arbiter_state: str, model: VehicleMode
     return None
 
 
+def _check_time(proposal: Proposal, model: VehicleModel, t_recv_s: float) -> Decision | None:
+    """ADR 0015 rule 3. Freshness and ordering come from the reception instant, never from a
+    stamp the proposal carries: an untrusted sender must not be able to extend its own liveness
+    by stamping ahead, which is review finding H-1 on the air side (ADR 0010 rule 1)."""
+    stamp_s, tolerance, timeout = (proposal.stamp_s, model.config.future_stamp_tolerance_s,
+                                   model.config.proposal_timeout_s)
+    if not math.isfinite(stamp_s) or not math.isfinite(t_recv_s):
+        return _refuse(RULE_TIME, proposal.verb, f"stamp {stamp_s!r} is not a finite instant")
+    if stamp_s > t_recv_s + tolerance:
+        return _refuse(RULE_TIME, proposal.verb,
+                       f"stamp leads the reception instant by {stamp_s - t_recv_s:.6f} s "
+                       f"> {tolerance} s")
+    if t_recv_s - stamp_s > timeout:
+        return _refuse(RULE_TIME, proposal.verb,
+                       f"already {t_recv_s - stamp_s:.6f} s old on arrival > {timeout} s")
+    return None
+
+
 def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
            model: VehicleModel, t_recv_s: float) -> Decision:
     """Admit or refuse one proposal. `t_recv_s` is the reception instant on the host clock."""
     refusal = _check_admissible(proposal, arbiter_state, model)
+    if refusal is not None:
+        return refusal
+    refusal = _check_time(proposal, model, t_recv_s)
     if refusal is not None:
         return refusal
     return Decision(admitted=True, rule=None, reason="admitted",
