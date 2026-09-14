@@ -157,7 +157,7 @@ recovery function and its evidence — is the catalogue in
 | **Core** | The PX4 RTA: arbiter, geofence predictor, DAIDALUS node, latency budget | M1–M7, P4 | Executed; every AC PASS with a recorded run (§6) |
 | **A — air / LLM embodiment** | Voice- and text-driven civil drone operation bounded by that RTA | M8–M12 | M8 complete; M9 in progress, plan flown as the CF in SITL |
 | **B — F´ host** | The same decision core inside a flight software framework with heritage | M13–M15 | Specified (ADR 0011); no code |
-| **C — space domain** | Orbital constraint monitors, a latched safe mode, orbital dynamics | M13c, M16 | Keep-out predictor and intent schema implemented (AC-47); no host, no simulator |
+| **C — space domain** | Orbital constraint monitors, a latched safe mode, orbital dynamics | M13c, M16 | Keep-out predictor, intent schema and the ADR 0015 gateway predicate implemented (AC-47, AC-102); no host, no simulator |
 
 **Rule O** protects the core: no F´ or space work starts before the PX4 latency and batch results
 are complete, because those are what the preprint depends on
@@ -171,7 +171,7 @@ exists at all today, and why it is one geometric predictor rather than a port in
 | Air, class **S** (sense) | [survey](docs/operations/air/survey.md), [inspect a point](docs/operations/air/inspect-point.md) | Survey flown as the CF in SITL; inspection compiled and tested |
 | Air, safety | [abort](docs/operations/air/abort.md), [land now](docs/operations/air/land-now.md), [return home](docs/operations/air/return-home.md), [status](docs/operations/air/status.md) | Stop grammar implemented and measured model-independent (AC-29); mode mapping and voice are M10 |
 | Air, classes **D / T / C** | dispense, transport, cooperate | **Gated**: refuse to load until their monitors exist ([ADR 0009](docs/adr/0009-use-case-capability-packs.md)) |
-| Space | [slew](docs/operations/space/slew.md), [point hold](docs/operations/space/point-hold.md), [safe mode](docs/operations/space/safe-mode.md), [abort](docs/operations/space/abort.md), [status](docs/operations/space/status.md) | Schema closed and predictor tested; the host, the dynamics and the safe mode are specified only |
+| Space | [slew](docs/operations/space/slew.md), [point hold](docs/operations/space/point-hold.md), [safe mode](docs/operations/space/safe-mode.md), [abort](docs/operations/space/abort.md), [status](docs/operations/space/status.md) | Schema closed, predictor tested and the gateway predicate refusing per ADR 0015 rule; the host, the dynamics and the safe mode are specified only |
 
 ### 4.3 Out of scope, permanently
 
@@ -403,6 +403,8 @@ generation only).
 | LLM corpus against a local open-weight model | `ollama pull llama3.1:8b` then `python3 scripts/llm/eval.py --provider ollama --model llama3.1:8b` |
 | LLM corpus against any OpenAI-compatible server | `GUARA_OPENAI_BASE_URL=http://localhost:8000/v1 python3 scripts/llm/eval.py --provider openai-compat --model <id>` |
 | Space keep-out predictor (AC-47) | `./scripts/dev.sh python3 scripts/check_ac.py AC-47` |
+| Space gateway rules, each the sole refuser of one case (AC-102) | `./scripts/dev.sh python3 -m pytest scripts/tests/test_space_gateway.py -q` |
+| Space run command-origin declaration (AC-103) | `python3 scripts/check_run_contract.py --profile space <run>` |
 
 The four commands above that take a `results/...` path need a run to exist first; `results/` is
 git-ignored and empty in a fresh clone ([`results/README.md`](results/README.md)). Point them at
@@ -436,7 +438,7 @@ which is what makes a number re-derivable rather than merely reported. Fourteen 
 | [`docs/PLAN-M8-M16.md`](docs/PLAN-M8-M16.md) · [`docs/PLAN-M17-M28.md`](docs/PLAN-M17-M28.md) | Executable plans: LLM embodiment, the F´ port and the space domain; then delivery, the gap register and the path to real hardware |
 | [`docs/evidence/`](docs/evidence) | Run contracts and metrics published verbatim from `results/` |
 | `mission/` | Mission Intent schema, site model, deterministic compiler, labelled corpus, trusted plan executor |
-| `space/` | Space intent schema, attitude keep-out predictor, demo-sat vehicle model |
+| `space/` | Space intent schema, attitude keep-out predictor, ADR 0015 gateway predicate, demo-sat vehicle model |
 | `ros2_ws/src/guara_rta` | `DecisionCore`, input manager, gateway logic, actuator, safety profile, ModeExecutor node, 12 test suites |
 | `ros2_ws/src/guara_geofence` | Predictor with braking distance and position-uncertainty handling |
 | `ros2_ws/src/guara_monitors` | FRETish specs, `px4_msgs` variable DB, Ogma template, generated Copilot C99, monitor node |
@@ -461,7 +463,7 @@ Six threads, with the state of each taken from
 | core | The PX4 RTA: arbiter, geofence, DAA, latency and batch | M1–M7, P4 | done and measured; P5–P7 not started |
 | A | Air and LLM embodiment | M8–M12, M9b | M8 done; M9 in progress; M9b onward planned |
 | B | The F´ host | M13–M15 | specified; no deployment has run |
-| C | The space domain | M13c, M16 | AC-47 PASS; AC-48 needs a simulator |
+| C | The space domain | M13c, M16 | AC-47 PASS; the ADR 0015 gateway predicate in progress (AC-102, AC-103); AC-48 needs a simulator |
 | S | Setup and reproducibility | M17 | in progress — `guara doctor`, the hash-pinned lock, offline mode |
 | K | The kernel and its delivery | M18–M20 | in progress — the host-free kernel, its C ABI and the conformance kit; nothing published yet |
 

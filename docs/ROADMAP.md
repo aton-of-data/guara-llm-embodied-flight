@@ -28,6 +28,7 @@ batch milestones are complete ([`docs/PLAN-M8-M16.md`](PLAN-M8-M16.md) §1).
 | M17 | S | Hermetic setup: single pin source, hash-pinned lock, `guara doctor`, offline mode | AC-51, AC-52, AC-55, AC-56 in progress; AC-53, AC-54 planned |
 | M18 | K | `guara-core`: the host-free kernel and its C ABI, ABI symbol gate, parameter digest | AC-57..AC-62 in progress, none PASS |
 | M19 | K | `guara-ctk`: published vectors, the Python reference port, the SIL port through the C ABI | AC-63..AC-66 in progress; ROS 2 and F´ ports absent |
+| M26–M27 | C | The [ADR 0015](adr/0015-space-untrusted-function-contract.md) gateway predicate and the space command-origin declaration, both host-free | AC-102, AC-103 in progress; no F´ component and no space run exists |
 | P5–P7 | core | Adversarial CF (RQ5), preprint and NFM submission, `px4_msgs` variable DB upstream to `nasa/ogma` (C2) | not started; displaced by M17–M19 |
 
 ## Planned
@@ -62,7 +63,8 @@ of the plan with no code.
 
 Ten further criteria, AC-102..AC-111, were added on 2026-09-13 from
 [`docs/reviews/2026-09-13-roadmap-docs-site-review.md`](reviews/2026-09-13-roadmap-docs-site-review.md)
-and are specified in [`docs/PLAN-M17-M28.md`](PLAN-M17-M28.md) §9. They belong to milestones that
+and are specified in [`docs/PLAN-M17-M28.md`](PLAN-M17-M28.md) §9. Two of them, AC-102 and AC-103,
+moved into the in-progress table above on 2026-09-14. They belong to milestones that
 already exist — M2, M9b, M14, M16, M19, M26, M27 — and none of them needs hardware, a host, a
 simulator or a network. They are the space gate of [ADR 0015](adr/0015-space-untrusted-function-contract.md),
 its published vectors, the safe-mode entry logic and its keep-out sweep, a space adversarial
