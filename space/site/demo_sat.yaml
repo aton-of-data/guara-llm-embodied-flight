@@ -34,3 +34,20 @@ forbidden:
 limits:
   horizon_s: 30.0                 # predictor horizon; [PARAMETER TBD]
   max_slew_rate_rad_s: 0.05       # [PARAMETER TBD]
+
+# ADR 0015 rules 2 and 3, as data. Changing the admissible set is a configuration change with
+# a recorded hash, never a rebuild of the gateway predicate (ADR 0015 rule 2).
+gateway:
+  # Which intent verbs GuaraSpaceGateway admits in each arbiter state. A verb absent from the
+  # state's list is refused; `status` is the only verb admissible while the safe-mode latch is
+  # closed, and no verb here releases it (ADR 0012 decision 3, ADR 0015 rule 7).
+  admissible:
+    INACTIVE: [status, safe_mode, abort]
+    CF: [slew, point_hold, safe_mode, abort, status]
+    RF: [safe_mode, abort, status]
+    LATCHED: [status]
+
+  # Trusted time. Both are measured against the reception instant on the host clock; the time
+  # system itself is [PARAMETER TBD] until AC-99 declares it (ADR 0015 rule 3).
+  future_stamp_tolerance_s: 0.05
+  proposal_timeout_s: 0.5
