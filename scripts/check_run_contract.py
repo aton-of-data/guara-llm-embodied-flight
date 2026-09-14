@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: Apache-2.0
-"""AC-2: verify the run contract of one SITL run directory (SPEC §6).
+"""AC-2 (air) and AC-103 (space): verify the run contract of one run directory (SPEC §6).
 
-Checks config.yaml (seed, pinned third_party commits, Guará SHA, PX4 build commit)
-and that at least one valid ULog was written. If the scenario declares
+The air profile checks config.yaml (seed, pinned third_party commits, Guará SHA, PX4 build
+commit) and that at least one valid ULog was written; if the scenario declares
 `expect.min_altitude_m`, the ULog must show the vehicle reached it.
+
+The space profile has no PX4 and no ULog. What it checks instead is the declaration ADR 0015
+rule 1 requires: which SDLS security association and which decryptor the uplink was configured
+with. F´ v4.3.0 routes SA 0 to `ClearTextDecryptor`, which authenticates nothing
+(`GROUNDING.md` D.9), so a default deployment is an unauthenticated command path. Such a run is
+permitted and marked, exactly as the air side marks an SROS2-less run; what is refused is a run
+that *claims* an authenticated origin the declaration does not support.
+
+The declaration is one block, `command_path`, shared by both domains and filled per profile.
 """
 import argparse
 import pathlib
@@ -21,6 +30,15 @@ REQUIRED_KEYS = (
     "guara_sha", "guara_dirty", "image_id", "px4_build_commit", "third_party", "simulator",
     "px4_params",
 )
+SPACE_REQUIRED_KEYS = (
+    "run_id", "created_utc", "scenario", "scenario_sha256", "seed", "headless",
+    "guara_sha", "guara_dirty", "command_path",
+)
+# Decryptors that perform no authentication, and the SA the default map routes to one
+# (GROUNDING.md D.9). A run declaring either of these cannot claim an authenticated origin.
+CLEARTEXT_DECRYPTORS = ("Svc::Ccsds::ClearTextDecryptor", "ClearTextDecryptor")
+UNAUTHENTICATED_SA_INDEX = 0
+
 # Values the run must have pinned and read back; see REQUIRED_PX4_PARAMS in sitl/run_scenario.py.
 REQUIRED_PX4_PARAMS = {"COM_MODE_ARM_CHK": 0}
 
@@ -103,17 +121,70 @@ def check(run_dir: pathlib.Path) -> list:
     return errors
 
 
+def check_space(run_dir: pathlib.Path) -> tuple[list, bool]:
+    """AC-103. Returns the errors and whether the declared command path is authenticated."""
+    config_path = run_dir / "config.yaml"
+    if not config_path.is_file():
+        return [f"missing {config_path}"], False
+    config = yaml.safe_load(config_path.read_text()) or {}
+
+    errors = [f"config.yaml missing key: {key}"
+              for key in SPACE_REQUIRED_KEYS if key not in config]
+    if errors:
+        return errors, False
+
+    declaration = config["command_path"]
+    if not isinstance(declaration, dict):
+        return ["command_path must be a mapping (ADR 0015 rule 1)"], False
+    for key in ("authenticated", "sdls_sa_index", "decryptor"):
+        if key not in declaration:
+            errors.append(f"command_path missing key: {key} (GROUNDING.md D.9)")
+    if errors:
+        return errors, False
+
+    authenticated = declaration["authenticated"]
+    sa_index = declaration["sdls_sa_index"]
+    decryptor = str(declaration["decryptor"])
+    if not isinstance(authenticated, bool):
+        errors.append("command_path.authenticated must be a boolean")
+    if not isinstance(sa_index, int) or isinstance(sa_index, bool):
+        errors.append(f"command_path.sdls_sa_index must be an integer, got {sa_index!r}")
+    if errors:
+        return errors, False
+
+    if authenticated:
+        # The claim has to be supported by the SA map the run says it ran with.
+        if decryptor in CLEARTEXT_DECRYPTORS:
+            errors.append(
+                f"command_path claims an authenticated origin through {decryptor}, which performs "
+                "no authentication, no integrity checking and no decryption (GROUNDING.md D.9)")
+        if sa_index == UNAUTHENTICATED_SA_INDEX:
+            errors.append(
+                f"command_path claims an authenticated origin on SA {sa_index}, the index the "
+                "default F´ SA map routes to the pass-through decryptor (GROUNDING.md D.9)")
+    return errors, bool(authenticated) and not errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("run_dir", type=pathlib.Path)
+    parser.add_argument("--profile", choices=("air", "space"), default="air",
+                        help="air: PX4 SITL run (AC-2). space: F´ run declaration (AC-103).")
     args = parser.parse_args()
     run_dir = args.run_dir.resolve()
-    errors = check(run_dir)
+    if args.profile == "space":
+        errors, authenticated = check_space(run_dir)
+    else:
+        errors, authenticated = check(run_dir), None
     for err in errors:
         print(f"FAIL {err}")
     if errors:
         return 1
-    print(f"PASS run contract: {run_dir.name}")
+    origin = ""
+    if args.profile == "space":
+        origin = (" · authenticated command path" if authenticated
+                  else " · unauthenticated command path (GROUNDING.md D.9)")
+    print(f"PASS run contract: {run_dir.name}{origin}")
     return 0
 
 

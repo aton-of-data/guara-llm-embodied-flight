@@ -22,7 +22,7 @@ the signals both domains switch on. The six are listed together in
 | Scope | Domain | Host | Recovery function | Thread | Maturity |
 |---|---|---|---|---|---|
 | **Air** | Civil multirotor, VLOS, agriculture first | PX4 v1.17 + ROS 2 Humble, arbiter as `ModeExecutor` (ADR 0001) | PX4 internal modes Hold / RTL / Land — assured, pre-existing | A (M8–M12) | SITL research prototype, latency measured (§6 of the README) |
-| **Space** | Small satellite, attitude-constrained operations | F´ v4.3.0, arbiter as an FPP component on a rate group (ADR 0011) | **Safe mode — does not exist in F´ and must be written** (ADR 0012 decision 2, risk RS-1) | B (M13–M15), C (M13c, M16) | Specified; analytic keep-out predictor and closed intent schema implemented |
+| **Space** | Small satellite, attitude-constrained operations | F´ v4.3.0, arbiter as an FPP component on a rate group (ADR 0011) | **Safe mode — does not exist in F´ and must be written** (ADR 0012 decision 2, risk RS-1) | B (M13–M15), C (M13c, M16) | Specified; analytic keep-out predictor, closed intent schema and the ADR 0015 gateway predicate implemented |
 
 The decision core is the shared artifact, not a fork: AC-39 and AC-40 require the two hosts to
 produce identical decisions for identical input vectors. A behavioural difference between them
@@ -75,8 +75,8 @@ written when their monitors are, not before.
 
 | Operation | Intent verb | Status | Document |
 |---|---|---|---|
-| Slew a boresight to a target | `slew` | Schema closed; analytic keep-out predictor (AC-47 PASS); no host, no dynamics | [space/slew.md](space/slew.md) |
-| Hold a pointing attitude | `point_hold` | Schema closed; monitors specified | [space/point-hold.md](space/point-hold.md) |
+| Slew a boresight to a target | `slew` | Schema closed; analytic keep-out predictor (AC-47 PASS); gateway predicate refuses per ADR 0015 rule (AC-102); no host, no dynamics | [space/slew.md](space/slew.md) |
+| Hold a pointing attitude | `point_hold` | Schema closed; gateway predicate implemented (AC-102); monitors specified | [space/point-hold.md](space/point-hold.md) |
 | Enter safe mode | `safe_mode` | Specified only — the component does not exist in F´ or here (RS-1) | [space/safe-mode.md](space/safe-mode.md) |
 | Abort the running sequence | `abort` | Specified; depends on `Svc::FpySequencer` (pre-release, RS-2) | [space/abort.md](space/abort.md) |
 | Status | `status` | Specified | [space/status.md](space/status.md) |

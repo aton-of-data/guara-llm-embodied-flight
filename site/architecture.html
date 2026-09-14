@@ -78,7 +78,7 @@
   <dl class="docmeta">
     <div><dt>Document</dt><dd>GUARA-SITE-01</dd></div>
     <div><dt>Title</dt><dd>Architecture</dd></div>
-    <div><dt>Describes commit</dt><dd>8a05cb6</dd></div>
+    <div><dt>Describes commit</dt><dd>1268f5e</dd></div>
     <div><dt>Issued</dt><dd>2026-09-13</dd></div>
     <div><dt>Status</dt><dd>Air implemented; space specified</dd></div>
     <div><dt>Licence</dt><dd>Apache-2.0</dd></div>
@@ -386,6 +386,27 @@ public:
       Freshness is measured <strong>on the receiver&rsquo;s clock</strong> rather than from the
       sender&rsquo;s stamp. A compromised or malfunctioning complex function controls its own
       timestamps; it does not control when packets arrive.
+    </p>
+
+    <p class="tbl-cap">The same seven rules in the space domain, on F´ signals instead of PX4 ones (ADR 0015).</p>
+    <p>
+      The contract above is air-shaped throughout: it names PX4 parameters as the clamp source and
+      the geofence braking model as the shadow check. <a href="roadmap.html#register">ADR 0015</a>
+      restates the same seven rules for the space host, in the same order, so the two read by diff.
+      Its predicate is implemented host-free in <code>space/gateway.py</code> and each rule is the
+      sole refuser of at least one crafted proposal (AC-102, <code>test_space_gateway.py</code>).
+      Two rules deliberately do not transfer: rule 4&rsquo;s envelope has no authoritative source,
+      because PX4 parameters have no F´ analogue, so it is a declaration marked
+      <b>[PARAMETER TBD]</b>; and rule 5 refuses a slew <em>whole</em> rather than clamping it,
+      because a half-executed slew is not a smaller slew.
+    </p>
+    <p>
+      Nothing in F´&rsquo;s command path authorises anything &mdash; <code>Svc::CmdDispatcher</code>
+      decodes an opcode and dispatches it &mdash; and a default uplink runs
+      <code>ClearTextDecryptor</code>, which authenticates nothing. A space run therefore has to
+      <em>declare</em> which security association and decryptor it used, and a run claiming an
+      authenticated origin its declaration does not support fails the contract check (AC-103). No
+      F´ component exists: what is tested is the decision, on a host, in Python.
     </p>
 
     <div class="note limit">

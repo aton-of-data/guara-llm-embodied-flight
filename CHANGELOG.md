@@ -12,6 +12,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Version
 ## [Unreleased]
 
 ### Added
+- `space/gateway.py`: the `GuaraSpaceGateway` predicate of ADR 0015, rules 2–6, as a pure
+  host-free decision — admissible verb per arbiter state from data, freshness on the reception
+  instant, an envelope that clamps finite magnitudes and refuses non-finite ones outright, a
+  keep-out shadow check that refuses a pointing proposal whole — including one that declares no
+  motion at all, since a verb listed in `gateway.motion_required` does not escape the rule by
+  leaving the field out — and one named event and counter per refusal. `scripts/tests/test_space_gateway.py` shows each rule is the *sole* refuser of a
+  proposal crafted inside the other rules' envelopes (AC-102). No F´ component exists; what is
+  tested is the decision, on a host, in Python.
+- `scripts/check_run_contract.py --profile space`: the command-origin declaration ADR 0015
+  rule 1 requires. A run over SA 0 or `ClearTextDecryptor` is permitted and marked
+  unauthenticated, the way an SROS2-less air run is; a run claiming an authenticated origin its
+  declaration does not support fails, citing `GROUNDING.md` D.9 (AC-103).
 - No-container path: `python3 -m mission.compiler --intent | --stop`, two worked example
   intents under `mission/intents/`, and declared Python dependencies in `requirements.txt`
   and `requirements-dev.txt`.

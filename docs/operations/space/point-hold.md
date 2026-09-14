@@ -6,7 +6,7 @@
 | Domain / host | Space · F´ v4.3.0 (specified) |
 | Recovery function | Safe mode, latched (ADR 0012 decision 3) |
 | Status | **implemented** (schema) · **specified** (everything that moves) |
-| Evidence | `scripts/tests/test_space_intent.py` |
+| Evidence | `scripts/tests/test_space_intent.py`, `scripts/tests/test_space_gateway.py` |
 
 Keep a named aperture on a named target for a requested duration: a downlink pass, a science
 observation, a thermal soak. Where `slew` is a transient, `point_hold` is the long exposure
@@ -45,7 +45,29 @@ space profile disables `T5`: safe mode **latches**, and only a ground command re
 supports latching (P-4, AC-13), not new logic — which is exactly why the two hosts are a
 stronger claim than one host twice.
 
-## 4. What this operation must not claim
+## 4. What refuses a proposal before it moves anything
+
+`GuaraSpaceGateway` (ADR 0015) stands between the command source and `Svc::CmdDispatcher`,
+which authorises nothing (`GROUNDING.md` D.10). Its predicate is implemented host-free in
+[`space/gateway.py`](../../../space/gateway.py) and every rule is the sole refuser of at least
+one case in `scripts/tests/test_space_gateway.py` (AC-102):
+
+| Rule | What it refuses (hold) |
+|---|---|
+| 1 · declared origin | Nothing at the gate. The run declares its SDLS security association and decryptor; a run claiming an authenticated origin the declaration does not support fails `check_run_contract.py --profile space` (AC-103, `GROUNDING.md` D.9) |
+| 2 · admissible set | A verb the arbiter state does not permit, or an identifier `space/site/demo_sat.yaml` does not declare. The admissible set is data; narrowing it is a configuration change |
+| 3 · trusted time | A stamp ahead of the reception instant past `future_stamp_tolerance_s`, or already stale on arrival. Freshness is never read off the proposal |
+| 4 · envelope | A non-finite magnitude, outright. Finite magnitudes are clamped to the per-vehicle envelope and the clamp is reported |
+| 5 · shadow check | A hold whose commanded motion closes a keep-out cone inside `tau_ko + h_ko`. A hold commanding no rate is admitted by this rule at entry, because `point_hold` is not in `gateway.motion_required` — the sweep of a fixed inertial attitude against the sun is the channel's job *during* the hold, not the gate's at admission. `slew` is in that list and is refused when it declares no motion |
+| 6 · observability | Nothing. It requires that each refusal above carries one event naming its rule and the verb, and one counter increment |
+
+Rule 7 is structural: the gate has no path that releases the safe-mode latch, and none of the
+tests can construct one (ADR 0012 decision 3).
+
+**The gate is a predicate, not a component.** No FPP exists, no F´ deployment has ever run it,
+and its conformance vectors are AC-107. What is tested is the decision, on a host, in Python.
+
+## 5. What this operation must not claim
 
 - Nothing has held anything. The schema is closed and tested; the attitude control, the power
   model and the momentum model do not exist in this repository.
@@ -54,7 +76,7 @@ stronger claim than one host twice.
 - No claim of compliance with NPR 7150.2 or ECSS; neither has been read for this project
   (`SPACE-AUTONOMY.md` §7).
 
-## 5. Open items
+## 6. Open items
 
 - Energy and momentum models with declared assumptions, then their FRETish requirements.
 - AC-48-style pairs for the slow channels, which need a simulator with orbit and eclipse.
