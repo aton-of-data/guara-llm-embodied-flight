@@ -58,7 +58,7 @@ one case in `scripts/tests/test_space_gateway.py` (AC-102):
 | 2 · admissible set | A verb the arbiter state does not permit, or an identifier `space/site/demo_sat.yaml` does not declare. The admissible set is data; narrowing it is a configuration change |
 | 3 · trusted time | A stamp ahead of the reception instant past `future_stamp_tolerance_s`, or already stale on arrival. Freshness is never read off the proposal |
 | 4 · envelope | A non-finite magnitude, outright. Finite magnitudes are clamped to the per-vehicle envelope and the clamp is reported |
-| 5 · shadow check | A hold whose commanded motion closes a keep-out cone inside `tau_ko + h_ko`. A hold commanding no rate is not gated by this rule at entry — the sweep of a fixed inertial attitude against the sun is the channel's job during the hold, not the gate's at admission |
+| 5 · shadow check | A hold whose commanded motion closes a keep-out cone inside `tau_ko + h_ko`. A hold commanding no rate is admitted by this rule at entry, because `point_hold` is not in `gateway.motion_required` — the sweep of a fixed inertial attitude against the sun is the channel's job *during* the hold, not the gate's at admission. `slew` is in that list and is refused when it declares no motion |
 | 6 · observability | Nothing. It requires that each refusal above carries one event naming its rule and the verb, and one counter increment |
 
 Rule 7 is structural: the gate has no path that releases the safe-mode latch, and none of the

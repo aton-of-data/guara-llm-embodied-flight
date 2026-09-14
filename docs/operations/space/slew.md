@@ -68,7 +68,7 @@ one case in `scripts/tests/test_space_gateway.py` (AC-102):
 | 2 · admissible set | A verb the arbiter state does not permit, or an identifier `space/site/demo_sat.yaml` does not declare. The admissible set is data; narrowing it is a configuration change |
 | 3 · trusted time | A stamp ahead of the reception instant past `future_stamp_tolerance_s`, or already stale on arrival. Freshness is never read off the proposal |
 | 4 · envelope | A non-finite magnitude, outright. Finite magnitudes are clamped to the per-vehicle envelope and the clamp is reported |
-| 5 · shadow check | A slew whose predicted time to a keep-out violation is not above `tau_ko + h_ko`, swept over every declared forbidden body. Refused **whole**: unlike a velocity, a half-executed slew has no safe truncation, so this rule deliberately differs from ADR 0010 rule 3 |
+| 5 · shadow check | A slew whose predicted time to a keep-out violation is not above `tau_ko + h_ko`, swept over every declared forbidden body. Refused **whole**: unlike a velocity, a half-executed slew has no safe truncation, so this rule deliberately differs from ADR 0010 rule 3. A slew that declares *no* motion, no boresight or no valid attitude is refused too — a proposer does not escape the rule by leaving a field out (`gateway.motion_required`) |
 | 6 · observability | Nothing. It requires that each refusal above carries one event naming its rule and the verb, and one counter increment |
 
 Rule 7 is structural: the gate has no path that releases the safe-mode latch, and none of the
@@ -85,7 +85,7 @@ $ ./scripts/dev.sh python3 -m pytest scripts/tests/test_keepout_analytic.py -q
 $ ./scripts/dev.sh python3 scripts/check_ac.py AC-47
 PASS AC-47
 $ ./scripts/dev.sh python3 -m pytest scripts/tests/test_space_gateway.py -q
-32 passed
+36 passed
 ```
 
 Analytic cases only — approaching, receding, tangent, zero rate, already inside, non-finite —

@@ -71,7 +71,7 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-64 | K | M19 | in progress | SIL ctypes port; both ports run the whole published set (94 vectors, one set hash) and agree; T4 mutation rejected in Python and C ABI; ROS/F´ ports absent |
 | AC-65 | K | M19 | in progress | `guara ctk run --port python` passes the published set; ambiguities filed in SPEC §3.6, not resolved |
 | AC-66 | K | M19 | in progress | `--report` + `check_ac.py AC-66`; not signed; only the Python port |
-| AC-102 | C | M26 | in progress | `python3 -m pytest scripts/tests/test_space_gateway.py -q`: 32 passed; each of ADR 0015 rules 2–6 is the sole refuser of one case. No milestone report and no F´ host, so not PASS |
+| AC-102 | C | M26 | in progress | `python3 -m pytest scripts/tests/test_space_gateway.py -q`: 36 passed; each of ADR 0015 rules 2–6 is the sole refuser of one case. No milestone report and no F´ host, so not PASS |
 | AC-103 | C | M27 | in progress | `python3 scripts/check_run_contract.py --profile space <run>`: the `command_path` declaration is checked against GROUNDING.md D.9. No space run directory exists yet, so the checker has only synthetic inputs |
 
 ## Planned criteria
