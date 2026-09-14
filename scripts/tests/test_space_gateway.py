@@ -234,6 +234,33 @@ def test_rule5_refuses_when_the_attitude_state_is_invalid(model):
     assert not d.admitted and d.rule == "rule5_keepout"
 
 
+def test_rule5_sweeps_every_declared_forbidden_body(model):
+    # A second bright body must never loosen the gate: the slew is safe against the sun and
+    # unsafe against the moon, and the sweep has to refuse on the nearer of the two.
+    safe_against_sun = gw.AttitudeState(
+        boresight_inertial=(1.0, 0.0, 0.0),
+        forbidden_inertial={"sun": (0.0, 0.0, -1.0), "moon": (0.0, 0.0, 1.0)},
+        valid=True,
+    )
+    d = gw.decide(proposal=gw.Proposal(**nominal(proposed_body_rate_rad_s=closing_rate(model))),
+                  arbiter_state="CF", attitude=safe_against_sun, model=model, t_recv_s=100.0)
+    assert not d.admitted and d.rule == "rule5_keepout"
+    assert "moon" in d.reason
+
+
+def test_rule5_horizon_must_cover_the_margin_it_judges(model, tmp_path):
+    # Beyond the predictor horizon every time is +inf, which the gate would read as safe. A
+    # site model whose horizon is shorter than tau_ko + h_ko must fail to load, not load quietly.
+    import yaml
+
+    raw = yaml.safe_load(SITE.read_text())
+    raw["gateway"]["horizon_s"] = raw["gateway"]["tau_ko_s"]
+    bad = tmp_path / "short_horizon.yaml"
+    bad.write_text(yaml.safe_dump(raw))
+    with pytest.raises(ValueError, match="horizon_s"):
+        gw.load_vehicle_model(bad)
+
+
 def test_rule5_does_not_gate_a_proposal_with_no_motion(model):
     d = decide(model, verb="status", boresight_id=None, target_id=None,
                proposed_body_rate_rad_s=None)

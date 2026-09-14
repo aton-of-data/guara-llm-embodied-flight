@@ -36,6 +36,8 @@ from dataclasses import dataclass, replace
 
 import yaml
 
+from space import keepout
+
 RULE_ADMISSIBLE = "rule2_admissible"
 RULE_TIME = "rule3_time"
 RULE_ENVELOPE = "rule4_envelope"
@@ -65,6 +67,14 @@ class GatewayConfig:
     proposal_timeout_s: float
     max_slew_rate_rad_s: float
     max_hold_s: float
+    tau_ko_s: float
+    h_ko_s: float
+    horizon_s: float
+
+    @property
+    def keepout_margin_s(self) -> float:
+        """The margin a pointing proposal must beat: tau_ko + h_ko (ADR 0012 channel table)."""
+        return self.tau_ko_s + self.h_ko_s
 
     def with_admissible(self, admissible: dict[str, tuple[str, ...]]) -> "GatewayConfig":
         return replace(self, admissible={k: tuple(v) for k, v in admissible.items()})
@@ -96,9 +106,21 @@ class Proposal:
 
 @dataclass(frozen=True)
 class AttitudeState:
+    """The latest attitude the gate evaluates a proposal from.
+
+    `forbidden_inertial` is either one direction or a mapping from the forbidden-body name in
+    the vehicle model to its inertial direction; the gate sweeps every entry and refuses on the
+    nearest violation, so declaring a second bright body cannot loosen the gate.
+    """
+
     boresight_inertial: Vector
-    forbidden_inertial: Vector
+    forbidden_inertial: Vector | dict[str, Vector]
     valid: bool = True
+
+    def forbidden_bodies(self) -> tuple[tuple[str, Vector], ...]:
+        if isinstance(self.forbidden_inertial, dict):
+            return tuple(self.forbidden_inertial.items())
+        return (("forbidden", self.forbidden_inertial),)
 
 
 @dataclass(frozen=True)
@@ -142,7 +164,15 @@ def load_vehicle_model(path: pathlib.Path) -> VehicleModel:
         proposal_timeout_s=float(gateway["proposal_timeout_s"]),
         max_slew_rate_rad_s=float(gateway["envelope"]["max_slew_rate_rad_s"]),
         max_hold_s=float(gateway["envelope"]["max_hold_s"]),
+        tau_ko_s=float(gateway["tau_ko_s"]),
+        h_ko_s=float(gateway["h_ko_s"]),
+        horizon_s=float(gateway["horizon_s"]),
     )
+    if config.horizon_s < config.keepout_margin_s:
+        # Beyond the horizon the predictor reports +inf, which the gate would read as safe.
+        raise ValueError(
+            f"{path}: gateway.horizon_s {config.horizon_s} < tau_ko + h_ko "
+            f"{config.keepout_margin_s}; the shadow check would admit unjudged proposals")
     return VehicleModel(
         vehicle_id=str(raw.get("vehicle_id", "")),
         boresights=raw.get("boresights") or {},
@@ -220,6 +250,36 @@ def _check_envelope(proposal: Proposal, model: VehicleModel
     return None, rate, hold_s, tuple(clamped)
 
 
+def _check_keepout(proposal: Proposal, attitude: AttitudeState, model: VehicleModel,
+                   rate: Vector | None) -> tuple[Decision | None, float | None]:
+    """ADR 0015 rule 5. Evaluate `space.keepout` on the *proposed* motion before admitting it.
+
+    This is the one rule that deliberately differs from ADR 0010 rule 3: the air gateway clamps
+    a velocity, this one refuses the proposal whole, because a half-executed slew is not a
+    smaller slew. Fail-closed: no attitude, no boresight, no decision."""
+    if rate is None or norm(rate) == 0.0:
+        return None, None  # nothing is being commanded to move; there is no motion to shadow
+    if not attitude.valid:
+        return _refuse(RULE_KEEPOUT, proposal.verb,
+                       "attitude state is not valid; the shadow check cannot be evaluated"), None
+    boresight = model.boresights.get(proposal.boresight_id or "")
+    if not boresight:
+        return _refuse(RULE_KEEPOUT, proposal.verb,
+                       "proposal commands motion without a boresight to protect"), None
+    theta_min = float(boresight["keepout_theta_min_rad"])
+    worst_name, worst_t = "", math.inf
+    for name, direction in attitude.forbidden_bodies():
+        t_s = keepout.predict(attitude.boresight_inertial, direction, rate, theta_min,
+                              model.config.horizon_s)
+        if t_s < worst_t:
+            worst_name, worst_t = name, t_s
+    if not worst_t > model.config.keepout_margin_s:
+        return _refuse(RULE_KEEPOUT, proposal.verb,
+                       f"predicted {worst_t:.3f} s to the {worst_name} keep-out cone, not above "
+                       f"tau_ko + h_ko = {model.config.keepout_margin_s} s; refused whole"), None
+    return None, worst_t
+
+
 def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
            model: VehicleModel, t_recv_s: float) -> Decision:
     """Admit or refuse one proposal. `t_recv_s` is the reception instant on the host clock."""
@@ -232,5 +292,9 @@ def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
     refusal, rate, hold_s, clamped = _check_envelope(proposal, model)
     if refusal is not None:
         return refusal
+    refusal, t_keepout_s = _check_keepout(proposal, attitude, model, rate)
+    if refusal is not None:
+        return refusal
     return Decision(admitted=True, rule=None, reason="admitted", clamped=clamped,
-                    admitted_body_rate_rad_s=rate, admitted_hold_s=hold_s)
+                    admitted_body_rate_rad_s=rate, admitted_hold_s=hold_s,
+                    t_keepout_s=t_keepout_s)
