@@ -63,6 +63,8 @@ class GatewayConfig:
     admissible: dict[str, tuple[str, ...]]
     future_stamp_tolerance_s: float
     proposal_timeout_s: float
+    max_slew_rate_rad_s: float
+    max_hold_s: float
 
     def with_admissible(self, admissible: dict[str, tuple[str, ...]]) -> "GatewayConfig":
         return replace(self, admissible={k: tuple(v) for k, v in admissible.items()})
@@ -138,6 +140,8 @@ def load_vehicle_model(path: pathlib.Path) -> VehicleModel:
         admissible=admissible,
         future_stamp_tolerance_s=float(gateway["future_stamp_tolerance_s"]),
         proposal_timeout_s=float(gateway["proposal_timeout_s"]),
+        max_slew_rate_rad_s=float(gateway["envelope"]["max_slew_rate_rad_s"]),
+        max_hold_s=float(gateway["envelope"]["max_hold_s"]),
     )
     return VehicleModel(
         vehicle_id=str(raw.get("vehicle_id", "")),
@@ -184,6 +188,38 @@ def _check_time(proposal: Proposal, model: VehicleModel, t_recv_s: float) -> Dec
     return None
 
 
+def _check_envelope(proposal: Proposal, model: VehicleModel
+                    ) -> tuple[Decision | None, Vector | None, float | None, tuple[str, ...]]:
+    """ADR 0015 rule 4. Finite magnitudes are clamped to the declared envelope; a non-finite
+    magnitude is refused outright, because there is no value to clamp it to.
+
+    The envelope is a Guará declaration, not a reading from the vehicle: ADR 0015 consequence 5
+    records that a wrong declaration narrows the mission, and the site model marks every value
+    `[PARAMETER TBD]` and `[REVIEW]`."""
+    clamped: list[str] = []
+    rate = proposal.proposed_body_rate_rad_s
+    if rate is not None:
+        if not all(math.isfinite(v) for v in rate):
+            return (_refuse(RULE_ENVELOPE, proposal.verb,
+                            f"body rate {rate!r} is not finite; refused, not clamped"),
+                    None, None, ())
+        magnitude = norm(rate)
+        if magnitude > model.config.max_slew_rate_rad_s:
+            scale = model.config.max_slew_rate_rad_s / magnitude
+            rate = (rate[0] * scale, rate[1] * scale, rate[2] * scale)
+            clamped.append("proposed_body_rate_rad_s")
+    hold_s = proposal.hold_s
+    if hold_s is not None:
+        if not math.isfinite(hold_s):
+            return (_refuse(RULE_ENVELOPE, proposal.verb,
+                            f"hold {hold_s!r} is not finite; refused, not clamped"),
+                    None, None, ())
+        if hold_s > model.config.max_hold_s:
+            hold_s = model.config.max_hold_s
+            clamped.append("hold_s")
+    return None, rate, hold_s, tuple(clamped)
+
+
 def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
            model: VehicleModel, t_recv_s: float) -> Decision:
     """Admit or refuse one proposal. `t_recv_s` is the reception instant on the host clock."""
@@ -193,6 +229,8 @@ def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
     refusal = _check_time(proposal, model, t_recv_s)
     if refusal is not None:
         return refusal
-    return Decision(admitted=True, rule=None, reason="admitted",
-                    admitted_body_rate_rad_s=proposal.proposed_body_rate_rad_s,
-                    admitted_hold_s=proposal.hold_s)
+    refusal, rate, hold_s, clamped = _check_envelope(proposal, model)
+    if refusal is not None:
+        return refusal
+    return Decision(admitted=True, rule=None, reason="admitted", clamped=clamped,
+                    admitted_body_rate_rad_s=rate, admitted_hold_s=hold_s)

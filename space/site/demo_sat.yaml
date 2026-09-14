@@ -51,3 +51,11 @@ gateway:
   # system itself is [PARAMETER TBD] until AC-99 declares it (ADR 0015 rule 3).
   future_stamp_tolerance_s: 0.05
   proposal_timeout_s: 0.5
+
+  # Envelope every actuator-facing magnitude is clamped to (ADR 0015 rule 4). Unlike the air
+  # side, there is no authoritative source: PX4 parameters have no F´ analogue, so these are a
+  # Guará declaration and a wrong one silently narrows the mission. [PARAMETER TBD] [REVIEW],
+  # per ADR 0015 consequence 5; no test asserts a value is correct, only that the clamp acts.
+  envelope:
+    max_slew_rate_rad_s: 0.05     # mirrors limits.max_slew_rate_rad_s; [PARAMETER TBD]
+    max_hold_s: 3600.0            # [PARAMETER TBD]
