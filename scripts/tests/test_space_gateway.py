@@ -174,6 +174,7 @@ def test_rule4_clamps_a_finite_magnitude_and_admits_it(model):
     d = decide(model, proposed_body_rate_rad_s=(0.0, over, 0.0))
     assert d.admitted
     assert "proposed_body_rate_rad_s" in d.clamped
+    assert "clamped" in d.reason
     assert gw.norm(d.admitted_body_rate_rad_s) == pytest.approx(
         model.config.max_slew_rate_rad_s, rel=1e-9)
 
@@ -261,11 +262,29 @@ def test_rule5_horizon_must_cover_the_margin_it_judges(model, tmp_path):
         gw.load_vehicle_model(bad)
 
 
+def test_rule5_refuses_a_motion_verb_that_declares_no_motion(model):
+    # Every field is hostile input, so omitting one must not be a way past the shadow check.
+    # `slew` is in the site model's motion_required list; `point_hold` is not.
+    for omission in (dict(proposed_body_rate_rad_s=None),
+                     dict(proposed_body_rate_rad_s=(0.0, 0.0, 0.0))):
+        d = decide(model, **omission)
+        assert not d.admitted, omission
+        assert d.rule == "rule5_keepout"
+
+
+def test_rule5_refuses_a_motion_verb_with_no_boresight_or_no_attitude(model):
+    assert not decide(model, boresight_id=None, proposed_body_rate_rad_s=None).admitted
+    d = gw.decide(proposal=gw.Proposal(**nominal(proposed_body_rate_rad_s=None)),
+                  arbiter_state="CF", attitude=state(valid=False), model=model, t_recv_s=100.0)
+    assert not d.admitted and d.rule == "rule5_keepout"
+
+
 def test_rule5_does_not_gate_a_proposal_with_no_motion(model):
-    d = decide(model, verb="status", boresight_id=None, target_id=None,
-               proposed_body_rate_rad_s=None)
-    assert d.admitted
-    assert d.t_keepout_s is None
+    for kw in (dict(verb="status", boresight_id=None, target_id=None),
+               dict(verb="point_hold", target_id="nadir")):
+        d = decide(model, proposed_body_rate_rad_s=None, **kw)
+        assert d.admitted, kw
+        assert d.t_keepout_s is None
 
 
 # --- rule 6: observability ------------------------------------------------------------
@@ -274,7 +293,8 @@ def refusing_cases(model) -> list[tuple[str, "gw.Decision"]]:
     return [
         ("rule2_admissible", decide(model, arbiter_state="LATCHED")),
         ("rule3_time", decide(model, stamp_s=200.0)),
-        ("rule4_envelope", decide(model, proposed_body_rate_rad_s=(0.0, math.nan, 0.0))),
+        # The non-finite *hold* case, not the non-finite rate: see the isolation test below.
+        ("rule4_envelope", decide(model, hold_s=math.nan)),
         ("rule5_keepout", decide(model, proposed_body_rate_rad_s=closing_rate(model))),
     ]
 
@@ -323,6 +343,49 @@ def test_rule6_counters_are_a_returned_value_and_the_predicate_holds_no_state(mo
 def test_every_rule_is_the_sole_refuser_of_at_least_one_case(model):
     named = {rule for rule, _ in refusing_cases(model)}
     assert named == set(gw.RULES)
+
+
+def isolated_refusers(proposal, arbiter_state, attitude, t_recv_s, model) -> list[str]:
+    """Ask each rule on its own, bypassing decide()'s ordering.
+
+    Ordering can make any rule look like a sole refuser. AC-102 is a claim about the rules, so
+    it has to be checked with the ordering removed.
+    """
+    refusers = []
+    if gw._check_admissible(proposal, arbiter_state, model) is not None:
+        refusers.append("rule2_admissible")
+    if gw._check_time(proposal, model, t_recv_s) is not None:
+        refusers.append("rule3_time")
+    refusal, rate, _hold, _clamped = gw._check_envelope(proposal, model)
+    if refusal is not None:
+        refusers.append("rule4_envelope")
+        rate = proposal.proposed_body_rate_rad_s  # what rule 5 would have seen
+    if gw._check_keepout(proposal, attitude, model, rate)[0] is not None:
+        refusers.append("rule5_keepout")
+    return refusers
+
+
+def test_every_rule_is_the_sole_refuser_with_the_ordering_removed(model):
+    cases = {
+        "rule2_admissible": (gw.Proposal(**nominal()), "LATCHED", 100.0),
+        "rule3_time": (gw.Proposal(**nominal(stamp_s=200.0)), "CF", 100.0),
+        "rule4_envelope": (gw.Proposal(**nominal(hold_s=math.nan)), "CF", 100.0),
+        "rule5_keepout": (gw.Proposal(**nominal(proposed_body_rate_rad_s=closing_rate(model))),
+                          "CF", 100.0),
+    }
+    for rule, (proposal, arbiter_state, t_recv_s) in cases.items():
+        assert isolated_refusers(proposal, arbiter_state, state(), t_recv_s, model) == [rule], rule
+
+
+def test_a_non_finite_rate_is_necessarily_refused_by_rules_4_and_5_together(model):
+    # Not a defect and not weakened: both rules fail closed on a non-finite value, so no
+    # proposal carrying one can isolate rule 4. That is why rule 4's isolation case above is
+    # the non-finite hold. Recorded as a test so the coupling cannot be lost silently.
+    proposal = gw.Proposal(**nominal(proposed_body_rate_rad_s=(0.0, math.nan, 0.0)))
+    assert isolated_refusers(proposal, "CF", state(), 100.0, model) == [
+        "rule4_envelope", "rule5_keepout"]
+    # Through the gate, the first rule in ADR order is still the only one named.
+    assert decide(model, proposed_body_rate_rad_s=(0.0, math.nan, 0.0)).rule == "rule4_envelope"
 
 
 # --- rule 1 (AC-103): the run contract declares the command origin --------------------

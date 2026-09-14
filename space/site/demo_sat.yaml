@@ -64,6 +64,11 @@ gateway:
   # predicted time to a cone violation is not above tau_ko + h_ko; unlike a velocity, a
   # partially executed slew has no safe truncation. horizon_s must cover tau_ko + h_ko or the
   # predictor would report +inf for times the gate still has to judge. All [PARAMETER TBD].
+  # Verbs that cannot be admitted without declaring the motion they will command. A slew whose
+  # proposed rate, boresight or attitude is missing cannot be shadow-checked, and a proposer
+  # that omits a field must not thereby escape the rule (ADR 0015 rule 5, fail-closed).
+  motion_required: [slew]
+
   tau_ko_s: 30.0
   h_ko_s: 5.0
   horizon_s: 60.0

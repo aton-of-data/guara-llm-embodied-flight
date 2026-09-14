@@ -63,6 +63,7 @@ class GatewayConfig:
     """The data half of the gate (ADR 0015 rule 2: the admissible set is data, not code)."""
 
     admissible: dict[str, tuple[str, ...]]
+    motion_required: tuple[str, ...]
     future_stamp_tolerance_s: float
     proposal_timeout_s: float
     max_slew_rate_rad_s: float
@@ -192,6 +193,7 @@ def load_vehicle_model(path: pathlib.Path) -> VehicleModel:
                   for state in STATES}
     config = GatewayConfig(
         admissible=admissible,
+        motion_required=tuple(gateway.get("motion_required", ())),
         future_stamp_tolerance_s=float(gateway["future_stamp_tolerance_s"]),
         proposal_timeout_s=float(gateway["proposal_timeout_s"]),
         max_slew_rate_rad_s=float(gateway["envelope"]["max_slew_rate_rad_s"]),
@@ -289,8 +291,13 @@ def _check_keepout(proposal: Proposal, attitude: AttitudeState, model: VehicleMo
     This is the one rule that deliberately differs from ADR 0010 rule 3: the air gateway clamps
     a velocity, this one refuses the proposal whole, because a half-executed slew is not a
     smaller slew. Fail-closed: no attitude, no boresight, no decision."""
+    must_move = proposal.verb in model.config.motion_required
     if rate is None or norm(rate) == 0.0:
-        return None, None  # nothing is being commanded to move; there is no motion to shadow
+        if must_move:
+            # A proposer that declines to declare its motion does not thereby escape the rule.
+            return _refuse(RULE_KEEPOUT, proposal.verb,
+                           f"{proposal.verb} declares no motion to shadow-check; refused"), None
+        return None, None  # nothing is commanded to move; there is no motion to shadow
     if not attitude.valid:
         return _refuse(RULE_KEEPOUT, proposal.verb,
                        "attitude state is not valid; the shadow check cannot be evaluated"), None
@@ -327,6 +334,7 @@ def decide(*, proposal: Proposal, arbiter_state: str, attitude: AttitudeState,
     refusal, t_keepout_s = _check_keepout(proposal, attitude, model, rate)
     if refusal is not None:
         return refusal
-    return Decision(admitted=True, rule=None, reason="admitted", clamped=clamped,
+    reason = "admitted" if not clamped else "admitted, clamped: " + ", ".join(clamped)
+    return Decision(admitted=True, rule=None, reason=reason, clamped=clamped,
                     admitted_body_rate_rad_s=rate, admitted_hold_s=hold_s,
                     t_keepout_s=t_keepout_s)
