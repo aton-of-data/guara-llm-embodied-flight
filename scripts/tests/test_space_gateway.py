@@ -284,7 +284,7 @@ def test_rule6_every_refusal_raises_exactly_one_event_naming_its_rule_and_verb(m
         assert d.rule == rule
         assert d.event is not None
         assert d.event.rule == rule
-        assert d.event.verb == ("slew" if rule != "rule2_admissible" else "slew")
+        assert d.event.verb == "slew"
         assert rule in d.reason
 
 

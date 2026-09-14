@@ -144,6 +144,38 @@ class Decision:
     t_keepout_s: float | None = None
 
 
+@dataclass(frozen=True)
+class Counters:
+    """ADR 0015 rule 6, in the shape a telemetry channel carries.
+
+    A gate that fails silent is indistinguishable from a gate that is absent, so the refusal
+    counts are downlinked continuously and not only after a ground pass. They are a value the
+    caller carries, not module state: `decide` stays pure and `count` returns a new set.
+    """
+
+    refusals: dict[str, int] = None  # type: ignore[assignment]
+    admitted: int = 0
+    last_event: RefusalEvent | None = None
+
+    def __post_init__(self) -> None:
+        if self.refusals is None:
+            object.__setattr__(self, "refusals", {rule: 0 for rule in RULES})
+
+    @property
+    def total(self) -> int:
+        return sum(self.refusals.values())
+
+
+def count(counters: Counters, decision: Decision) -> Counters:
+    """Fold one decision into a counter set. Exactly one counter moves per call."""
+    if decision.admitted:
+        return Counters(refusals=dict(counters.refusals), admitted=counters.admitted + 1,
+                        last_event=counters.last_event)
+    refusals = dict(counters.refusals)
+    refusals[decision.rule] = refusals.get(decision.rule, 0) + 1
+    return Counters(refusals=refusals, admitted=counters.admitted, last_event=decision.event)
+
+
 def _refuse(rule: str, verb: str, detail: str) -> Decision:
     reason = f"{rule}: {detail}"
     return Decision(admitted=False, rule=rule, reason=reason,
