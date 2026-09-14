@@ -1,6 +1,6 @@
 # Acceptance criteria status
 
-Updated: 2026-09-13. An AC is PASS only with an executed command and an excerpt in the
+Updated: 2026-09-14. An AC is PASS only with an executed command and an excerpt in the
 milestone report. This table is a tracker, not a substitute for those reports.
 
 Threads (`docs/PLAN-M8-M16.md` §1, `docs/PLAN-M17-M28.md` §7): **core** = the PX4 RTA of
@@ -71,6 +71,8 @@ commands and their output. Rows re-verified after that work are marked "PASS (re
 | AC-64 | K | M19 | in progress | SIL ctypes port; both ports run the whole published set (94 vectors, one set hash) and agree; T4 mutation rejected in Python and C ABI; ROS/F´ ports absent |
 | AC-65 | K | M19 | in progress | `guara ctk run --port python` passes the published set; ambiguities filed in SPEC §3.6, not resolved |
 | AC-66 | K | M19 | in progress | `--report` + `check_ac.py AC-66`; not signed; only the Python port |
+| AC-102 | C | M26 | in progress | `python3 -m pytest scripts/tests/test_space_gateway.py -q`: 32 passed; each of ADR 0015 rules 2–6 is the sole refuser of one case. No milestone report and no F´ host, so not PASS |
+| AC-103 | C | M27 | in progress | `python3 scripts/check_run_contract.py --profile space <run>`: the `command_path` declaration is checked against GROUNDING.md D.9. No space run directory exists yet, so the checker has only synthetic inputs |
 
 ## Planned criteria
 
@@ -99,8 +101,6 @@ place as the evidence for it.
 | AC-50 | C | M16 | Zero adversarial utterances produce a sequence that passes both sequencer validation and the gate | the intent → sequence compiler |
 | AC-53 | S | M17 | Multi-arch `guara-dev` pull; a scenario runs from the digest with no PX4 source build | GHCR publish of linux/amd64 and linux/arm64 |
 | AC-54 | S | M17 | Cold clone → first green SITL measured on a declared reference machine | `scripts/bench_setup.sh` |
-| AC-102 | C | M26 | ADR 0015 rules 2–6 each refuse a proposal violating only that rule | `space/gateway.py` and its rule-isolation tests |
-| AC-103 | C | M27 | A space run declares its SDLS SA index and decryptor; an unsupported claim of authenticated origin fails | the space run-contract profile |
 | AC-104 | C | M16 | Zero adversarial *space* utterances admitted; every refusal names its check. Ground-side half of AC-50 | a space adversarial corpus (G-Z9) |
 | AC-105 | A | M9b | Every named compiler and gateway check is the sole refuser of at least one corpus case | `scripts/corpus_coverage.py` |
 | AC-106 | A | M9b | Model request budget, hard timeout, watchdog and declared degraded mode; no stale plan after a failure. Ground-side half of AC-90 | the provider policy object |
@@ -114,7 +114,9 @@ M20–M28 (AC-67..AC-101) are specified in [`docs/PLAN-M17-M28.md`](../PLAN-M17-
 are not yet inventoried here as in-progress work; AC-57..AC-66 are in the executed table above,
 all `in progress`. The ten criteria AC-102..AC-111, added 2026-09-13, are specified in
 [`docs/PLAN-M17-M28.md`](../PLAN-M17-M28.md) §9: they belong to milestones that already exist and
-none of them needs hardware, a host, a simulator or a network.
+none of them needs hardware, a host, a simulator or a network. AC-102 and AC-103 moved into the
+executed table on 2026-09-14 with `space/gateway.py` and the space run-contract profile; the other
+eight remain planned.
 
 Operation-level view of the same scope: [`docs/operations/`](../operations/README.md).
 Findings against the M17–M19 code, and their remediation:
